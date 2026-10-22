@@ -2986,9 +2986,10 @@ class SettingsView: NSView {
     private func refreshBottomAction() {
         guard let btn = launchButton else { return }
         if isStartup {
-            let allGranted = AppPermissions.allRequiredGranted
+            // Accessibility is enough to start: the ⌘⌘ trigger needs it, and a
+            // missing Screen Recording grant is requested on the first capture.
             btn.update(symbolName: "power", title: L10n.launchApp, tint: .systemGreen)
-            btn.isEnabled = allGranted
+            btn.isEnabled = AppPermissions.accessibilityGranted
         } else {
             // Red tint — actual destructive confirmation happens in the NSAlert
             // sheet that fires on click.
@@ -3305,6 +3306,12 @@ class SettingsView: NSView {
     }
 
     @objc private func openScreenRecordingSettings(_ sender: NSButton) {
+        // On macOS 15+ the app only appears in the Screen Recording list after
+        // it asks the system once; a bare deep link leaves nothing to toggle.
+        if CGRequestScreenCaptureAccess() {
+            refreshPermissionStatus()
+            return
+        }
         startPermissionFlow(.screenRecording, from: sender)
     }
 
@@ -3357,7 +3364,7 @@ class SettingsView: NSView {
 
     @objc private func launchClicked() {
         if isStartup {
-            guard AppPermissions.allRequiredGranted else {
+            guard AppPermissions.accessibilityGranted else {
                 showPermissionsTab()
                 refreshPermissionStatus()
                 return

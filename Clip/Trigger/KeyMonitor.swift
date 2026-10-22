@@ -74,10 +74,12 @@ class KeyMonitor {
         let axTrusted = AXIsProcessTrusted()
         let listenAccess = CGPreflightListenEventAccess()
         Self.log.notice("start: accessibility=\(axTrusted) inputMonitoring=\(listenAccess)")
+        FileLog.write("KeyMonitor start accessibility=\(axTrusted) inputMonitoring=\(listenAccess)")
 
         if listenAccess, startEventTapMonitoring() {
             activePath = "event-tap"
             Self.log.notice("path: CGEvent tap")
+            FileLog.write("KeyMonitor path=event-tap")
             return
         }
 
@@ -93,6 +95,7 @@ class KeyMonitor {
         }
         activePath = axTrusted ? "nsevent-monitor" : "nsevent-monitor (no accessibility)"
         Self.log.notice("path: NSEvent monitors, accessibility=\(axTrusted)")
+        FileLog.write("KeyMonitor path=nsevent-monitor accessibility=\(axTrusted)")
     }
 
     private func stopMonitoring() {
@@ -154,6 +157,7 @@ class KeyMonitor {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
             Self.log.error("CGEvent.tapCreate returned nil")
+            FileLog.write("KeyMonitor tapCreate=nil")
             return false
         }
 
@@ -206,6 +210,7 @@ class KeyMonitor {
                 && withinWindow
                 && lastCommandPressOption == sample.optionIsDown
             Self.log.debug("⌘ down: withinWindow=\(withinWindow) otherKey=\(self.otherKeyPressed) double=\(isDoubleTap)")
+            FileLog.write("⌘ down withinWindow=\(withinWindow) otherKey=\(otherKeyPressed) double=\(isDoubleTap) regularEnabled=\(isRegularDoubleTapEnabled)")
 
             if isDoubleTap {
                 if sample.optionIsDown {

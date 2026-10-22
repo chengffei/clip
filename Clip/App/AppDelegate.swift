@@ -31,14 +31,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        FileLog.write("launch accessibility=\(AppPermissions.accessibilityGranted) screenRecording=\(AppPermissions.screenRecordingGranted) initialized=\(appInitialized)")
         registerShareHandoffObserver()
         clipboardTextHistoryMonitor.start()
 
         if appInitialized {
             flushPendingOpenImageURLs()
-        } else if LaunchAtLogin.isEnabled && AppPermissions.allRequiredGranted {
+        } else if AppPermissions.accessibilityGranted {
+            // Start as soon as the ⌘⌘ trigger can work. Screen Recording is
+            // requested on first capture; surface the permissions tab now if
+            // it is still missing so the user is not left with a silent app.
             initializeApp()
             flushPendingOpenImageURLs()
+            if !AppPermissions.screenRecordingGranted {
+                configuredSettingsController().showAsSettings(focusingPermissions: true)
+            }
         } else if !pendingOpenImageURLs.isEmpty {
             initializeApp()
             flushPendingOpenImageURLs()
@@ -440,6 +447,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// active this is the default copy-to-clipboard hotkey; otherwise it falls
     /// through to the regular screenshot trigger.
     private func handleDoubleTapCommand(triggerContext: CaptureTriggerContext) {
+        FileLog.write("doubleTap recording=\(recordingEngine != nil) overlay=\(overlayController != nil)")
         if recordingEngine != nil {
             stopRecordingAndSave()
             triggerContext.finish(.rerouted)
@@ -487,6 +495,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func handleRecordingTrigger() {
         guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard ensureScreenRecordingAccess() else { return }
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         overlayController = OverlayWindowController(
             postCaptureAction: .record,
@@ -794,6 +803,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let context = triggerContext ?? CaptureTriggerContext(source: .programmatic)
         context.mark(.startCapture)
         guard overlayController == nil, recordingEngine == nil else {
+            context.finish(.ignored)
+            return
+        }
+        guard ensureScreenRecordingAccess() else {
             context.finish(.ignored)
             return
         }
@@ -1252,6 +1265,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func openSettings() {
         configuredSettingsController().showAsSettings()
+    }
+
+    /// True when Screen Recording is granted. Otherwise asks the system (which
+    /// registers Clip in the Screen Recording list and prompts the first time)
+    /// and opens the permissions tab, so a trigger never fails silently.
+    @discardableResult
+    private func ensureScreenRecordingAccess() -> Bool {
+        if AppPermissions.screenRecordingGranted { return true }
+        let granted = CGRequestScreenCaptureAccess()
+        FileLog.write("screenRecording missing, request returned \(granted)")
+        if granted { return true }
+        configuredSettingsController().showAsSettings(focusingPermissions: true)
+        return false
     }
 
     private func scheduleSettingsOpenFromReopen() {

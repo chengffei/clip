@@ -31,6 +31,17 @@ if let exitCode = AgentCommand.runIfRequested(arguments: Array(CommandLine.argum
     exit(exitCode)
 }
 
+// `Clip --diagnose` prints the TCC view from inside the signed bundle and exits.
+if CommandLine.arguments.contains("--diagnose") {
+    print("bundle: \(Bundle.main.bundleIdentifier ?? "-") \(Bundle.main.bundlePath)")
+    print("accessibility: \(AXIsProcessTrusted())")
+    print("screenRecording: \(CGPreflightScreenCaptureAccess())")
+    print("inputMonitoring: \(CGPreflightListenEventAccess())")
+    print("customScreenshotHotkey: \(Defaults.hasCustomScreenshotHotkey)")
+    print("launchAtLogin: \(LaunchAtLogin.isEnabled)")
+    exit(0)
+}
+
 let app = NSApplication.shared
 installMinimalEditMenu(on: app)
 let delegate = AppDelegate()

@@ -65,6 +65,9 @@ class SettingsWindowController: NSWindowController {
     }
 
     func showAsStartupDialog() {
+        if !AppPermissions.screenRecordingGranted {
+            _ = CGRequestScreenCaptureAccess()
+        }
         isStartup = true
         settingsView.setStartupMode(true)
         resizeWindow(height: 600)
