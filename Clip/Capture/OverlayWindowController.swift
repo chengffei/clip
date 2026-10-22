@@ -25,7 +25,6 @@ class OverlayWindowController {
         case quickPin
         case textRecognition
         case copyImageText
-        case screenshotTranslation
         case record
 
         var cursorChipText: String {
@@ -40,8 +39,6 @@ class OverlayWindowController {
                 return L10n.dragToTextRecognition
             case .copyImageText:
                 return L10n.dragToCopyImageText
-            case .screenshotTranslation:
-                return L10n.dragToScreenshotTranslation
             }
         }
     }
@@ -938,7 +935,7 @@ class OverlayWindowController {
         switch postCaptureAction {
         case .edit, .record:
             return true
-        case .quickPin, .textRecognition, .copyImageText, .screenshotTranslation:
+        case .quickPin, .textRecognition, .copyImageText:
             return false
         }
     }
@@ -953,7 +950,7 @@ class OverlayWindowController {
         case .record:
             guard let aspectRatio else { return L10n.dragToRecordAspectFree }
             return L10n.dragToRecordAspect(aspectRatioLabel(for: aspectRatio))
-        case .textRecognition, .copyImageText, .screenshotTranslation:
+        case .textRecognition, .copyImageText:
             return action.cursorChipText
         }
     }
@@ -1747,7 +1744,7 @@ extension OverlayWindowController: SelectionViewDelegate {
                 windowBaseImage: windowBaseImage,
                 isWindowCapture: shouldApplyWindowEffects
             )
-        case .quickPin, .textRecognition, .copyImageText, .screenshotTranslation:
+        case .quickPin, .textRecognition, .copyImageText:
             completeImmediateAction(request, preSnapshot: preSnapshot, windowBaseImage: windowBaseImage)
         case .record:
             tearDown()
@@ -1778,7 +1775,7 @@ extension OverlayWindowController: SelectionViewDelegate {
         case .quickPin:
             PinLauncher.pin(image: baseImage, at: request.screenRect.origin)
         case .textRecognition:
-            OCRTranslatePanel.presentTextRecognition(
+            OCRPanel.presentTextRecognition(
                 image: baseImage,
                 anchorRect: request.screenRect,
                 screen: request.screen
@@ -1788,12 +1785,6 @@ extension OverlayWindowController: SelectionViewDelegate {
                 from: baseImage,
                 screen: request.screen,
                 anchorRect: request.screenRect
-            )
-        case .screenshotTranslation:
-            OCRTranslatePanel.presentScreenshotTranslation(
-                image: baseImage,
-                anchorRect: request.screenRect,
-                screen: request.screen
             )
         case .edit, .record:
             break
@@ -1858,12 +1849,6 @@ extension OverlayWindowController: SelectionViewDelegate {
               !editController.blocksHistoryNavigation
         else {
             return false
-        }
-        if HotkeyManager.eventMatchesPreviousHistoryImageHotkey(event) {
-            return switchHistoryImage(offset: 1)
-        }
-        if HotkeyManager.eventMatchesNextHistoryImageHotkey(event) {
-            return switchHistoryImage(offset: -1)
         }
         return false
     }

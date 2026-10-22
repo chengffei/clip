@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class HistoryCopyPromotionPolicyTests: XCTestCase {
     func testCopyingSeventhItemPromotesItToFront() {

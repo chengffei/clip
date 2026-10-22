@@ -50,7 +50,7 @@ final class PinWindow: NSWindow {
     private func clearSource() {
         switch pinSource {
         case .finder:
-            FinderSelection.clearSelection()
+            break
         case .clipboard, .clipboardText:
             ClipboardImageSource.clear()
         case nil:
@@ -64,21 +64,6 @@ final class PinWindow: NSWindow {
 enum PinLauncher {
     private static let stackOffset = NSSize(width: 28, height: -28)
     private static let maxDistinctStackOffsets = 8
-
-    /// Pins images currently selected in Finder. This shortcut is intentionally
-    /// source-specific: it does not fall back to the clipboard.
-    @discardableResult
-    static func pinSelectedImagesIfAvailable() -> Bool {
-        let finderImages = FinderSelection.currentImageFileURLs().compactMap(loadImage)
-        guard !finderImages.isEmpty else {
-            ToastWindow.show(message: L10n.selectedImagePinNoImage)
-            return false
-        }
-
-        pin(images: finderImages, source: .finder)
-        ToastWindow.show(message: L10n.pinFromFinderHint)
-        return true
-    }
 
     /// Pins the image currently on the clipboard. This shortcut is
     /// source-specific: it does not check the Finder selection.
@@ -1876,7 +1861,7 @@ final class PinContentView: NSView, NSDraggingSource {
             if lines.isEmpty, !result.text.isEmpty, let window = self.window,
                let screen = window.screen ?? NSScreen.main {
                 self.isOCRSelectionEnabled = false
-                OCRTranslatePanel.presentTextRecognition(image: imageForOCR, anchorRect: window.frame,
+                OCRPanel.presentTextRecognition(image: imageForOCR, anchorRect: window.frame,
                                                          screen: screen, initialResult: result)
                 return
             }
@@ -2600,7 +2585,7 @@ private final class TextPinToolbarView: NSView {
     var onEditText: (() -> Void)?
     var onPointerEvent: ((NSEvent) -> Void)?
 
-    private let closeButton = PinToolbarIconButton(symbolName: "xmark", accessibilityLabel: L10n.imageMergeClose)
+    private let closeButton = PinToolbarIconButton(symbolName: "xmark", accessibilityLabel: L10n.pinToolbarClose)
     private let textEditButton = PinToolbarIconButton(symbolName: "textformat", accessibilityLabel: L10n.pinToolbarEditText)
     private let editButton = PinToolbarIconButton(symbolName: "pencil", accessibilityLabel: L10n.pinToolbarEdit)
     private var trackingArea: NSTrackingArea?
@@ -2618,7 +2603,7 @@ private final class TextPinToolbarView: NSView {
         wantsLayer = true
         layer?.masksToBounds = false
 
-        closeButton.toolTip = L10n.imageMergeClose
+        closeButton.toolTip = L10n.pinToolbarClose
         closeButton.target = self
         closeButton.action = #selector(closeTapped)
         textEditButton.toolTip = L10n.pinToolbarEditText

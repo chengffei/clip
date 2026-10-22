@@ -203,8 +203,6 @@ enum L10n {
     static var screenshotTranslationShortcutDefaultDisplay: String { s("screenshotTranslationShortcutDefaultDisplay") }
     static var recordShortcutHeader: String { s("recordShortcutHeader") }
     static var recordShortcutDefaultDisplay: String { s("recordShortcutDefaultDisplay") }
-    static var imageMergeShortcutHeader: String { s("imageMergeShortcutHeader") }
-    static var imageMergeShortcutDefaultDisplay: String { s("imageMergeShortcutDefaultDisplay") }
     static var fileUploadShortcutHeader: String { s("fileUploadShortcutHeader") }
     static var finderUploadShortcutDefaultDisplay: String { s("finderUploadShortcutDefaultDisplay") }
     static var fullScreenScreenshotShortcutHeader: String { s("fullScreenScreenshotShortcutHeader") }
@@ -390,11 +388,6 @@ enum L10n {
     static var selectedImageEditNoImage: String { s("selectedImageEditNoImage") }
     static var clipboardImageEditNoImage: String { s("clipboardImageEditNoImage") }
     static var mergeEditExitHint: String { s("mergeEditExitHint") }
-    static var imageMergeNeedTwoImages: String { s("imageMergeNeedTwoImages") }
-    static var imageMergeSomeImagesSkipped: String { s("imageMergeSomeImagesSkipped") }
-    static var imageMergeNoClipboardImage: String { s("imageMergeNoClipboardImage") }
-    static var imageMergeFailed: String { s("imageMergeFailed") }
-    static var imageMergeSaved: String { s("imageMergeSaved") }
     static func recordingSaved(to path: String) -> String {
         String(format: s("recordingSaved"), path)
     }
@@ -884,31 +877,6 @@ enum L10n {
     static var translationErrBadResponse: String { s("translationErrBadResponse") }
 
     // Image Merge workbench
-    static var imageMergeWindowTitle: String { s("imageMergeWindowTitle") }
-    static var imageMergeSources: String { s("imageMergeSources") }
-    static var imageMergeAddFiles: String { s("imageMergeAddFiles") }
-    static var imageMergeAddFromClipboard: String { s("imageMergeAddFromClipboard") }
-    static var imageMergeImageList: String { s("imageMergeImageList") }
-    static var imageMergeTemplate: String { s("imageMergeTemplate") }
-    static var imageMergeTemplateHorizontal: String { s("imageMergeTemplateHorizontal") }
-    static var imageMergeTemplateVertical: String { s("imageMergeTemplateVertical") }
-    static var imageMergeTemplateGrid: String { s("imageMergeTemplateGrid") }
-    static var imageMergeTemplateLongStitch: String { s("imageMergeTemplateLongStitch") }
-    static var imageMergeLayout: String { s("imageMergeLayout") }
-    static var imageMergeSpacing: String { s("imageMergeSpacing") }
-    static var imageMergeMargin: String { s("imageMergeMargin") }
-    static var imageMergeCornerRadius: String { s("imageMergeCornerRadius") }
-    static var imageMergeBackground: String { s("imageMergeBackground") }
-    static var imageMergeTransparent: String { s("imageMergeTransparent") }
-    static var imageMergeSolid: String { s("imageMergeSolid") }
-    static var imageMergeOutput: String { s("imageMergeOutput") }
-    static var imageMergeCopy: String { s("imageMergeCopy") }
-    static var imageMergeSave: String { s("imageMergeSave") }
-    static var imageMergeContinueEditing: String { s("imageMergeContinueEditing") }
-    static var imageMergeClose: String { s("imageMergeClose") }
-    static var imageMergeEmptyTitle: String { s("imageMergeEmptyTitle") }
-    static var imageMergeEmptyBody: String { s("imageMergeEmptyBody") }
-    static var imageMergeClipboardSourceName: String { s("imageMergeClipboardSourceName") }
 }
 
 struct Defaults {
@@ -1215,16 +1183,6 @@ struct Defaults {
         defaults.removeObject(forKey: "recordHotkeyModifiers")
     }
 
-    static var imageMergeHotkeyKeyCode: Int {
-        get { defaults.integer(forKey: "imageMergeHotkeyKeyCode") }
-        set { defaults.set(newValue, forKey: "imageMergeHotkeyKeyCode") }
-    }
-
-    static var imageMergeHotkeyModifiers: Int {
-        get { defaults.integer(forKey: "imageMergeHotkeyModifiers") }
-        set { defaults.set(newValue, forKey: "imageMergeHotkeyModifiers") }
-    }
-
     static var hasCustomImageMergeHotkey: Bool {
         defaults.object(forKey: "imageMergeHotkeyKeyCode") != nil
     }
@@ -1291,66 +1249,6 @@ struct Defaults {
     static func clearColorPickerHotkey() {
         defaults.removeObject(forKey: "colorPickerHotkeyKeyCode")
         defaults.removeObject(forKey: "colorPickerHotkeyModifiers")
-    }
-
-    static var imageMergeTemplate: ImageMergeTemplate {
-        get {
-            let rawValue = defaults.integer(forKey: "imageMergeTemplate")
-            return ImageMergeTemplate(rawValue: rawValue) ?? .horizontal
-        }
-        set {
-            defaults.set(newValue.rawValue, forKey: "imageMergeTemplate")
-        }
-    }
-
-    static var imageMergeSpacing: Double {
-        get {
-            if defaults.object(forKey: "imageMergeSpacing") == nil {
-                return 12
-            }
-            return min(max(defaults.double(forKey: "imageMergeSpacing"), 0), 80)
-        }
-        set {
-            defaults.set(min(max(newValue.rounded(), 0), 80), forKey: "imageMergeSpacing")
-        }
-    }
-
-    static var imageMergeMargin: Double {
-        get {
-            if defaults.object(forKey: "imageMergeMargin") == nil {
-                return 24
-            }
-            return min(max(defaults.double(forKey: "imageMergeMargin"), 0), 120)
-        }
-        set {
-            defaults.set(min(max(newValue.rounded(), 0), 120), forKey: "imageMergeMargin")
-        }
-    }
-
-    static var imageMergeCornerRadius: Double {
-        get {
-            if defaults.object(forKey: "imageMergeCornerRadius") == nil {
-                return 0
-            }
-            return min(max(defaults.double(forKey: "imageMergeCornerRadius"), 0), 80)
-        }
-        set {
-            defaults.set(min(max(newValue.rounded(), 0), 80), forKey: "imageMergeCornerRadius")
-        }
-    }
-
-    static var imageMergeBackgroundIsSolid: Bool {
-        get { defaults.bool(forKey: "imageMergeBackgroundIsSolid") }
-        set { defaults.set(newValue, forKey: "imageMergeBackgroundIsSolid") }
-    }
-
-    static var imageMergeBackgroundColorHex: String {
-        get {
-            normalizedHexColor(defaults.string(forKey: "imageMergeBackgroundColorHex")) ?? "#FFFFFF"
-        }
-        set {
-            defaults.set(normalizedHexColor(newValue) ?? "#FFFFFF", forKey: "imageMergeBackgroundColorHex")
-        }
     }
 
     static var recordingSaveFormat: ScreenRecordingFormat {

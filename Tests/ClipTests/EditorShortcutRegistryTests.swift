@@ -1,7 +1,7 @@
 import AppKit
 import Carbon
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class EditorShortcutRegistryTests: XCTestCase {
     func testLegacyEditorDefaultsRemainStable() {

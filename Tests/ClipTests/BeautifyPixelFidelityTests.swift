@@ -1,7 +1,7 @@
 import AppKit
 import XCTest
 
-@testable import capcap
+@testable import Clip
 
 final class BeautifyPixelFidelityTests: XCTestCase {
     func testPNGExportPreservesInteriorPixelsWithFractionalPadding() throws {

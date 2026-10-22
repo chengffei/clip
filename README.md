@@ -24,8 +24,8 @@ Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the o
 - **Annotate**: rectangle, ellipse, arrow, pen, highlighter, mosaic, numbered markers, text; every mark stays editable with undo / redo
 - **Record** the selected region to mp4 or gif, with a small HUD for pause and stop
 - **OCR to clipboard**: Apple Vision on-device recognition, copied as text with one shortcut
-- **Scrolling capture**, pin to screen, color picker, local history panel
-- **Native AppKit**, Swift Package Manager, ~15 MB, Apple Silicon and Intel
+- **Scrolling capture**, pin to screen, color picker
+- **Native AppKit**, Swift Package Manager, about 45k lines after cutting cloud upload, translation, image merge, history panel and the rest; Apple Silicon and Intel
 
 ## Install
 
@@ -57,7 +57,7 @@ Trigger diagnostics are written to `~/Library/Logs/Clip/clip.log`.
 
 ## Credits
 
-Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (MIT). The capture engine, editor and recording pipeline come from there; Clip changes the identity, the permission flow and the chrome, and removes what one person does not need.
+Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (MIT). The capture engine, editor and recording pipeline come from there; Clip changes the identity, the permission flow and the chrome, and removes what one person does not need: cloud upload, translation, image merge, the history panel, the agent CLI, auto-update, countdown, QR and beautify toolbar buttons.
 
 ## License
 
@@ -77,8 +77,8 @@ Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (
 - **标注**：矩形、椭圆、箭头、画笔、高亮、马赛克、序号、文字，放下后还能改，支持撤销重做
 - **录屏**：选区录成 mp4 或 gif，小 HUD 负责暂停与停止
 - **OCR 进剪贴板**：Apple Vision 本机识别，一个快捷键把文字复制走
-- **长截图**、钉图、取色、本地历史面板
-- **原生 AppKit**，Swift Package Manager，约 15 MB，Apple Silicon 与 Intel 通用
+- **长截图**、钉图、取色
+- **原生 AppKit**，Swift Package Manager，砍掉图床、翻译、拼图、历史面板等后约 4.5 万行；Apple Silicon 与 Intel 通用
 
 ### 安装
 
@@ -110,7 +110,7 @@ bash scripts/make-release.sh       # 通用二进制发布包 → dist/
 
 ### 致谢
 
-Clip 分叉自 realskyrin 的 [capcap](https://github.com/realskyrin/capcap)（MIT）。截图引擎、编辑器、录屏管线都来自那里；Clip 改了身份、权限流程和外观，删掉一个人用不到的部分。
+Clip 分叉自 realskyrin 的 [capcap](https://github.com/realskyrin/capcap)（MIT）。截图引擎、编辑器、录屏管线都来自那里；Clip 改了身份、权限流程和外观，删掉一个人用不到的部分：图床、翻译、拼图、历史面板、Agent 命令行、自动更新、倒计时、二维码与美化按钮。
 
 ### 许可
 

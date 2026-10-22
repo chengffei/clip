@@ -8,84 +8,40 @@ final class HotkeyManager {
     private(set) var isRecording: Bool = false
 
     private var hotKeyRef: EventHotKeyRef?
-    private var countdownHotKeyRef: EventHotKeyRef?
     private var quickPinHotKeyRef: EventHotKeyRef?
-    private var selectedImagePinHotKeyRef: EventHotKeyRef?
-    private var clipboardImagePinHotKeyRef: EventHotKeyRef?
-    private var clipboardTextPinHotKeyRef: EventHotKeyRef?
-    private var selectedImageEditHotKeyRef: EventHotKeyRef?
-    private var clipboardImageEditHotKeyRef: EventHotKeyRef?
     private var textRecognitionHotKeyRef: EventHotKeyRef?
     private var copyImageTextHotKeyRef: EventHotKeyRef?
-    private var screenshotTranslationHotKeyRef: EventHotKeyRef?
     private var recordHotKeyRef: EventHotKeyRef?
-    private var imageMergeHotKeyRef: EventHotKeyRef?
-    private var finderUploadHotKeyRef: EventHotKeyRef?
     private var fullScreenScreenshotHotKeyRef: EventHotKeyRef?
     private var colorPickerHotKeyRef: EventHotKeyRef?
-    private var historyPanelHotKeyRef: EventHotKeyRef?
-    private var historyPreviewHotKeyRef: EventHotKeyRef?
     private var callback: ((CaptureTriggerContext) -> Void)?
-    private var countdownCallback: (() -> Void)?
     private var quickPinCallback: (() -> Void)?
-    private var selectedImagePinCallback: (() -> Void)?
-    private var clipboardImagePinCallback: (() -> Void)?
-    private var clipboardTextPinCallback: (() -> Void)?
-    private var selectedImageEditCallback: (() -> Void)?
-    private var clipboardImageEditCallback: (() -> Void)?
     private var textRecognitionCallback: (() -> Void)?
     private var copyImageTextCallback: (() -> Void)?
-    private var screenshotTranslationCallback: (() -> Void)?
     private var recordCallback: (() -> Void)?
-    private var imageMergeCallback: (() -> Void)?
-    private var finderUploadCallback: (() -> Void)?
     private var fullScreenScreenshotCallback: (() -> Void)?
     private var colorPickerCallback: (() -> Void)?
-    private var historyPanelCallback: (() -> Void)?
-    private var historyPreviewCallback: (() -> Void)?
     private var eventHandlerRef: EventHandlerRef?
 
     private static let regularHotKeySignature: OSType = OSType(0x4341_5043) // 'CAPC'
     private static let regularHotKeyID: UInt32 = 1
-    private static let countdownHotKeyID: UInt32 = 2
-    private static let selectedImagePinHotKeyID: UInt32 = 3
-    private static let selectedImageEditHotKeyID: UInt32 = 4
-    private static let clipboardImageEditHotKeyID: UInt32 = 5
-    private static let clipboardImagePinHotKeyID: UInt32 = 6
     private static let textRecognitionHotKeyID: UInt32 = 7
-    private static let screenshotTranslationHotKeyID: UInt32 = 8
     private static let recordHotKeyID: UInt32 = 9
-    private static let imageMergeHotKeyID: UInt32 = 10
     private static let fullScreenScreenshotHotKeyID: UInt32 = 11
     private static let colorPickerHotKeyID: UInt32 = 12
     private static let copyImageTextHotKeyID: UInt32 = 13
-    private static let clipboardTextPinHotKeyID: UInt32 = 14
-    private static let historyPanelHotKeyID: UInt32 = 15
-    private static let historyPreviewHotKeyID: UInt32 = 16
-    private static let finderUploadHotKeyID: UInt32 = 17
     private static let quickPinHotKeyID: UInt32 = 18
 
     private init() {}
 
     deinit {
         unregister()
-        unregisterCountdown()
         unregisterQuickPin()
-        unregisterSelectedImagePin()
-        unregisterClipboardImagePin()
-        unregisterClipboardTextPin()
-        unregisterSelectedImageEdit()
-        unregisterClipboardImageEdit()
         unregisterTextRecognition()
         unregisterCopyImageText()
-        unregisterScreenshotTranslation()
         unregisterRecord()
-        unregisterImageMerge()
-        unregisterFinderUpload()
         unregisterFullScreenScreenshot()
         unregisterColorPicker()
-        unregisterHistoryPanel()
-        unregisterHistoryPreview()
         if let handler = eventHandlerRef {
             RemoveEventHandler(handler)
             eventHandlerRef = nil
@@ -121,34 +77,6 @@ final class HotkeyManager {
         }
     }
 
-    /// Register the ⌥-augmented variant of the saved hotkey for countdown capture.
-    /// Skips when no custom hotkey is set or when the saved hotkey already
-    /// contains ⌥ (the +⌥ variant would collide with the regular hotkey).
-    func registerCountdown(callback: @escaping () -> Void) {
-        self.countdownCallback = callback
-        unregisterCountdown()
-
-        guard let (keyCode, modifiers) = currentCountdownHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.countdownHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            countdownHotKeyRef = ref
-        }
-    }
-
-    func unregisterCountdown() {
-        if let ref = countdownHotKeyRef {
-            UnregisterEventHotKey(ref)
-            countdownHotKeyRef = nil
-        }
-    }
-
     /// Register the shortcut that selects a screen region and pins it directly.
     func registerQuickPin(callback: @escaping () -> Void) {
         quickPinCallback = callback
@@ -172,141 +100,6 @@ final class HotkeyManager {
         if let ref = quickPinHotKeyRef {
             UnregisterEventHotKey(ref)
             quickPinHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved selected-image pin hotkey, if any. Caller's
-    /// `callback` fires when it is pressed. No-ops when unset.
-    func registerSelectedImagePin(callback: @escaping () -> Void) {
-        self.selectedImagePinCallback = callback
-        unregisterSelectedImagePin()
-
-        guard let (keyCode, modifiers) = currentSelectedImagePinHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.selectedImagePinHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            selectedImagePinHotKeyRef = ref
-        }
-    }
-
-    func unregisterSelectedImagePin() {
-        if let ref = selectedImagePinHotKeyRef {
-            UnregisterEventHotKey(ref)
-            selectedImagePinHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved clipboard-image pin hotkey, if any. Caller's
-    /// `callback` fires when it is pressed. No-ops when unset.
-    func registerClipboardImagePin(callback: @escaping () -> Void) {
-        self.clipboardImagePinCallback = callback
-        unregisterClipboardImagePin()
-
-        guard let (keyCode, modifiers) = currentClipboardImagePinHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.clipboardImagePinHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            clipboardImagePinHotKeyRef = ref
-        }
-    }
-
-    func unregisterClipboardImagePin() {
-        if let ref = clipboardImagePinHotKeyRef {
-            UnregisterEventHotKey(ref)
-            clipboardImagePinHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved clipboard-text pin hotkey, if any. Caller's
-    /// `callback` fires when it is pressed. No-ops when unset.
-    func registerClipboardTextPin(callback: @escaping () -> Void) {
-        self.clipboardTextPinCallback = callback
-        unregisterClipboardTextPin()
-
-        guard let (keyCode, modifiers) = currentClipboardTextPinHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.clipboardTextPinHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            clipboardTextPinHotKeyRef = ref
-        }
-    }
-
-    func unregisterClipboardTextPin() {
-        if let ref = clipboardTextPinHotKeyRef {
-            UnregisterEventHotKey(ref)
-            clipboardTextPinHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved selected-image edit hotkey, if any. No-ops when no
-    /// selected-image edit hotkey is saved.
-    func registerSelectedImageEdit(callback: @escaping () -> Void) {
-        self.selectedImageEditCallback = callback
-        unregisterSelectedImageEdit()
-
-        guard let (keyCode, modifiers) = currentSelectedImageEditHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.selectedImageEditHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            selectedImageEditHotKeyRef = ref
-        }
-    }
-
-    func unregisterSelectedImageEdit() {
-        if let ref = selectedImageEditHotKeyRef {
-            UnregisterEventHotKey(ref)
-            selectedImageEditHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved clipboard-image edit hotkey, if any. No-ops when no
-    /// clipboard-image edit hotkey is saved.
-    func registerClipboardImageEdit(callback: @escaping () -> Void) {
-        self.clipboardImageEditCallback = callback
-        unregisterClipboardImageEdit()
-
-        guard let (keyCode, modifiers) = currentClipboardImageEditHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.clipboardImageEditHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            clipboardImageEditHotKeyRef = ref
-        }
-    }
-
-    func unregisterClipboardImageEdit() {
-        if let ref = clipboardImageEditHotKeyRef {
-            UnregisterEventHotKey(ref)
-            clipboardImageEditHotKeyRef = nil
         }
     }
 
@@ -362,32 +155,6 @@ final class HotkeyManager {
         }
     }
 
-    /// Register the saved screenshot-translation hotkey, if any.
-    func registerScreenshotTranslation(callback: @escaping () -> Void) {
-        self.screenshotTranslationCallback = callback
-        unregisterScreenshotTranslation()
-
-        guard let (keyCode, modifiers) = currentScreenshotTranslationHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.screenshotTranslationHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            screenshotTranslationHotKeyRef = ref
-        }
-    }
-
-    func unregisterScreenshotTranslation() {
-        if let ref = screenshotTranslationHotKeyRef {
-            UnregisterEventHotKey(ref)
-            screenshotTranslationHotKeyRef = nil
-        }
-    }
-
     /// Register the saved recording hotkey, if any.
     func registerRecord(callback: @escaping () -> Void) {
         self.recordCallback = callback
@@ -411,58 +178,6 @@ final class HotkeyManager {
         if let ref = recordHotKeyRef {
             UnregisterEventHotKey(ref)
             recordHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved image-merge hotkey, if any.
-    func registerImageMerge(callback: @escaping () -> Void) {
-        self.imageMergeCallback = callback
-        unregisterImageMerge()
-
-        guard let (keyCode, modifiers) = currentImageMergeHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.imageMergeHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            imageMergeHotKeyRef = ref
-        }
-    }
-
-    func unregisterImageMerge() {
-        if let ref = imageMergeHotKeyRef {
-            UnregisterEventHotKey(ref)
-            imageMergeHotKeyRef = nil
-        }
-    }
-
-    /// Register the saved file upload hotkey, if any.
-    func registerFinderUpload(callback: @escaping () -> Void) {
-        self.finderUploadCallback = callback
-        unregisterFinderUpload()
-
-        guard let (keyCode, modifiers) = currentFinderUploadHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.finderUploadHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref {
-            finderUploadHotKeyRef = ref
-        }
-    }
-
-    func unregisterFinderUpload() {
-        if let ref = finderUploadHotKeyRef {
-            UnregisterEventHotKey(ref)
-            finderUploadHotKeyRef = nil
         }
     }
 
@@ -518,70 +233,6 @@ final class HotkeyManager {
         }
     }
 
-    /// Register the saved history panel hotkey, if any.
-    func registerHistoryPanel(callback: @escaping () -> Void) {
-        self.historyPanelCallback = callback
-        unregisterHistoryPanel()
-
-        guard let (keyCode, modifiers) = currentHistoryPanelHotkey() else { return }
-
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.historyPanelHotKeyID)
-        let status = RegisterEventHotKey(
-            keyCode, modifiers, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref = ref {
-            historyPanelHotKeyRef = ref
-        }
-    }
-
-    func unregisterHistoryPanel() {
-        if let ref = historyPanelHotKeyRef {
-            UnregisterEventHotKey(ref)
-            historyPanelHotKeyRef = nil
-        }
-    }
-
-    /// Temporarily captures an unmodified Space press while a history tile is
-    /// hovered. Carbon hotkeys work even though the history panel intentionally
-    /// remains a non-activating panel.
-    @discardableResult
-    func registerHistoryPreview(callback: @escaping () -> Void) -> Bool {
-        unregisterHistoryPreview()
-        historyPreviewCallback = callback
-        installEventHandlerIfNeeded()
-        var ref: EventHotKeyRef?
-        let id = EventHotKeyID(signature: Self.regularHotKeySignature, id: Self.historyPreviewHotKeyID)
-        let status = RegisterEventHotKey(
-            UInt32(kVK_Space), 0, id,
-            GetApplicationEventTarget(), 0, &ref
-        )
-        if status == noErr, let ref {
-            historyPreviewHotKeyRef = ref
-            return true
-        }
-        historyPreviewCallback = nil
-        return false
-    }
-
-    func unregisterHistoryPreview() {
-        if let ref = historyPreviewHotKeyRef {
-            UnregisterEventHotKey(ref)
-            historyPreviewHotKeyRef = nil
-        }
-        historyPreviewCallback = nil
-    }
-
-    /// Returns the (keyCode, modifiers) for the countdown variant — user hotkey + ⌥.
-    /// Returns nil if no custom hotkey is set or the saved hotkey already contains ⌥.
-    func currentCountdownHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard let (kc, mods) = currentHotkey() else { return nil }
-        if mods & UInt32(optionKey) != 0 { return nil }
-        return (kc, mods | UInt32(optionKey))
-    }
-
     // MARK: - Recording lifecycle
 
     /// Called by Settings UI when the user starts capturing a new key combo.
@@ -589,22 +240,12 @@ final class HotkeyManager {
     func beginRecording() {
         isRecording = true
         unregister()
-        unregisterCountdown()
         unregisterQuickPin()
-        unregisterSelectedImagePin()
-        unregisterClipboardImagePin()
-        unregisterClipboardTextPin()
-        unregisterSelectedImageEdit()
-        unregisterClipboardImageEdit()
         unregisterTextRecognition()
         unregisterCopyImageText()
-        unregisterScreenshotTranslation()
         unregisterRecord()
-        unregisterImageMerge()
-        unregisterFinderUpload()
         unregisterFullScreenScreenshot()
         unregisterColorPicker()
-        unregisterHistoryPanel()
         NotificationCenter.default.post(name: .hotkeyDidChange, object: nil)
     }
 
@@ -645,92 +286,6 @@ final class HotkeyManager {
         return modifierString(mods) + keyString(kc)
     }
 
-    /// Returns (keyCode, carbonModifiers) for the saved selected-image pin
-    /// hotkey, or nil.
-    func currentSelectedImagePinHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomSelectedImagePinHotkey else { return nil }
-        let kc = UInt32(Defaults.selectedImagePinHotkeyKeyCode)
-        let mods = UInt32(Defaults.selectedImagePinHotkeyModifiers)
-        // Require at least one modifier unless it is a standalone function key.
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string like "⌘⇧P" for the saved selected-image pin hotkey, or
-    /// nil if not set.
-    static func currentSelectedImagePinDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentSelectedImagePinHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved clipboard-image pin
-    /// hotkey, or nil.
-    func currentClipboardImagePinHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomClipboardImagePinHotkey else { return nil }
-        let kc = UInt32(Defaults.clipboardImagePinHotkeyKeyCode)
-        let mods = UInt32(Defaults.clipboardImagePinHotkeyModifiers)
-        // Require at least one modifier unless it is a standalone function key.
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string like "⌘⇧P" for the saved clipboard-image pin hotkey, or
-    /// nil if not set.
-    static func currentClipboardImagePinDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentClipboardImagePinHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved clipboard-text pin
-    /// hotkey, or nil.
-    func currentClipboardTextPinHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomClipboardTextPinHotkey else { return nil }
-        let kc = UInt32(Defaults.clipboardTextPinHotkeyKeyCode)
-        let mods = UInt32(Defaults.clipboardTextPinHotkeyModifiers)
-        // Require at least one modifier unless it is a standalone function key.
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string like "⌘⇧T" for the saved clipboard-text pin hotkey, or
-    /// nil if not set.
-    static func currentClipboardTextPinDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentClipboardTextPinHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved selected-image edit
-    /// hotkey, or nil when the user hasn't bound one.
-    func currentSelectedImageEditHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomSelectedImageEditHotkey else { return nil }
-        let kc = UInt32(Defaults.selectedImageEditHotkeyKeyCode)
-        let mods = UInt32(Defaults.selectedImageEditHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string for the selected-image edit hotkey, or nil if not set.
-    static func currentSelectedImageEditDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentSelectedImageEditHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved clipboard-image edit
-    /// hotkey, or nil when the user hasn't bound one.
-    func currentClipboardImageEditHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomClipboardImageEditHotkey else { return nil }
-        let kc = UInt32(Defaults.clipboardImageEditHotkeyKeyCode)
-        let mods = UInt32(Defaults.clipboardImageEditHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string for the clipboard-image edit hotkey, or nil if not set.
-    static func currentClipboardImageEditDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentClipboardImageEditHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
     /// Returns (keyCode, carbonModifiers) for the saved text-recognition
     /// hotkey, or nil when the user hasn't bound one.
     func currentTextRecognitionHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
@@ -763,22 +318,6 @@ final class HotkeyManager {
         return modifierString(mods) + keyString(kc)
     }
 
-    /// Returns (keyCode, carbonModifiers) for the saved screenshot-translation
-    /// hotkey, or nil when the user hasn't bound one.
-    func currentScreenshotTranslationHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomScreenshotTranslationHotkey else { return nil }
-        let kc = UInt32(Defaults.screenshotTranslationHotkeyKeyCode)
-        let mods = UInt32(Defaults.screenshotTranslationHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string for the screenshot-translation hotkey, or nil if not set.
-    static func currentScreenshotTranslationDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentScreenshotTranslationHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
     /// Returns (keyCode, carbonModifiers) for the saved recording hotkey.
     func currentRecordHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
         guard Defaults.hasCustomRecordHotkey else { return nil }
@@ -791,35 +330,6 @@ final class HotkeyManager {
     /// Display string for the recording hotkey, or nil if not set.
     static func currentRecordDisplayString() -> String? {
         guard let (kc, mods) = HotkeyManager.shared.currentRecordHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved image-merge hotkey.
-    func currentImageMergeHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomImageMergeHotkey else { return nil }
-        let kc = UInt32(Defaults.imageMergeHotkeyKeyCode)
-        let mods = UInt32(Defaults.imageMergeHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string for the image-merge hotkey, or nil if not set.
-    static func currentImageMergeDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentImageMergeHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the file upload hotkey.
-    func currentFinderUploadHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomFinderUploadHotkey else { return nil }
-        let kc = UInt32(Defaults.finderUploadHotkeyKeyCode)
-        let mods = UInt32(Defaults.finderUploadHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    static func currentFinderUploadDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentFinderUploadHotkey() else { return nil }
         return modifierString(mods) + keyString(kc)
     }
 
@@ -851,21 +361,6 @@ final class HotkeyManager {
     /// Display string for the color-picker hotkey, or nil if not set.
     static func currentColorPickerDisplayString() -> String? {
         guard let (kc, mods) = HotkeyManager.shared.currentColorPickerHotkey() else { return nil }
-        return modifierString(mods) + keyString(kc)
-    }
-
-    /// Returns (keyCode, carbonModifiers) for the saved history panel hotkey.
-    func currentHistoryPanelHotkey() -> (keyCode: UInt32, modifiers: UInt32)? {
-        guard Defaults.hasCustomHistoryPanelHotkey else { return nil }
-        let kc = UInt32(Defaults.historyPanelHotkeyKeyCode)
-        let mods = UInt32(Defaults.historyPanelHotkeyModifiers)
-        guard mods != 0 || Self.isFunctionKey(kc) else { return nil }
-        return (kc, mods)
-    }
-
-    /// Display string for the history panel hotkey, or nil if not set.
-    static func currentHistoryPanelDisplayString() -> String? {
-        guard let (kc, mods) = HotkeyManager.shared.currentHistoryPanelHotkey() else { return nil }
         return modifierString(mods) + keyString(kc)
     }
 
@@ -919,42 +414,6 @@ final class HotkeyManager {
         return matches(event: event, keyCode: kc, modifiers: m)
     }
 
-    func currentPreviousHistoryImageHotkey() -> (keyCode: UInt32, modifiers: UInt32) {
-        if Defaults.hasCustomPreviousHistoryImageHotkey {
-            return (UInt32(Defaults.previousHistoryImageHotkeyKeyCode),
-                    UInt32(Defaults.previousHistoryImageHotkeyModifiers))
-        }
-        return (UInt32(kVK_ANSI_Comma), 0)
-    }
-
-    static func currentPreviousHistoryImageDisplayString() -> String {
-        let (kc, mods) = HotkeyManager.shared.currentPreviousHistoryImageHotkey()
-        return modifierString(mods) + keyString(kc)
-    }
-
-    static func eventMatchesPreviousHistoryImageHotkey(_ event: NSEvent) -> Bool {
-        let (kc, m) = HotkeyManager.shared.currentPreviousHistoryImageHotkey()
-        return matches(event: event, keyCode: kc, modifiers: m)
-    }
-
-    func currentNextHistoryImageHotkey() -> (keyCode: UInt32, modifiers: UInt32) {
-        if Defaults.hasCustomNextHistoryImageHotkey {
-            return (UInt32(Defaults.nextHistoryImageHotkeyKeyCode),
-                    UInt32(Defaults.nextHistoryImageHotkeyModifiers))
-        }
-        return (UInt32(kVK_ANSI_Period), 0)
-    }
-
-    static func currentNextHistoryImageDisplayString() -> String {
-        let (kc, mods) = HotkeyManager.shared.currentNextHistoryImageHotkey()
-        return modifierString(mods) + keyString(kc)
-    }
-
-    static func eventMatchesNextHistoryImageHotkey(_ event: NSEvent) -> Bool {
-        let (kc, m) = HotkeyManager.shared.currentNextHistoryImageHotkey()
-        return matches(event: event, keyCode: kc, modifiers: m)
-    }
-
     static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
         let activeMask: NSEvent.ModifierFlags = [.command, .shift, .option, .control]
         let mods = flags.intersection(activeMask)
@@ -977,24 +436,13 @@ final class HotkeyManager {
     enum HotkeySlot {
         case screenshot
         case quickPin
-        case selectedImagePin
-        case clipboardImagePin
-        case clipboardTextPin
-        case selectedImageEdit
-        case clipboardImageEdit
         case textRecognition
         case copyImageText
-        case screenshotTranslation
         case record
-        case imageMerge
-        case finderUpload
         case fullScreenScreenshot
         case colorPicker
         case clipboard
         case fileSave
-        case previousHistoryImage
-        case nextHistoryImage
-        case historyPanel
     }
 
     /// Returns a localized message describing the existing binding a candidate
@@ -1012,9 +460,6 @@ final class HotkeyManager {
             if let (kc, m) = currentHotkey(), kc == keyCode, m == modifiers {
                 return L10n.shortcutConflictScreenshot
             }
-            if let (kc, m) = currentCountdownHotkey(), kc == keyCode, m == modifiers {
-                return L10n.shortcutConflictCountdown
-            }
         }
         if slot != .quickPin, let (kc, m) = currentQuickPinHotkey(), kc == keyCode {
             if m == modifiers {
@@ -1023,59 +468,6 @@ final class HotkeyManager {
             if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
                m == modifiers | UInt32(optionKey) {
                 return L10n.shortcutConflictQuickPin
-            }
-        }
-        if slot != .selectedImagePin, let (kc, m) = currentSelectedImagePinHotkey() {
-            if kc == keyCode, m == modifiers {
-                return L10n.shortcutConflictSelectedImagePin
-            }
-            // The screenshot hotkey's ⌥ variant becomes the countdown hotkey;
-            // it must not land on the selected-image pin hotkey either.
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               kc == keyCode, m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictSelectedImagePin
-            }
-        }
-        if slot != .clipboardImagePin, let (kc, m) = currentClipboardImagePinHotkey() {
-            if kc == keyCode, m == modifiers {
-                return L10n.shortcutConflictClipboardImagePin
-            }
-            // The screenshot hotkey's ⌥ variant becomes the countdown hotkey;
-            // it must not land on the clipboard-image pin hotkey either.
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               kc == keyCode, m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictClipboardImagePin
-            }
-        }
-        if slot != .clipboardTextPin, let (kc, m) = currentClipboardTextPinHotkey() {
-            if kc == keyCode, m == modifiers {
-                return L10n.shortcutConflictClipboardTextPin
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               kc == keyCode, m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictClipboardTextPin
-            }
-        }
-        if slot != .selectedImageEdit,
-           let (kc, m) = currentSelectedImageEditHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictSelectedImageEdit
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictSelectedImageEdit
-            }
-        }
-        if slot != .clipboardImageEdit,
-           let (kc, m) = currentClipboardImageEditHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictClipboardImageEdit
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictClipboardImageEdit
             }
         }
         if slot != .textRecognition,
@@ -1100,17 +492,6 @@ final class HotkeyManager {
                 return L10n.shortcutConflictCopyImageText
             }
         }
-        if slot != .screenshotTranslation,
-           let (kc, m) = currentScreenshotTranslationHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictScreenshotTranslation
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictScreenshotTranslation
-            }
-        }
         if slot != .record,
            let (kc, m) = currentRecordHotkey(),
            kc == keyCode {
@@ -1120,28 +501,6 @@ final class HotkeyManager {
             if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
                m == modifiers | UInt32(optionKey) {
                 return L10n.shortcutConflictRecord
-            }
-        }
-        if slot != .imageMerge,
-           let (kc, m) = currentImageMergeHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictImageMerge
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictImageMerge
-            }
-        }
-        if slot != .finderUpload,
-           let (kc, m) = currentFinderUploadHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictFileUpload
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictFileUpload
             }
         }
         if slot != .fullScreenScreenshot,
@@ -1166,17 +525,6 @@ final class HotkeyManager {
                 return L10n.shortcutConflictColorPicker
             }
         }
-        if slot != .historyPanel,
-           let (kc, m) = currentHistoryPanelHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictHistoryPanel
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictHistoryPanel
-            }
-        }
         if slot != .clipboard, let (kc, m) = currentClipboardHotkey(), kc == keyCode, m == modifiers {
             return L10n.shortcutConflictClipboard
         }
@@ -1184,30 +532,6 @@ final class HotkeyManager {
             let (kc, m) = currentFileSaveHotkey()
             if kc == keyCode, m == modifiers {
                 return L10n.shortcutConflictFileSave
-            }
-        }
-        if slot != .previousHistoryImage {
-            let (kc, m) = currentPreviousHistoryImageHotkey()
-            if kc == keyCode {
-                if m == modifiers {
-                    return L10n.shortcutConflictPreviousHistoryImage
-                }
-                if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-                   m == modifiers | UInt32(optionKey) {
-                    return L10n.shortcutConflictPreviousHistoryImage
-                }
-            }
-        }
-        if slot != .nextHistoryImage {
-            let (kc, m) = currentNextHistoryImageHotkey()
-            if kc == keyCode {
-                if m == modifiers {
-                    return L10n.shortcutConflictNextHistoryImage
-                }
-                if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-                   m == modifiers | UInt32(optionKey) {
-                    return L10n.shortcutConflictNextHistoryImage
-                }
             }
         }
         return nil
@@ -1257,40 +581,18 @@ final class HotkeyManager {
 
                 let callback: (() -> Void)?
                 switch hkID.id {
-                case HotkeyManager.countdownHotKeyID:
-                    callback = mgr.countdownCallback
                 case HotkeyManager.quickPinHotKeyID:
                     callback = mgr.quickPinCallback
-                case HotkeyManager.selectedImagePinHotKeyID:
-                    callback = mgr.selectedImagePinCallback
-                case HotkeyManager.clipboardImagePinHotKeyID:
-                    callback = mgr.clipboardImagePinCallback
-                case HotkeyManager.clipboardTextPinHotKeyID:
-                    callback = mgr.clipboardTextPinCallback
-                case HotkeyManager.selectedImageEditHotKeyID:
-                    callback = mgr.selectedImageEditCallback
-                case HotkeyManager.clipboardImageEditHotKeyID:
-                    callback = mgr.clipboardImageEditCallback
                 case HotkeyManager.textRecognitionHotKeyID:
                     callback = mgr.textRecognitionCallback
                 case HotkeyManager.copyImageTextHotKeyID:
                     callback = mgr.copyImageTextCallback
-                case HotkeyManager.screenshotTranslationHotKeyID:
-                    callback = mgr.screenshotTranslationCallback
                 case HotkeyManager.recordHotKeyID:
                     callback = mgr.recordCallback
-                case HotkeyManager.imageMergeHotKeyID:
-                    callback = mgr.imageMergeCallback
-                case HotkeyManager.finderUploadHotKeyID:
-                    callback = mgr.finderUploadCallback
                 case HotkeyManager.fullScreenScreenshotHotKeyID:
                     callback = mgr.fullScreenScreenshotCallback
                 case HotkeyManager.colorPickerHotKeyID:
                     callback = mgr.colorPickerCallback
-                case HotkeyManager.historyPanelHotKeyID:
-                    callback = mgr.historyPanelCallback
-                case HotkeyManager.historyPreviewHotKeyID:
-                    callback = mgr.historyPreviewCallback
                 default:
                     callback = nil
                 }
@@ -1350,26 +652,6 @@ final class HotkeyManager {
         apply(keyCode: kc, modifiers: mods, to: item)
     }
 
-    static func applyImageMergeToMenuItem(_ item: NSMenuItem) {
-        item.attributedTitle = nil
-        guard let (kc, mods) = HotkeyManager.shared.currentImageMergeHotkey() else {
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
-            return
-        }
-        apply(keyCode: kc, modifiers: mods, to: item)
-    }
-
-    static func applyFinderUploadToMenuItem(_ item: NSMenuItem) {
-        item.attributedTitle = nil
-        guard let (kc, mods) = HotkeyManager.shared.currentFinderUploadHotkey() else {
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
-            return
-        }
-        apply(keyCode: kc, modifiers: mods, to: item)
-    }
-
     static func applyFullScreenScreenshotToMenuItem(_ item: NSMenuItem) {
         item.attributedTitle = nil
         guard let (kc, mods) = HotkeyManager.shared.currentFullScreenScreenshotHotkey() else {
@@ -1393,16 +675,6 @@ final class HotkeyManager {
     static func applyColorPickerToMenuItem(_ item: NSMenuItem) {
         item.attributedTitle = nil
         guard let (kc, mods) = HotkeyManager.shared.currentColorPickerHotkey() else {
-            item.keyEquivalent = ""
-            item.keyEquivalentModifierMask = []
-            return
-        }
-        apply(keyCode: kc, modifiers: mods, to: item)
-    }
-
-    static func applyHistoryPanelToMenuItem(_ item: NSMenuItem) {
-        item.attributedTitle = nil
-        guard let (kc, mods) = HotkeyManager.shared.currentHistoryPanelHotkey() else {
             item.keyEquivalent = ""
             item.keyEquivalentModifierMask = []
             return

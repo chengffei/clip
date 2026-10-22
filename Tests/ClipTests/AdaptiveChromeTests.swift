@@ -1,6 +1,6 @@
 import AppKit
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class AdaptiveChromeTests: XCTestCase {
     func testAppearanceClassification() throws {
@@ -11,7 +11,9 @@ final class AdaptiveChromeTests: XCTestCase {
         XCTAssertTrue(AdaptiveChrome.isDark(dark))
     }
 
-    func testToolbarBackgroundResolvesDifferentlyAcrossAppearances() throws {
+    /// Clip's chrome is ink in both appearances; the brand does not follow the
+    /// system light/dark switch.
+    func testToolbarBackgroundIsInkInBothAppearances() throws {
         let light = try XCTUnwrap(NSAppearance(named: .aqua))
         let dark = try XCTUnwrap(NSAppearance(named: .darkAqua))
         let lightColor = try colorComponents(
@@ -21,9 +23,10 @@ final class AdaptiveChromeTests: XCTestCase {
             AdaptiveChrome.resolvedCGColor(AdaptiveChrome.toolbarBackground, for: dark)
         )
 
-        XCTAssertGreaterThan(lightColor.red, darkColor.red)
-        XCTAssertGreaterThan(lightColor.green, darkColor.green)
-        XCTAssertGreaterThan(lightColor.blue, darkColor.blue)
+        XCTAssertEqual(lightColor.red, darkColor.red, accuracy: 0.001)
+        XCTAssertEqual(lightColor.green, darkColor.green, accuracy: 0.001)
+        XCTAssertEqual(lightColor.blue, darkColor.blue, accuracy: 0.001)
+        XCTAssertLessThan(lightColor.red, 0.2)
     }
 
     func testFloatingControlOriginUsesExternalTopRightPlacement() {

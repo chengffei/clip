@@ -1,5 +1,5 @@
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class BeautifyPresetTests: XCTestCase {
     func testPrimaryPresetsRemainTheCompactToolbarCatalog() {

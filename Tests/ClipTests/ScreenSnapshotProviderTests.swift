@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class ScreenSnapshotProviderTests: XCTestCase {
     func testFiveKSnapshotUsesSingleFrameQueue() {

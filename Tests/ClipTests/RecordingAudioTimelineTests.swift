@@ -1,6 +1,6 @@
 import CoreMedia
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class RecordingAudioTimelineTests: XCTestCase {
     func testSilenceChunksShortenFinalBufferWithoutCrossingRealSample() {

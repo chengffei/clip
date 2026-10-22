@@ -549,13 +549,8 @@ class EditWindowController {
             performQRCodeRecognition()
         case .ocr:
             performOCR()
-        case .screenshotTranslate:
-            performScreenshotTranslation()
         case .save:
             save()
-        case .upload:
-            guard Defaults.hasUsableUploadProvider else { return false }
-            upload()
         case .pin:
             pin()
         case .record:
@@ -2244,16 +2239,6 @@ class EditWindowController {
         }
     }
 
-    private func upload() {
-        guard !deferUntilWindowCaptureReady(.upload) else { return }
-        canvasView?.commitActiveTextEditing()
-        guard let finalImage = currentCompositeImage() else { return }
-        let targetScreen = screen
-        tearDown()
-        onComplete(nil)
-        UploadManager.shared.upload(image: finalImage, on: targetScreen)
-    }
-
     /// Text-recognition action: exits the selection/editor, then opens the OCR
     /// panel anchored to the original selection. Uses the raw capture (no
     /// annotations) so recognition is not polluted by drawn marks.
@@ -2266,7 +2251,7 @@ class EditWindowController {
         tearDown()
         onComplete(nil)
         guard let baseImage else { return }
-        OCRTranslatePanel.presentTextRecognition(image: baseImage, anchorRect: anchorRect, screen: targetScreen)
+        OCRPanel.presentTextRecognition(image: baseImage, anchorRect: anchorRect, screen: targetScreen)
     }
 
     private func performQRCodeRecognition() {
@@ -2386,20 +2371,6 @@ class EditWindowController {
             width: max(0, maxX - minX) * bounds.width,
             height: max(0, maxY - minY) * bounds.height
         )
-    }
-
-    /// Screenshot-translation action: uses OCR internally, but only shows the
-    /// translated result to the user.
-    private func performScreenshotTranslation() {
-        guard !deferUntilWindowCaptureReady(.screenshotTranslate) else { return }
-        canvasView?.commitActiveTextEditing()
-        let baseImage = orientedBaseImageForOutput() ?? currentCompositeImage()
-        let anchorRect = selectionRect
-        let targetScreen = screen
-        tearDown()
-        onComplete(nil)
-        guard let baseImage else { return }
-        OCRTranslatePanel.presentScreenshotTranslation(image: baseImage, anchorRect: anchorRect, screen: targetScreen)
     }
 
     private func pin() {
@@ -3392,12 +3363,6 @@ class ToolbarView: NSView {
         btn.target = self
         btn.action = #selector(buttonTapped(_:))
         btn.tag = index
-        // Upload is unavailable until an upload provider is configured.
-        if id == .upload {
-            let hasProvider = Defaults.hasUsableUploadProvider
-            btn.isEnabled = hasProvider
-            btn.alphaValue = hasProvider ? 1.0 : 0.35
-        }
         return btn
     }
 

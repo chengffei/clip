@@ -3,7 +3,7 @@ import ImageIO
 import UniformTypeIdentifiers
 import XCTest
 
-@testable import capcap
+@testable import Clip
 
 /// GIF export must preserve the original clip duration when the source frame
 /// rate is not a clean multiple of the GIF target rate. The encoder drops

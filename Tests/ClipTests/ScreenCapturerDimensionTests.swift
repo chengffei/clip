@@ -1,7 +1,7 @@
 import CoreGraphics
 import XCTest
 
-@testable import capcap
+@testable import Clip
 
 /// Regression coverage for issue #135: a browser auto-snap captured the
 /// window CGImage at `ceil(contentSize * scale)` backing pixels but tagged the

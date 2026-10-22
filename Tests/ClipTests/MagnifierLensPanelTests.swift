@@ -1,6 +1,6 @@
 import XCTest
 import AppKit
-@testable import capcap
+@testable import Clip
 
 final class MagnifierLensPanelTests: XCTestCase {
 

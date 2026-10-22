@@ -27,10 +27,6 @@ private func installMinimalEditMenu(on app: NSApplication) {
     app.mainMenu = mainMenu
 }
 
-if let exitCode = AgentCommand.runIfRequested(arguments: Array(CommandLine.arguments.dropFirst())) {
-    exit(exitCode)
-}
-
 // `Clip --diagnose` prints the TCC view from inside the signed bundle and exits.
 if CommandLine.arguments.contains("--diagnose") {
     print("bundle: \(Bundle.main.bundleIdentifier ?? "-") \(Bundle.main.bundlePath)")

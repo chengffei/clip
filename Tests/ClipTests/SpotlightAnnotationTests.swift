@@ -1,6 +1,6 @@
 import AppKit
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class SpotlightAnnotationTests: XCTestCase {
     func testSpotlightDimsOutsideAndPreservesHighlight() throws {

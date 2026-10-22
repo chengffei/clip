@@ -1,7 +1,7 @@
 import AppKit
 import XCTest
 
-@testable import capcap
+@testable import Clip
 
 final class WindowEffectsTests: XCTestCase {
     /// Regression for #153. Full-screen Chromium can return a direct-window

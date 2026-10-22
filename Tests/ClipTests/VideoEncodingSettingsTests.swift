@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import capcap
+@testable import Clip
 
 /// `VideoEncodingSettings.evenDimensions` must round odd inputs UP to the next
 /// even integer (H.264 requires even pixel dimensions; rounding down would

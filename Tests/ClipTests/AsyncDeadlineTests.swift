@@ -1,5 +1,5 @@
 import XCTest
-@testable import capcap
+@testable import Clip
 
 final class AsyncDeadlineTests: XCTestCase {
     func testReturnsValueAndPropagatesError() async throws {

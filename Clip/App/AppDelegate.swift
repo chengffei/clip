@@ -2,7 +2,6 @@ import AppKit
 import UniformTypeIdentifiers
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private static let shareHandoffNotificationName = Notification.Name("cn.skyrin.capcap.share-handoff")
 
     private var statusBarController: StatusBarController!
     private var keyMonitor: KeyMonitor!
@@ -15,16 +14,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordingCancelLocalMonitor: Any?
     private var recordingCancelGlobalMonitor: Any?
     private var recordingCancelRequested = false
-    private var historyPanelController: HistoryPanelController?
-    private var fileUploadWindowController: FinderUploadWindowController?
-    private var fileUploadOpenPanel: NSOpenPanel?
     private var countdownActive = false
     private var appInitialized = false
     private var suspendedEditDraft: OverlayWindowController.SuspendedEditDraft?
     private var pendingReopenSettingsWorkItem: DispatchWorkItem?
-    private var pendingOpenImageURLs: [URL] = []
     private var startupDialogShown = false
-    private let clipboardTextHistoryMonitor = ClipboardTextHistoryMonitor()
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
@@ -32,30 +26,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         FileLog.write("launch accessibility=\(AppPermissions.accessibilityGranted) screenRecording=\(AppPermissions.screenRecordingGranted) initialized=\(appInitialized)")
-        registerShareHandoffObserver()
-        clipboardTextHistoryMonitor.start()
 
         if appInitialized {
-            flushPendingOpenImageURLs()
         } else if AppPermissions.accessibilityGranted {
             // Start as soon as the ⌘⌘ trigger can work. Screen Recording is
             // requested on first capture; surface the permissions tab now if
             // it is still missing so the user is not left with a silent app.
             initializeApp()
-            flushPendingOpenImageURLs()
             if !AppPermissions.screenRecordingGranted {
                 configuredSettingsController().showAsSettings(focusingPermissions: true)
             }
-        } else if !pendingOpenImageURLs.isEmpty {
-            initializeApp()
-            flushPendingOpenImageURLs()
+        } else if false {
         } else {
             showStartupDialog()
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        clipboardTextHistoryMonitor.stop()
     }
 
     func applicationDidChangeScreenParameters(_ notification: Notification) {
@@ -79,19 +66,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
-    func application(_ application: NSApplication, open urls: [URL]) {
-        _ = requestOpenImageURLs(urls)
-    }
-
-    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
-        requestOpenImageURLs([URL(fileURLWithPath: filename)])
-    }
-
-    func application(_ sender: NSApplication, openFiles filenames: [String]) {
-        let handled = requestOpenImageURLs(filenames.map { URL(fileURLWithPath: $0) })
-        sender.reply(toOpenOrPrint: handled ? .success : .failure)
-    }
-
     private func showStartupDialog() {
         startupDialogShown = true
         let settingsController = configuredSettingsController()
@@ -110,32 +84,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return settingsController
     }
 
-    private func registerShareHandoffObserver() {
-        DistributedNotificationCenter.default().addObserver(
-            self,
-            selector: #selector(handleShareHandoffNotification(_:)),
-            name: Self.shareHandoffNotificationName,
-            object: nil,
-            suspensionBehavior: .deliverImmediately
-        )
-    }
-
     private func initializeApp() {
         guard !appInitialized else { return }
         appInitialized = true
 
-        ImageEditLauncher.clearTempDir()
         OverlayWindowController.prewarmPresentationSurfaces()
         if AppPermissions.screenRecordingGranted {
             ScreenSnapshotProvider.shared.prewarm()
         }
-        ImageMergeLauncher.shared.onContinueEditing = { [weak self] image in
-            self?.continueEditingMergedImage(image)
-        }
-        historyPanelController = HistoryPanelController { [weak self] entry in
-            _ = self?.launchImageFile(entry.fileURL)
-        }
-
         statusBarController = StatusBarController(
             onTakeScreenshot: { [weak self] in
                 self?.handleTrigger(
@@ -144,10 +100,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onTakeFullScreenScreenshot: { [weak self] in self?.handleFullScreenScreenshotTrigger() },
             onRecord: { [weak self] in self?.handleRecordingTrigger() },
-            onMergeImages: { [weak self] in self?.handleImageMergeMenuTrigger() },
-            onUploadFiles: { [weak self] in self?.handleFileUploadTrigger() },
+            onCopyImageText: { [weak self] in self?.handleCopyImageTextTrigger() },
             onColorPicker: { [weak self] in self?.handleColorPickerTrigger() },
-            onOpenHistoryPanel: { [weak self] in self?.handleHistoryPanelTrigger(holdOpenUntilMouseEnters: true) },
             onOpenSettings: { [weak self] in self?.openSettings() }
         )
         statusBarController.setMenuBarVisible(Defaults.showMenuBar)
@@ -160,7 +114,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 self.handleDoubleTapCommand(triggerContext: context)
             },
-            onCountdownTrigger: { [weak self] in self?.handleCountdownTrigger() }
+            onCountdownTrigger: {}
         )
 
         NotificationCenter.default.addObserver(
@@ -176,7 +130,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyHotkeyState() {
         if HotkeyManager.shared.isRecording {
             HotkeyManager.shared.unregister()
-            HotkeyManager.shared.unregisterCountdown()
             unregisterNonScreenshotHotkeys()
             keyMonitor?.isEnabled = false
             return
@@ -198,7 +151,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 HotkeyManager.shared.unregister()
             }
-            HotkeyManager.shared.unregisterCountdown()
             return
         }
 
@@ -211,12 +163,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 self.handleTrigger(fromShortcut: true, triggerContext: context)
             }
-            HotkeyManager.shared.registerCountdown { [weak self] in
-                self?.handleCountdownTrigger()
-            }
         } else {
             HotkeyManager.shared.unregister()
-            HotkeyManager.shared.unregisterCountdown()
         }
 
         // Double-tap ⌘ does two jobs: it's the default screenshot trigger
@@ -227,53 +175,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             || (overlayController != nil && !Defaults.hasCustomClipboardHotkey)
         keyMonitor?.isRegularDoubleTapEnabled = needsDoubleTap
 
-        // The pin hotkeys are independent of the screenshot hotkey.
         if Defaults.hasCustomQuickPinHotkey {
             HotkeyManager.shared.registerQuickPin { [weak self] in
                 self?.handleQuickPinTrigger()
             }
         } else {
             HotkeyManager.shared.unregisterQuickPin()
-        }
-
-        if Defaults.hasCustomSelectedImagePinHotkey {
-            HotkeyManager.shared.registerSelectedImagePin { [weak self] in
-                self?.handleSelectedImagePinTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterSelectedImagePin()
-        }
-
-        if Defaults.hasCustomClipboardImagePinHotkey {
-            HotkeyManager.shared.registerClipboardImagePin { [weak self] in
-                self?.handleClipboardImagePinTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterClipboardImagePin()
-        }
-
-        if Defaults.hasCustomClipboardTextPinHotkey {
-            HotkeyManager.shared.registerClipboardTextPin { [weak self] in
-                self?.handleClipboardTextPinTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterClipboardTextPin()
-        }
-
-        if Defaults.hasCustomSelectedImageEditHotkey {
-            HotkeyManager.shared.registerSelectedImageEdit { [weak self] in
-                self?.handleSelectedImageEditTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterSelectedImageEdit()
-        }
-
-        if Defaults.hasCustomClipboardImageEditHotkey {
-            HotkeyManager.shared.registerClipboardImageEdit { [weak self] in
-                self?.handleClipboardImageEditTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterClipboardImageEdit()
         }
 
         if Defaults.hasCustomTextRecognitionHotkey {
@@ -292,36 +199,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             HotkeyManager.shared.unregisterCopyImageText()
         }
 
-        if Defaults.hasCustomScreenshotTranslationHotkey {
-            HotkeyManager.shared.registerScreenshotTranslation { [weak self] in
-                self?.handleScreenshotTranslationTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterScreenshotTranslation()
-        }
-
         if Defaults.hasCustomRecordHotkey {
             HotkeyManager.shared.registerRecord { [weak self] in
                 self?.handleRecordingTrigger()
             }
         } else {
             HotkeyManager.shared.unregisterRecord()
-        }
-
-        if Defaults.hasCustomImageMergeHotkey {
-            HotkeyManager.shared.registerImageMerge { [weak self] in
-                self?.handleImageMergeShortcutTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterImageMerge()
-        }
-
-        if Defaults.hasCustomFinderUploadHotkey {
-            HotkeyManager.shared.registerFinderUpload { [weak self] in
-                self?.handleFileUploadTrigger()
-            }
-        } else {
-            HotkeyManager.shared.unregisterFinderUpload()
         }
 
         if Defaults.hasCustomFullScreenScreenshotHotkey {
@@ -339,108 +222,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             HotkeyManager.shared.unregisterColorPicker()
         }
-
-        if Defaults.hasCustomHistoryPanelHotkey {
-            HotkeyManager.shared.registerHistoryPanel { [weak self] in
-                self?.handleHistoryPanelTrigger(holdOpenUntilMouseEnters: true)
-            }
-        } else {
-            HotkeyManager.shared.unregisterHistoryPanel()
-        }
     }
 
     private func unregisterNonScreenshotHotkeys() {
         HotkeyManager.shared.unregisterQuickPin()
-        HotkeyManager.shared.unregisterSelectedImagePin()
-        HotkeyManager.shared.unregisterClipboardImagePin()
-        HotkeyManager.shared.unregisterClipboardTextPin()
-        HotkeyManager.shared.unregisterSelectedImageEdit()
-        HotkeyManager.shared.unregisterClipboardImageEdit()
         HotkeyManager.shared.unregisterTextRecognition()
         HotkeyManager.shared.unregisterCopyImageText()
-        HotkeyManager.shared.unregisterScreenshotTranslation()
         HotkeyManager.shared.unregisterRecord()
-        HotkeyManager.shared.unregisterImageMerge()
-        HotkeyManager.shared.unregisterFinderUpload()
         HotkeyManager.shared.unregisterFullScreenScreenshot()
         HotkeyManager.shared.unregisterColorPicker()
-        HotkeyManager.shared.unregisterHistoryPanel()
-    }
-
-    @discardableResult
-    private func requestOpenImageURLs(_ urls: [URL]) -> Bool {
-        guard Self.containsImageFile(in: urls) else {
-            if appInitialized {
-                ToastWindow.show(message: L10n.openImageNoImage)
-            }
-            return false
-        }
-
-        pendingOpenImageURLs.append(contentsOf: urls)
-        cancelPendingReopenSettings()
-
-        if appInitialized {
-            flushPendingOpenImageURLs()
-        } else {
-            initializeApp()
-            if startupDialogShown {
-                SettingsWindowController.shared.dismissStartupDialogForExternalOpen()
-                startupDialogShown = false
-            }
-            flushPendingOpenImageURLs()
-        }
-
-        return true
-    }
-
-    private func flushPendingOpenImageURLs() {
-        guard appInitialized, !pendingOpenImageURLs.isEmpty else { return }
-        let urls = pendingOpenImageURLs
-        pendingOpenImageURLs.removeAll()
-        _ = openImageURLs(urls)
-    }
-
-    @discardableResult
-    private func openImageURLs(_ urls: [URL]) -> Bool {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return true }
-        guard let url = urls.lazy.compactMap(Self.resolvedImageFileURL).first(where: Self.isImageFile) else {
-            ToastWindow.show(message: L10n.openImageNoImage)
-            return false
-        }
-
-        let didLaunch = launchImageFile(url)
-        if didLaunch {
-            cancelPendingReopenSettings()
-        }
-        return didLaunch
-    }
-
-    @discardableResult
-    private func launchImageFile(_ url: URL) -> Bool {
-        let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
-        guard let controller = ImageEditLauncher.launch(
-            sourceURL: url,
-            onRequestFocusReturn: {
-                focusRestorer.restore()
-            },
-            onSuspend: { [weak self] draft in
-                self?.handleEditSuspension(draft)
-            },
-            onComplete: { [weak self] finalImage in
-                self?.handleEditCompletion(finalImage)
-            }
-        ) else {
-            ToastWindow.show(message: L10n.openImageNoImage)
-            return false
-        }
-
-        overlayController = controller
-        applyHotkeyState()
-        return true
-    }
-
-    private func handleHistoryPanelTrigger(holdOpenUntilMouseEnters: Bool = false) {
-        historyPanelController?.toggleFromUserRequest(holdOpenUntilMouseEnters: holdOpenUntilMouseEnters)
     }
 
     /// KeyMonitor entry point for plain double-tap ⌘. While an overlay is
@@ -487,9 +277,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         startCapture(
             triggerContext: context,
-            onFirstFramePresented: fromShortcut ? {
-                UpdateChecker.shared.checkFromScreenshotShortcutIfDue()
-            } : nil
+            onFirstFramePresented: nil
         )
     }
 
@@ -513,127 +301,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         applyHotkeyState()
     }
 
-    /// Opens the single image currently selected in Finder directly in the
-    /// editor. Returns nil when Finder has no exactly-one editable image.
-    private func launchSelectedImageEdit() -> OverlayWindowController? {
-        let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
-        let onComplete: (NSImage?) -> Void = { [weak self] finalImage in
-            self?.handleEditCompletion(finalImage)
-        }
-
-        if let url = FinderSelection.currentImageFileURL(),
-           let controller = ImageEditLauncher.launch(
-               sourceURL: url,
-               onRequestFocusReturn: {
-                   focusRestorer.restore()
-               },
-               onSuspend: { [weak self] draft in
-                   self?.handleEditSuspension(draft)
-               },
-               onComplete: onComplete
-           ) {
-            return controller
-        }
-
-        return nil
-    }
-
-    /// Opens the current clipboard image directly in the editor. Returns nil
-    /// when the clipboard has no editable image.
-    private func launchClipboardImageEdit() -> OverlayWindowController? {
-        let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
-        let onComplete: (NSImage?) -> Void = { [weak self] finalImage in
-            self?.handleEditCompletion(finalImage)
-        }
-
-        if let image = ClipboardImageSource.currentImage(),
-           let controller = ImageEditLauncher.launch(
-               clipboardImage: image,
-               onRequestFocusReturn: {
-                   focusRestorer.restore()
-               },
-               onSuspend: { [weak self] draft in
-                   self?.handleEditSuspension(draft)
-               },
-               onComplete: onComplete
-           ) {
-            return controller
-        }
-
-        return nil
-    }
-
-    /// Countdown-triggered capture. It never checks image-edit sources; the
-    /// user explicitly asked for a delayed screen capture.
-    func handleCountdownTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        countdownActive = true
-        CountdownWindow.start(
-            seconds: Defaults.countdownSeconds,
-            onFinish: { [weak self] in
-                self?.countdownActive = false
-                self?.startCapture(
-                    triggerContext: CaptureTriggerContext(source: .countdown)
-                )
-            },
-            onCancel: { [weak self] in
-                self?.countdownActive = false
-            }
-        )
-    }
-
     /// Select a screen region and pin it immediately after capture.
-    func handleQuickPinTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        startCapture(postCaptureAction: .quickPin)
-    }
-
-    /// Pin-hotkey trigger: pin Finder selection onto the screen. Skipped while
-    /// a capture overlay is up.
-    func handleSelectedImagePinTrigger() {
-        guard overlayController == nil, recordingEngine == nil else { return }
-        PinLauncher.pinSelectedImagesIfAvailable()
-    }
-
-    /// Contextual pin hotkey: pin the current edited screenshot while an
-    /// editor is active; otherwise pin the clipboard image.
-    func handleClipboardImagePinTrigger() {
-        if let overlayController {
-            _ = overlayController.pinFromKeyboard()
-            return
-        }
-        guard recordingEngine == nil else { return }
-        PinLauncher.pinClipboardImageIfAvailable()
-    }
-
-    /// Pin-hotkey trigger: render clipboard text into a desktop text pin.
-    /// Skipped while a capture overlay is up.
-    func handleClipboardTextPinTrigger() {
-        guard overlayController == nil, recordingEngine == nil else { return }
-        PinLauncher.pinClipboardTextIfAvailable()
-    }
-
-    func handleSelectedImageEditTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        guard let controller = launchSelectedImageEdit() else {
-            ToastWindow.show(message: L10n.selectedImageEditNoImage)
-            return
-        }
-        overlayController = controller
-        applyHotkeyState()
-    }
-
-    func handleClipboardImageEditTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        guard let controller = launchClipboardImageEdit() else {
-            ToastWindow.show(message: L10n.clipboardImageEditNoImage)
-            return
-        }
-        overlayController = controller
-        applyHotkeyState()
-    }
-
-    @discardableResult
     func handlePinnedImageEditRequest(_ image: NSImage, beforePresent: () -> Void) -> Bool {
         guard overlayController == nil, recordingEngine == nil, !countdownActive else { return false }
         beforePresent()
@@ -657,6 +325,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    func handleQuickPinTrigger() {
+        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        startCapture(postCaptureAction: .quickPin)
+    }
+
     func handleTextRecognitionTrigger() {
         guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
         startCapture(postCaptureAction: .textRecognition)
@@ -665,86 +338,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func handleCopyImageTextTrigger() {
         guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
         startCapture(postCaptureAction: .copyImageText)
-    }
-
-    func handleScreenshotTranslationTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        startCapture(postCaptureAction: .screenshotTranslation)
-    }
-
-    func handleImageMergeMenuTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        ImageMergeLauncher.shared.openEmpty()
-    }
-
-    func handleImageMergeShortcutTrigger() {
-        guard overlayController == nil,
-              recordingEngine == nil,
-              !countdownActive,
-              !ImageMergeLauncher.shared.isWorkbenchActive
-        else { return }
-        ImageMergeLauncher.shared.openFromShortcutSources()
-    }
-
-    func handleFileUploadTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-
-        if let controller = fileUploadWindowController {
-            controller.show()
-            return
-        }
-
-        let urls = FinderSelection.currentFileURLs()
-        guard !urls.isEmpty else {
-            showFileUploadOpenPanel()
-            return
-        }
-
-        showFileUploadDialog(fileURLs: urls)
-    }
-
-    private func showFileUploadOpenPanel() {
-        if let panel = fileUploadOpenPanel {
-            NSApp.activate(ignoringOtherApps: true)
-            panel.makeKeyAndOrderFront(nil)
-            return
-        }
-
-        let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
-        let panel = NSOpenPanel()
-        panel.title = L10n.uploadFilesMenu
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = true
-        panel.resolvesAliases = true
-        fileUploadOpenPanel = panel
-
-        NSApp.activate(ignoringOtherApps: true)
-        panel.begin { [weak self, weak panel] response in
-            guard let self, let panel else { return }
-            if self.fileUploadOpenPanel === panel {
-                self.fileUploadOpenPanel = nil
-            }
-            guard response == .OK else {
-                focusRestorer.restore()
-                return
-            }
-            self.showFileUploadDialog(fileURLs: panel.urls)
-        }
-    }
-
-    private func showFileUploadDialog(fileURLs: [URL]) {
-        let urls = fileURLs.filter { url in
-            let values = try? url.resourceValues(forKeys: [.isRegularFileKey])
-            return values?.isRegularFile == true
-        }
-        guard !urls.isEmpty else { return }
-
-        let controller = FinderUploadWindowController(fileURLs: urls) { [weak self] in
-            self?.fileUploadWindowController = nil
-        }
-        fileUploadWindowController = controller
-        controller.show()
     }
 
     func handleColorPickerTrigger() {
@@ -761,10 +354,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func handleFullScreenScreenshotTrigger(fromShortcut: Bool = false) {
         guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        if fromShortcut {
-            UpdateChecker.shared.checkFromScreenshotShortcutIfDue()
-        }
-
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         let cursorPoint = NSEvent.mouseLocation
         let screen = NSScreen.screens.first(where: { $0.frame.contains(cursorPoint) })
@@ -901,29 +490,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return screen
         }
         return NSScreen.screens.first(where: { $0.frame == draft.screenFrame }) ?? NSScreen.main
-    }
-
-    private func continueEditingMergedImage(_ image: NSImage) {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
-        let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
-        guard let controller = ImageEditLauncher.launch(
-            generatedImage: image,
-            source: .merge,
-            onRequestFocusReturn: {
-                focusRestorer.restore()
-            },
-            onSuspend: { [weak self] draft in
-                self?.handleEditSuspension(draft)
-            },
-            onComplete: { [weak self] finalImage in
-                self?.handleEditCompletion(finalImage)
-            }
-        ) else {
-            ToastWindow.show(message: L10n.imageMergeFailed)
-            return
-        }
-        overlayController = controller
-        applyHotkeyState()
     }
 
     private func beginRecording(rect: NSRect, screen: NSScreen) {
@@ -1296,49 +862,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pendingReopenSettingsWorkItem = nil
     }
 
-    @objc private func handleShareHandoffNotification(_ notification: Notification) {
-        guard let filePath = notification.userInfo?["file"] as? String,
-              !filePath.isEmpty
-        else {
-            return
-        }
-
-        cancelPendingReopenSettings()
-        requestOpenImageURLs([URL(fileURLWithPath: filePath)])
-    }
-
-    private static func containsImageFile(in urls: [URL]) -> Bool {
-        urls.lazy.compactMap(resolvedImageFileURL).contains(where: isImageFile)
-    }
-
-    private static func isImageFile(_ url: URL) -> Bool {
-        let values = try? url.resourceValues(forKeys: [.contentTypeKey])
-        if values?.contentType?.conforms(to: .image) == true {
-            return true
-        }
-
-        guard let type = UTType(filenameExtension: url.pathExtension) else {
-            return false
-        }
-        return type.conforms(to: .image)
-    }
-
-    private static func resolvedImageFileURL(from url: URL) -> URL? {
-        if url.isFileURL {
-            return url
-        }
-
-        guard url.scheme?.caseInsensitiveCompare("capcap") == .orderedSame,
-              url.host?.caseInsensitiveCompare("edit") == .orderedSame,
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let filePath = components.queryItems?.first(where: { $0.name == "file" })?.value,
-              !filePath.isEmpty
-        else {
-            return nil
-        }
-
-        return URL(fileURLWithPath: filePath)
-    }
 }
 
 private final class RecordingSaveAccessoryView: NSView {
