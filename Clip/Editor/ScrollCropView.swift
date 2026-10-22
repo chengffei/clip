@@ -24,7 +24,7 @@ final class ScrollCropView: NSView {
 
     private var activeEdge: Edge?
 
-    private let accent = NSColor(red: 0, green: 212.0 / 255.0, blue: 106.0 / 255.0, alpha: 1.0)
+    private let accent = Brand.accent
     private let outerMargin: CGFloat = 80
     private let minimumImageInset: CGFloat = 24
     private let minimumCropHeight: CGFloat = 12

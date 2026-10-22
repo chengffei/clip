@@ -468,8 +468,15 @@ class EditWindowController {
         repositionFloatingChrome()
         updateEditorInteractionState()
         updateHistoryButtons(canUndo: canvas.canUndo, canRedo: canvas.canRedo)
+        // Beautify only comes back on its own when its toolbar button is
+        // visible; otherwise a stale preference would trap the user in a mode
+        // they cannot switch off.
         if Defaults.lastBeautifyEnabled {
-            activateBeautify()
+            if Defaults.toolbarLayout.hidden.contains(.beautify) {
+                Defaults.lastBeautifyEnabled = false
+            } else {
+                activateBeautify()
+            }
         }
         bringEditorToFront()
     }
@@ -6599,11 +6606,11 @@ final class SelectionChromeOverlay: NSView {
     private(set) var selectionRectInView: NSRect = .zero
     private(set) var isActiveAndVisible: Bool = false
 
-    private let accentColor = NSColor(red: 0, green: 212.0/255.0, blue: 106.0/255.0, alpha: 1.0)
+    private let accentColor = Brand.accent
     private let handleSize: CGFloat = 8
     private let handleHitSize: CGFloat = 12
     private let borderWidth: CGFloat = 2.0
-    private let dashPattern: [CGFloat] = [6, 4]
+    private let dashPattern: [CGFloat] = [10, 6]
 
     private var dragHandle: SelectionView.HandlePosition?
     private var dragOriginalRect: NSRect = .zero
@@ -6735,6 +6742,7 @@ final class SelectionChromeOverlay: NSView {
         context.setLineDash(phase: 0, lengths: dashPattern)
         context.stroke(rect.insetBy(dx: -1, dy: -1))
         context.setLineDash(phase: 0, lengths: [])
+        SelectionView.drawCornerBrackets(context: context, rect: rect, color: accentColor)
 
         for pos in SelectionView.handlePositions(for: rect) {
             let handleRect = NSRect(
@@ -6744,7 +6752,7 @@ final class SelectionChromeOverlay: NSView {
                 height: handleSize
             )
             context.setFillColor(accentColor.cgColor)
-            context.fillEllipse(in: handleRect)
+            context.fill(handleRect)
         }
 
         // The SelectionView draws its own size label underneath, but the
