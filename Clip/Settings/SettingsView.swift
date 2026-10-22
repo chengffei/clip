@@ -7,6 +7,7 @@ import PermissionFlow
 enum SettingsTab: CaseIterable {
     case general
     case shortcuts
+    case toolbar
     case capture
     case recording
     case files
@@ -18,6 +19,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return L10n.settingsTabGeneral
         case .shortcuts: return L10n.settingsTabShortcuts
+        case .toolbar: return L10n.settingsTabToolbar
         case .capture: return L10n.settingsGeneralCapture
         case .recording: return L10n.settingsGeneralRecording
         case .files: return L10n.settingsGeneralFiles
@@ -31,6 +33,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "gearshape.fill"
         case .shortcuts: return "keyboard"
+        case .toolbar: return "slider.horizontal.3"
         case .capture: return "crop"
         case .recording: return "record.circle"
         case .files: return "doc"
@@ -43,7 +46,7 @@ enum SettingsTab: CaseIterable {
     var iconTint: NSColor {
         switch self {
         case .general: return Brand.accent
-        case .shortcuts, .capture:
+        case .shortcuts, .capture, .toolbar:
             return Brand.accent
         case .recording:
             return Brand.accent
@@ -238,6 +241,7 @@ class SettingsView: NSView {
     private var paneContainer: NSView!
     private var paneViews: [SettingsTab: NSView] = [:]
     private var filenameRuleCard: FilenameRuleCard?
+    private var toolbarPane: ToolbarSettingsPane?
     private var screenshotQualityTitleLabel: NSTextField!
     private var screenshotQualitySubtitleLabel: NSTextField!
     private var screenshotQualityUploadTitleLabel: NSTextField!
@@ -370,6 +374,7 @@ class SettingsView: NSView {
         // Build all panes
         buildCapturePreferencePanes()
         paneViews[.shortcuts] = buildShortcutsPane()
+        paneViews[.toolbar] = buildToolbarPane()
         paneViews[.ocr] = OCRSettingsPane()
         paneViews[.permissions] = buildPermissionsPane()
         paneViews[.about] = buildAboutPane()
@@ -526,6 +531,9 @@ class SettingsView: NSView {
     }
 
     private func selectTab(_ tab: SettingsTab) {
+        if selectedTab == .toolbar && tab != .toolbar {
+            toolbarPane?.cancelShortcutRecording()
+        }
         window?.makeFirstResponder(nil)
         selectedTab = tab
         for btn in tabButtons {
@@ -1356,6 +1364,25 @@ class SettingsView: NSView {
         row.addArrangedSubview(revealButton)
 
         return (row, titleLabel, valueLabel, chooseButton, revealButton)
+    }
+
+    private func buildToolbarPane() -> NSView {
+        let host = NSView()
+        host.translatesAutoresizingMaskIntoConstraints = false
+        let pane = ToolbarSettingsPane()
+        toolbarPane = pane
+        host.addSubview(pane)
+        NSLayoutConstraint.activate([
+            pane.topAnchor.constraint(equalTo: host.topAnchor),
+            pane.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            pane.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            pane.bottomAnchor.constraint(equalTo: host.bottomAnchor),
+        ])
+        return host
+    }
+
+    func cancelToolbarShortcutRecording() {
+        toolbarPane?.cancelShortcutRecording()
     }
 
     private func buildPermissionsPane() -> NSView {

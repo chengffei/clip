@@ -25,6 +25,7 @@ Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the o
 - **Record** the selected region to mp4 or gif, with a small HUD for pause and stop
 - **OCR to clipboard**: Apple Vision on-device recognition, copied as text with one shortcut
 - **Scrolling capture**, pin to screen, color picker
+- **Toolbar you arrange**: Settings › Toolbar drags any tool between the main bar, the side bar and hidden; the default is twelve tools
 - **Native AppKit**, Swift Package Manager, about 45k lines after cutting cloud upload, translation, image merge, history panel and the rest; Apple Silicon and Intel
 
 ## Install
@@ -78,6 +79,7 @@ Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (
 - **录屏**：选区录成 mp4 或 gif，小 HUD 负责暂停与停止
 - **OCR 进剪贴板**：Apple Vision 本机识别，一个快捷键把文字复制走
 - **长截图**、钉图、取色
+- **工具栏自定义**：设置里的「工具栏」页把工具在主栏、侧栏、隐藏之间拖动，默认只留 12 个
 - **原生 AppKit**，Swift Package Manager，砍掉图床、翻译、拼图、历史面板等后约 4.5 万行；Apple Silicon 与 Intel 通用
 
 ### 安装

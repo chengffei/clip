@@ -222,11 +222,11 @@ struct ToolbarLayout: Equatable {
     static var `default`: ToolbarLayout {
         ToolbarLayout(
             primary: [
-                .rectangle, .ellipse, .line, .arrow, .pen, .marker, .spotlight, .mosaic, .eraser, .numbered, .text,
-                .colorPicker, .magnifier, .rotate, .ocr, .undo, .redo, .moveSelection,
+                .rectangle, .ellipse, .arrow, .pen, .marker, .mosaic, .numbered, .text, .eraser,
+                .undo, .redo, .moveSelection,
             ],
-            side: [.scrollCapture, .save, .pin, .record, .close, .confirm],
-            hidden: [.beautify, .qrCode, .emoji, .insertImage]
+            side: [.scrollCapture, .ocr, .save, .pin, .record, .close, .confirm],
+            hidden: [.line, .spotlight, .colorPicker, .magnifier, .rotate, .beautify, .qrCode, .emoji, .insertImage]
         )
     }
 
