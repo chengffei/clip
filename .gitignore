@@ -24,3 +24,5 @@ docs/
 # Code-signing secrets — never commit (see scripts/signing/README.md)
 *.p12
 *.p12.base64
+# Local working notes
+NOTES.md
