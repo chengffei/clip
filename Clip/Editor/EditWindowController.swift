@@ -3182,7 +3182,7 @@ class EditWindowController {
 
 // MARK: - Main Toolbar View
 
-let accentGreen = NSColor(red: 0, green: 212.0/255.0, blue: 106.0/255.0, alpha: 1.0)
+let accentGreen = Brand.accent
 
 private final class ClosureMenuItem: NSMenuItem {
     private let handler: () -> Void
@@ -3405,7 +3405,7 @@ class ToolbarView: NSView {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
         AdaptiveChrome.toolbarBackground.setFill()
         path.fill()
-        Brand.line.setStroke()
+        Brand.lineStrong.setStroke()
         path.lineWidth = Brand.hairline
         path.stroke()
     }

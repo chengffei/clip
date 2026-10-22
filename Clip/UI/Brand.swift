@@ -7,12 +7,12 @@ enum Brand {
     // Surfaces
     static let ink = NSColor(srgbRed: 0.055, green: 0.055, blue: 0.067, alpha: 1)        // #0E0E11
     static let inkRaised = NSColor(srgbRed: 0.102, green: 0.102, blue: 0.122, alpha: 1)  // #1A1A1F
-    static let inkFloating = NSColor(srgbRed: 0.055, green: 0.055, blue: 0.067, alpha: 0.94)
+    static let inkFloating = NSColor(srgbRed: 0.102, green: 0.102, blue: 0.122, alpha: 0.97)
 
     // Lines and fills
-    static let line = NSColor.white.withAlphaComponent(0.14)
-    static let lineStrong = NSColor.white.withAlphaComponent(0.26)
-    static let subtleFill = NSColor.white.withAlphaComponent(0.08)
+    static let line = NSColor.white.withAlphaComponent(0.20)
+    static let lineStrong = NSColor.white.withAlphaComponent(0.34)
+    static let subtleFill = NSColor.white.withAlphaComponent(0.10)
 
     // Text
     static let text = NSColor(srgbRed: 0.949, green: 0.949, blue: 0.941, alpha: 1)       // #F2F2F0
@@ -20,7 +20,7 @@ enum Brand {
 
     // Accents
     static let accent = NSColor(srgbRed: 0.80, green: 1.0, blue: 0.0, alpha: 1)          // #CCFF00 acid
-    static let accentFill = NSColor(srgbRed: 0.80, green: 1.0, blue: 0.0, alpha: 0.18)
+    static let accentFill = NSColor(srgbRed: 0.80, green: 1.0, blue: 0.0, alpha: 0.22)
     static let alert = NSColor(srgbRed: 1.0, green: 0.302, blue: 0.180, alpha: 1)        // #FF4D2E coral
     static let onAccent = ink
 

@@ -204,7 +204,7 @@ extension ToolbarItemID {
 
 /// Red used for the cancel button's icon. Mirrors the literal previously
 /// inlined in `ToolbarView.setupButtons()`.
-let toolbarDangerRed = NSColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1.0)
+let toolbarDangerRed = Brand.alert
 
 /// User-customizable assignment of every toolbar item to the primary
 /// (horizontal) toolbar, the side (vertical) toolbar, or hidden.
