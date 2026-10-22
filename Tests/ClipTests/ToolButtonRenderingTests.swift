@@ -39,7 +39,8 @@ final class ToolButtonRenderingTests: XCTestCase {
         NSGraphicsContext.saveGraphicsState()
         defer { NSGraphicsContext.restoreGraphicsState() }
         NSGraphicsContext.current = context
-        context.cgContext.scaleBy(x: CGFloat(scale), y: CGFloat(scale))
+        // `bitmap.size` already maps 40pt onto 40×scale pixels; scaling the
+        // CGContext again would draw at 4x and clip the glyph at the edge.
         draw()
         return bitmap
     }

@@ -3600,7 +3600,7 @@ class ToolButton: NSButton {
         if let iconImage {
             image = iconImage
         } else if let img = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) {
-            let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .medium)
+            let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .medium, scale: .medium)
             // Keep the text tool's Aa glyph independent of the system language.
             let localizedImage = symbolName == "textformat" ? img.withLocale(Locale(identifier: "en")) : img
             image = localizedImage.withSymbolConfiguration(config)
@@ -3682,10 +3682,17 @@ class ToolButton: NSButton {
         // Centre the symbol's alignment rect, not its bitmap: SF Symbols pad
         // ascenders and descenders differently, so centring the bitmap makes
         // glyphs of the same point size sit at different heights.
+        // The shift is clamped so an odd alignment rect can never push a
+        // glyph past the button's edge.
         let alignment = image.alignmentRect
+        var shiftY = image.size.height / 2 - alignment.midY
+        if alignment.isEmpty || alignment.height > image.size.height { shiftY = 0 }
+        shiftY = max(-2, min(2, shiftY.rounded()))
+        // Whole-point origin: a fractional origin makes the symbol bitmap
+        // resample and lose its faint edge rows at both backing scales.
         let imageRect = NSRect(
-            x: bounds.midX - alignment.midX,
-            y: bounds.midY - alignment.midY,
+            x: (bounds.midX - image.size.width / 2).rounded(),
+            y: (bounds.midY - image.size.height / 2 + shiftY).rounded(),
             width: image.size.width,
             height: image.size.height
         )
