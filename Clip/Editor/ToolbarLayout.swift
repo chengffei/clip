@@ -122,7 +122,7 @@ extension ToolbarItemID {
         guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else {
             return nil
         }
-        let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
+        let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium, scale: .medium)
         let locale: Locale? = switch self {
         case .ocr: Locale(identifier: "zh-Hans")
         case .text: Locale(identifier: "en")
@@ -179,7 +179,7 @@ extension ToolbarItemID {
     var normalColor: NSColor {
         switch self {
         case .close:   return Brand.text.withAlphaComponent(0.55)
-        case .confirm: return Brand.onAccent
+        case .confirm: return Brand.accent
         default:       return .labelColor
         }
     }

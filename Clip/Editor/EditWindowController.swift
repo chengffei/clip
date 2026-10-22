@@ -3656,8 +3656,8 @@ class ToolButton: NSButton {
 
     override func draw(_ dirtyRect: NSRect) {
         if isProminent {
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: Brand.radius, yRadius: Brand.radius)
-            Brand.accent.withAlphaComponent(isHighlighted ? 0.8 : 1).setFill()
+            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 3, dy: 3), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
+            Brand.accentFill.withAlphaComponent(isHighlighted ? 0.4 : 0.22).setFill()
             bgPath.fill()
         } else if isSelected {
             contentTintColor = selectedColor
@@ -3679,9 +3679,13 @@ class ToolButton: NSButton {
             rect.fill(using: .sourceAtop)
             return true
         }
+        // Centre the symbol's alignment rect, not its bitmap: SF Symbols pad
+        // ascenders and descenders differently, so centring the bitmap makes
+        // glyphs of the same point size sit at different heights.
+        let alignment = image.alignmentRect
         let imageRect = NSRect(
-            x: bounds.midX - image.size.width / 2,
-            y: bounds.midY - image.size.height / 2,
+            x: bounds.midX - alignment.midX,
+            y: bounds.midY - alignment.midY,
             width: image.size.width,
             height: image.size.height
         )
