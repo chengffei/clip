@@ -27,7 +27,9 @@ if [ "$UNIVERSAL" = "1" ]; then
     echo "Building Clip ($CONFIG, universal)..."
     swift build -c "$CONFIG" --arch arm64 --arch x86_64
     CONFIG_CAP="$(tr '[:lower:]' '[:upper:]' <<< "${CONFIG:0:1}")${CONFIG:1}"
-    BUILD_DIR=".build/apple/Products/$CONFIG_CAP"
+    # Xcode 26+ SwiftPM puts multi-arch products here; older toolchains used .build/apple/.
+    BUILD_DIR=".build/out/Products/$CONFIG_CAP"
+    [ -f "$BUILD_DIR/Clip" ] || BUILD_DIR=".build/apple/Products/$CONFIG_CAP"
 else
     echo "Building Clip ($CONFIG)..."
     swift build -c "$CONFIG"
