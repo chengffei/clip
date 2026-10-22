@@ -344,6 +344,8 @@
 "settingsTabPermissions" = "权限";
 "settingsTabUpload" = "图床";
 "settingsTabAbout" = "关于";
+"settingsSectionCapture" = "截图与录制";
+"settingsSectionSystem" = "识别与系统";
 "settingsTabTranslation" = "翻译";
 "settingsTabToolbar" = "工具栏";
 "settingsQuit" = "退出应用";

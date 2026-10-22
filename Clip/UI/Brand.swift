@@ -7,6 +7,7 @@ enum Brand {
     // Surfaces
     static let ink = NSColor(srgbRed: 0.055, green: 0.055, blue: 0.067, alpha: 1)        // #0E0E11
     static let inkRaised = NSColor(srgbRed: 0.102, green: 0.102, blue: 0.122, alpha: 1)  // #1A1A1F
+    static let canvas = NSColor(srgbRed: 0.078, green: 0.078, blue: 0.094, alpha: 1)      // #141418
     static let inkFloating = NSColor(srgbRed: 0.102, green: 0.102, blue: 0.122, alpha: 0.97)
 
     // Lines and fills

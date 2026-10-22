@@ -242,6 +242,7 @@ class SettingsView: NSView {
     private var paneViews: [SettingsTab: NSView] = [:]
     private var filenameRuleCard: FilenameRuleCard?
     private var toolbarPane: ToolbarSettingsPane?
+    private var sectionCaptions: [SidebarSectionCaption] = []
     private var screenshotQualityTitleLabel: NSTextField!
     private var screenshotQualitySubtitleLabel: NSTextField!
     private var screenshotQualityUploadTitleLabel: NSTextField!
@@ -360,15 +361,15 @@ class SettingsView: NSView {
         addSubview(detail)
 
         NSLayoutConstraint.activate([
-            sidebar.topAnchor.constraint(equalTo: topAnchor, constant: 38),
-            sidebar.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
-            sidebar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            sidebar.widthAnchor.constraint(equalToConstant: 224),
+            sidebar.topAnchor.constraint(equalTo: topAnchor),
+            sidebar.bottomAnchor.constraint(equalTo: bottomAnchor),
+            sidebar.leadingAnchor.constraint(equalTo: leadingAnchor),
+            sidebar.widthAnchor.constraint(equalToConstant: 212),
 
-            detail.topAnchor.constraint(equalTo: topAnchor, constant: 38),
-            detail.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
-            detail.leadingAnchor.constraint(equalTo: sidebar.trailingAnchor, constant: 12),
-            detail.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            detail.topAnchor.constraint(equalTo: topAnchor),
+            detail.bottomAnchor.constraint(equalTo: bottomAnchor),
+            detail.leadingAnchor.constraint(equalTo: sidebar.trailingAnchor),
+            detail.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
 
         // Build all panes
@@ -436,10 +437,12 @@ class SettingsView: NSView {
 
         for tab in SettingsTab.allCases {
             if tab == .capture || tab == .ocr {
-                let separator = SidebarSeparatorView()
-                stack.addArrangedSubview(separator)
-                separator.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-                separator.heightAnchor.constraint(equalToConstant: 9).isActive = true
+                let caption = SidebarSectionCaption(
+                    text: tab == .capture ? L10n.settingsSectionCapture : L10n.settingsSectionSystem
+                )
+                sectionCaptions.append(caption)
+                stack.addArrangedSubview(caption)
+                caption.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
             }
             let btn = TabButton(tab: tab)
             btn.target = self
@@ -450,9 +453,8 @@ class SettingsView: NSView {
             btn.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         }
 
-        // Hairline above the bottom action so the sidebar visually splits
-        // navigation from the primary launch/quit affordance.
-        let divider = SidebarSeparatorView()
+        let divider = NSView()
+        divider.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(divider)
 
         let bottomBtn = ActionButton(symbolName: "power", title: L10n.launchApp, tint: Brand.accent)
@@ -463,19 +465,19 @@ class SettingsView: NSView {
         launchButton = bottomBtn
 
         NSLayoutConstraint.activate([
-            navigation.topAnchor.constraint(equalTo: panel.topAnchor, constant: 14),
-            navigation.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 14),
-            navigation.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -14),
+            navigation.topAnchor.constraint(equalTo: panel.topAnchor, constant: 52),
+            navigation.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            navigation.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
             navigation.bottomAnchor.constraint(equalTo: divider.topAnchor, constant: -8),
 
             divider.heightAnchor.constraint(equalToConstant: 1),
-            divider.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 14),
-            divider.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -14),
+            divider.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            divider.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
             divider.bottomAnchor.constraint(equalTo: bottomBtn.topAnchor, constant: -8),
 
-            bottomBtn.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 14),
-            bottomBtn.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -14),
-            bottomBtn.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -10),
+            bottomBtn.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 12),
+            bottomBtn.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -12),
+            bottomBtn.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -12),
         ])
 
         return panel
@@ -570,8 +572,8 @@ class SettingsView: NSView {
 
         // Title
         let title = NSTextField(labelWithString: SettingsTab.general.title)
-        title.font = NSFont.systemFont(ofSize: 20, weight: .bold)
-        title.textColor = NSColor.white.withAlphaComponent(0.96)
+        title.font = NSFont.systemFont(ofSize: 22, weight: .semibold)
+        title.textColor = Brand.text
         title.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(title)
         detailTitleLabel = title
@@ -594,10 +596,10 @@ class SettingsView: NSView {
         paneContainer = container
 
         NSLayoutConstraint.activate([
-            scroll.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 10),
-            title.topAnchor.constraint(equalTo: panel.topAnchor, constant: 18),
-            title.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 22),
-            title.trailingAnchor.constraint(lessThanOrEqualTo: panel.trailingAnchor, constant: -22),
+            scroll.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 12),
+            title.topAnchor.constraint(equalTo: panel.topAnchor, constant: 26),
+            title.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 28),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: panel.trailingAnchor, constant: -28),
 
             scroll.leadingAnchor.constraint(equalTo: panel.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: panel.trailingAnchor),
@@ -1652,9 +1654,9 @@ class SettingsView: NSView {
         host.addSubview(stack)
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: host.topAnchor, constant: 4),
-            stack.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: 22),
-            stack.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -22),
-            stack.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -22),
+            stack.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -28),
+            stack.bottomAnchor.constraint(equalTo: host.bottomAnchor, constant: -28),
         ])
         return host
     }
@@ -1689,15 +1691,15 @@ class SettingsView: NSView {
 
     private func primaryLabel(_ text: String) -> NSTextField {
         let l = NSTextField(labelWithString: text)
-        l.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        l.textColor = NSColor.white.withAlphaComponent(0.94)
+        l.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        l.textColor = Brand.text
         return l
     }
 
     private func secondaryLabel(_ text: String, wrapping: Bool = false) -> NSTextField {
         let l = wrapping ? NSTextField(wrappingLabelWithString: text) : NSTextField(labelWithString: text)
-        l.font = NSFont.systemFont(ofSize: 11)
-        l.textColor = NSColor.white.withAlphaComponent(0.58)
+        l.font = NSFont.systemFont(ofSize: 12)
+        l.textColor = Brand.muted
         if wrapping {
             l.preferredMaxLayoutWidth = 360
         }
@@ -1994,12 +1996,12 @@ class SettingsView: NSView {
         if isStartup {
             // Accessibility is enough to start: the ⌘⌘ trigger needs it, and a
             // missing Screen Recording grant is requested on the first capture.
-            btn.update(symbolName: "power", title: L10n.launchApp, tint: Brand.accent)
+            btn.update(symbolName: "power", title: L10n.launchApp, tint: Brand.accent, prominent: true)
             btn.isEnabled = AppPermissions.accessibilityGranted
         } else {
             // Red tint — actual destructive confirmation happens in the NSAlert
             // sheet that fires on click.
-            btn.update(symbolName: "power", title: L10n.settingsQuit, tint: Brand.alert)
+            btn.update(symbolName: "power", title: L10n.settingsQuit, tint: Brand.muted, prominent: false)
             btn.isEnabled = true
         }
     }
@@ -3416,22 +3418,9 @@ private final class SidebarPanel: NSView {
     }
 
     private func commonInit() {
+        // The sidebar sits directly on the window's ink; nothing to draw.
         wantsLayer = true
-        layer?.cornerRadius = 22
-        layer?.cornerCurve = .continuous
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.10).cgColor
-        layer?.borderWidth = 1
-
-        let g = CAGradientLayer()
-        g.colors = [
-            Brand.inkRaised.cgColor,
-            Brand.inkRaised.cgColor,
-        ]
-        g.startPoint = CGPoint(x: 0, y: 1)
-        g.endPoint = CGPoint(x: 1, y: 0)
-        g.cornerRadius = Brand.radiusLarge
-        layer?.insertSublayer(g, at: 0)
-        gradientLayer = g
+        layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     override func layout() {
@@ -3453,28 +3442,20 @@ private final class DetailPanel: NSView {
     }
 
     private func commonInit() {
+        // Content canvas: one step above the window ink, hairline on the left.
         wantsLayer = true
-        layer?.cornerRadius = 24
-        layer?.cornerCurve = .continuous
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.06).cgColor
-        layer?.borderWidth = 1
-
-        let g = CAGradientLayer()
-        g.colors = [
-            Brand.inkRaised.cgColor,
-            Brand.inkRaised.cgColor,
-        ]
-        g.startPoint = CGPoint(x: 0, y: 1)
-        g.endPoint = CGPoint(x: 1, y: 0)
-        g.cornerRadius = 24
-        layer?.insertSublayer(g, at: 0)
-        gradientLayer = g
+        layer?.backgroundColor = Brand.canvas.cgColor
+        let edge = CAGradientLayer()
+        edge.colors = [Brand.line.cgColor, Brand.line.cgColor]
+        layer?.addSublayer(edge)
+        gradientLayer = edge
     }
 
     override func layout() {
         super.layout()
-        gradientLayer?.frame = bounds
+        gradientLayer?.frame = CGRect(x: 0, y: 0, width: 1, height: bounds.height)
     }
+
 }
 
 /// A hairline that fades to transparent at both edges of the sidebar.
@@ -3531,43 +3512,39 @@ private final class TabButton: NSControl {
         self.tab = tab
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.cornerRadius = Brand.radiusLarge
         layer?.cornerCurve = .continuous
 
         iconChip.translatesAutoresizingMaskIntoConstraints = false
-        iconChip.wantsLayer = true
-        iconChip.layer?.cornerRadius = 8
-        iconChip.layer?.cornerCurve = .continuous
-        iconChip.layer?.borderWidth = 1
         addSubview(iconChip)
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.image = NSImage(systemSymbolName: tab.iconName, accessibilityDescription: nil)
-        iconView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        iconView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         iconView.imageScaling = .scaleProportionallyDown
         iconChip.addSubview(iconView)
 
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = NSFont.systemFont(ofSize: 14, weight: .semibold)
+        label.font = NSFont.systemFont(ofSize: 13, weight: .medium)
         label.stringValue = tab.title
         addSubview(label)
 
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 46),
+            heightAnchor.constraint(equalToConstant: 30),
 
-            iconChip.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            iconChip.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             iconChip.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconChip.widthAnchor.constraint(equalToConstant: 28),
-            iconChip.heightAnchor.constraint(equalToConstant: 28),
+            iconChip.widthAnchor.constraint(equalToConstant: 20),
+            iconChip.heightAnchor.constraint(equalToConstant: 20),
 
             iconView.centerXAnchor.constraint(equalTo: iconChip.centerXAnchor),
             iconView.centerYAnchor.constraint(equalTo: iconChip.centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: 16),
-            iconView.heightAnchor.constraint(equalToConstant: 16),
+            iconView.widthAnchor.constraint(equalToConstant: 18),
+            iconView.heightAnchor.constraint(equalToConstant: 18),
 
-            label.leadingAnchor.constraint(equalTo: iconChip.trailingAnchor, constant: 12),
+            label.leadingAnchor.constraint(equalTo: iconChip.trailingAnchor, constant: 8),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -10),
         ])
 
         setAccessibilityElement(true)
@@ -3587,22 +3564,15 @@ private final class TabButton: NSControl {
 
     private func applyAppearance() {
         if isSelected {
-            layer?.backgroundColor = Brand.accent.cgColor
-            layer?.borderColor = Brand.accent.cgColor
-            layer?.borderWidth = 1
-            label.textColor = Brand.onAccent
-            iconChip.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.22).cgColor
-            iconChip.layer?.borderColor = NSColor.white.withAlphaComponent(0.30).cgColor
-            iconView.contentTintColor = .white
+            layer?.backgroundColor = Brand.subtleFill.cgColor
+            label.textColor = Brand.accent
+            iconView.contentTintColor = Brand.accent
         } else {
             layer?.backgroundColor = (
                 isHovered ? NSColor.white.withAlphaComponent(0.05) : NSColor.clear
             ).cgColor
-            layer?.borderWidth = 0
-            label.textColor = NSColor.white.withAlphaComponent(0.82)
-            iconChip.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
-            iconChip.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
-            iconView.contentTintColor = tab.iconTint
+            label.textColor = Brand.text.withAlphaComponent(0.86)
+            iconView.contentTintColor = Brand.text.withAlphaComponent(0.6)
         }
     }
 
@@ -3675,45 +3645,42 @@ private final class ActionButton: NSControl {
     private let label = NSTextField(labelWithString: "")
     private var trackingArea: NSTrackingArea?
     private var tint: NSColor = .systemGreen
+    private var prominent = false
 
     init(symbolName: String, title: String, tint: NSColor) {
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.cornerRadius = Brand.radiusLarge
         layer?.cornerCurve = .continuous
 
         iconChip.translatesAutoresizingMaskIntoConstraints = false
-        iconChip.wantsLayer = true
-        iconChip.layer?.cornerRadius = 8
-        iconChip.layer?.cornerCurve = .continuous
-        iconChip.layer?.borderWidth = 1
         addSubview(iconChip)
 
         iconView.translatesAutoresizingMaskIntoConstraints = false
-        iconView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        iconView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         iconView.imageScaling = .scaleProportionallyDown
         iconChip.addSubview(iconView)
 
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = NSFont.systemFont(ofSize: 14, weight: .semibold)
+        label.font = NSFont.systemFont(ofSize: 13, weight: .medium)
         addSubview(label)
 
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 46),
+            heightAnchor.constraint(equalToConstant: 32),
 
-            iconChip.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            iconChip.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
             iconChip.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconChip.widthAnchor.constraint(equalToConstant: 28),
-            iconChip.heightAnchor.constraint(equalToConstant: 28),
+            iconChip.widthAnchor.constraint(equalToConstant: 20),
+            iconChip.heightAnchor.constraint(equalToConstant: 20),
 
             iconView.centerXAnchor.constraint(equalTo: iconChip.centerXAnchor),
             iconView.centerYAnchor.constraint(equalTo: iconChip.centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: 16),
-            iconView.heightAnchor.constraint(equalToConstant: 16),
+            iconView.widthAnchor.constraint(equalToConstant: 18),
+            iconView.heightAnchor.constraint(equalToConstant: 18),
 
-            label.leadingAnchor.constraint(equalTo: iconChip.trailingAnchor, constant: 12),
+            label.leadingAnchor.constraint(equalTo: iconChip.trailingAnchor, constant: 8),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -10),
         ])
 
         update(symbolName: symbolName, title: title, tint: tint)
@@ -3723,8 +3690,9 @@ private final class ActionButton: NSControl {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func update(symbolName: String, title: String, tint: NSColor) {
+    func update(symbolName: String, title: String, tint: NSColor, prominent: Bool = false) {
         self.tint = tint
+        self.prominent = prominent
         iconView.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: title)
         label.stringValue = title
         applyAppearance()
@@ -3735,13 +3703,15 @@ private final class ActionButton: NSControl {
     }
 
     private func applyAppearance() {
-        layer?.backgroundColor = NSColor.clear.cgColor
-        // Match unselected TabButton's chip — the tint flows into the
-        // icon glyph and the label so the whole row reads as a single color.
-        iconChip.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
-        iconChip.layer?.borderColor = NSColor.white.withAlphaComponent(0.10).cgColor
-        iconView.contentTintColor = tint
-        label.textColor = tint
+        if prominent {
+            layer?.backgroundColor = tint.cgColor
+            iconView.contentTintColor = Brand.onAccent
+            label.textColor = Brand.onAccent
+        } else {
+            layer?.backgroundColor = NSColor.clear.cgColor
+            iconView.contentTintColor = tint
+            label.textColor = tint
+        }
     }
 
     override func updateTrackingAreas() {
@@ -4454,12 +4424,37 @@ private final class CardView: NSView {
     private func commonInit() {
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.cornerRadius = 10
         layer?.cornerCurve = .continuous
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.04).cgColor
+        layer?.backgroundColor = Brand.inkRaised.cgColor
         layer?.borderColor = NSColor.white.withAlphaComponent(0.06).cgColor
         layer?.borderWidth = 1
     }
+}
+
+/// Small muted caption that groups sidebar entries, like System Settings.
+private final class SidebarSectionCaption: NSView {
+    private let label = NSTextField(labelWithString: "")
+
+    init(text: String) {
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = NSFont.systemFont(ofSize: 11, weight: .medium)
+        label.textColor = Brand.muted
+        label.stringValue = text
+        addSubview(label)
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: 30),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
+        ])
+        setAccessibilityElement(false)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func setText(_ text: String) { label.stringValue = text }
 }
 
 // MARK: - Status badge

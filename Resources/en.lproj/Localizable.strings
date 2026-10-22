@@ -344,6 +344,8 @@
 "settingsTabPermissions" = "Permissions";
 "settingsTabUpload" = "Upload";
 "settingsTabAbout" = "About";
+"settingsSectionCapture" = "Capture";
+"settingsSectionSystem" = "Recognition & System";
 "settingsTabTranslation" = "Translation";
 "settingsTabToolbar" = "Toolbar";
 "settingsQuit" = "Quit App";

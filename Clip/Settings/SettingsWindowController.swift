@@ -24,7 +24,7 @@ class SettingsWindowController: NSWindowController {
 
     private init() {
         let window = SettingsWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -33,7 +33,8 @@ class SettingsWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(calibratedRed: 0.09, green: 0.12, blue: 0.16, alpha: 1.0)
+        window.backgroundColor = Brand.ink
+        window.isMovableByWindowBackground = true
         window.center()
         window.isReleasedWhenClosed = false
         window.level = .normal
@@ -44,14 +45,14 @@ class SettingsWindowController: NSWindowController {
             self?.window?.title = L10n.settingsTitle
         }
 
-        settingsView = SettingsView(frame: NSRect(x: 0, y: 0, width: 760, height: 560), isStartup: true)
+        settingsView = SettingsView(frame: NSRect(x: 0, y: 0, width: 820, height: 600), isStartup: true)
         settingsView.onMenuBarToggle = { [weak self] visible in
             self?.onMenuBarToggle?(visible)
         }
         settingsView.onLaunch = { [weak self] in
             self?.isStartup = false
             self?.settingsView.setStartupMode(false)
-            self?.resizeWindow(height: 560)
+            self?.resizeWindow(height: 600)
             self?.window?.close()
             self?.onLaunch?()
         }
@@ -70,7 +71,7 @@ class SettingsWindowController: NSWindowController {
         }
         isStartup = true
         settingsView.setStartupMode(true)
-        resizeWindow(height: 600)
+        resizeWindow(height: 640)
         window?.center()
         resetInitialFocus()
         showWindow(nil)
@@ -85,7 +86,7 @@ class SettingsWindowController: NSWindowController {
         if shouldFocusPermissions {
             settingsView.showPermissionsTab()
         }
-        resizeWindow(height: 560)
+        resizeWindow(height: 600)
         resetInitialFocus()
         showWindow(nil)
         resetInitialFocus()
@@ -96,7 +97,7 @@ class SettingsWindowController: NSWindowController {
         guard isStartup else { return }
         isStartup = false
         settingsView.setStartupMode(false)
-        resizeWindow(height: 560)
+        resizeWindow(height: 600)
         window?.close()
     }
 
