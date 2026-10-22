@@ -554,6 +554,8 @@ enum L10n {
     static var settingsTabAbout: String { s("settingsTabAbout") }
     static var settingsSectionCapture: String { s("settingsSectionCapture") }
     static var settingsSectionSystem: String { s("settingsSectionSystem") }
+    static var tipMore: String { s("tipMore") }
+    static var tipShapePicker: String { s("tipShapePicker") }
     static var settingsTabTranslation: String { s("settingsTabTranslation") }
     static var settingsTabToolbar: String { s("settingsTabToolbar") }
     static var settingsQuit: String { s("settingsQuit") }
@@ -1914,6 +1916,16 @@ struct Defaults {
     private static func normalizedMagnifierLensPanelMagnification(_ value: Double) -> Double {
         guard value.isFinite else { return 4.0 }
         return min(16.0, max(1.0, value))
+    }
+
+    static var lastEditorTool: String? {
+        get { defaults.string(forKey: "lastEditorTool") }
+        set { defaults.set(newValue, forKey: "lastEditorTool") }
+    }
+
+    static var lastShapeTool: String? {
+        get { defaults.string(forKey: "lastShapeTool") }
+        set { defaults.set(newValue, forKey: "lastShapeTool") }
     }
 
     static var lastBeautifyPresetID: String? {

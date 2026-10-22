@@ -16,6 +16,15 @@ enum EditTool {
     case text
     case emoji
     case scrollCapture
+
+    /// Stable string for UserDefaults; the enum itself has no raw type.
+    var rawValueForDefaults: String { String(describing: self) }
+    init?(rawValueFromDefaults raw: String) {
+        let all: [EditTool] = [.pen, .marker, .spotlight, .mosaic, .eraser, .magnifier, .rectangle,
+                               .ellipse, .arrow, .line, .numbered, .text, .emoji]
+        guard let match = all.first(where: { String(describing: $0) == raw }) else { return nil }
+        self = match
+    }
 }
 
 class EditCanvasView: NSView {

@@ -3,14 +3,14 @@ import XCTest
 @testable import Clip
 
 final class ToolbarLayoutTests: XCTestCase {
-    /// Clip's default keeps the main bar to twelve tools; spotlight is hidden
-    /// until the user drags it in from Settings › Toolbar.
-    func testDefaultKeepsMainBarToTwelveToolsAndHidesSpotlight() {
+    /// One bar: close first, confirm last, shapes together, spotlight hidden.
+    func testDefaultIsOneBarWithCloseFirstAndConfirmLast() {
         let layout = ToolbarLayout.default
-        XCTAssertEqual(layout.primary.count, 12)
+        XCTAssertEqual(layout.primary.first, .close)
+        XCTAssertEqual(layout.primary.last, .confirm)
         XCTAssertTrue(layout.hidden.contains(.spotlight))
-        XCTAssertFalse(layout.primary.contains(.spotlight))
-        XCTAssertEqual(layout.side.last, .confirm)
+        XCTAssertFalse(layout.side.contains(.moveSelection), "drag handle cannot live in a menu")
+        XCTAssertTrue(ToolbarView.shapeFamily.allSatisfy { layout.primary.contains($0) })
     }
 
     func testOlderPersistedLayoutAddsSpotlightAfterMarker() throws {

@@ -346,17 +346,19 @@
 "settingsTabAbout" = "About";
 "settingsSectionCapture" = "Capture";
 "settingsSectionSystem" = "Recognition & System";
+"tipMore" = "More";
+"tipShapePicker" = "click again for other shapes";
 "settingsTabTranslation" = "Translation";
 "settingsTabToolbar" = "Toolbar";
 "settingsQuit" = "Quit App";
 
-"toolbarSettingsPrimaryTitle" = "Main toolbar";
-"toolbarSettingsPrimaryHint" = "Tools appear above or below the selection, drag to reposition, click to set a shortcut";
-"toolbarSettingsSideTitle" = "Side toolbar";
-"toolbarSettingsSideHint" = "Tools appear to the left or right of the selection, drag to reposition, click to set a shortcut";
+"toolbarSettingsPrimaryTitle" = "Toolbar";
+"toolbarSettingsPrimaryHint" = "One bar under the selection, split into close, tools, edit and outcome zones. Drag to order within a zone, click to set a shortcut";
+"toolbarSettingsSideTitle" = "“More” menu";
+"toolbarSettingsSideHint" = "Tucked behind the ellipsis button at the end of the bar; one click away without crowding the view";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
 "toolbarSettingsHiddenHint" = "Tools dragged here won't appear in any toolbar";
-"toolbarSettingsFootnote" = "Toolbars switch automatically between top/bottom and left/right based on the selection's position";
+"toolbarSettingsFootnote" = "Rectangle, ellipse, arrow and line merge into one shape button when they share the bar; click again or long-press to switch";
 "toolbarSettingsShortcutHint" = "Click a tool to record its shortcut, drag to reposition it, or right-click for more options";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
 "toolbarSettingsShortcutRecord" = "Record Shortcut";

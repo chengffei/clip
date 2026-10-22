@@ -17,7 +17,7 @@ enum EditorToolbarPlacement {
         let margin = edgeMargin
         let minimumX = bounds.minX + margin
         let maximumX = bounds.maxX - width - margin
-        let x = max(minimumX, min(maximumX, referenceRect.maxX - width))
+        let x = max(minimumX, min(maximumX, referenceRect.minX))
 
         let minimumY = bounds.minY + margin
         let maximumY = bounds.maxY - max(0, topSafeInset) - height - margin
@@ -463,6 +463,7 @@ class EditWindowController {
         self.selectionChromeOverlay = overlay
 
         showToolbar()
+        restoreLastTool()
         // The first editor frame includes the interactive canvas, border,
         // handles and toolbar, even while its precise silhouette is pending.
         repositionFloatingChrome()
@@ -481,31 +482,30 @@ class EditWindowController {
         bringEditorToFront()
     }
 
+    /// Reopens with the tool used last time, provided it is still reachable
+    /// from the bar or the overflow menu.
+    private func restoreLastTool() {
+        guard let raw = Defaults.lastEditorTool,
+              let tool = EditTool(rawValueFromDefaults: raw),
+              let toolbarView,
+              let id = ToolbarLayout.canonicalOrder.first(where: { $0.editTool == tool }),
+              toolbarView.contains(id)
+        else { return }
+        selectTool(tool)
+    }
+
     private func showToolbar() {
         guard let hostSelectionView else { return }
         let layout = Defaults.toolbarLayout
 
-        // Each toolbar exists only when the user has assigned tools to it.
+        // One bar. Items the user moved to the overflow zone live behind "more".
         if !layout.primary.isEmpty {
-            let tv = ToolbarView(items: layout.primary, orientation: .horizontal)
+            let tv = ToolbarView(items: layout.primary, overflow: layout.side)
             wireToolbarCallbacks(tv)
             tv.frame = toolbarRect(in: hostSelectionView.bounds, size: tv.preferredSize)
             styleFloatingHUD(tv)
             self.toolbarView = tv
             hostSelectionView.addSubview(tv)
-        }
-
-        if !layout.side.isEmpty {
-            let sv = ToolbarView(items: layout.side, orientation: .vertical)
-            wireToolbarCallbacks(sv)
-            sv.frame = sideToolbarRect(
-                in: hostSelectionView.bounds,
-                size: sv.preferredSize,
-                avoiding: toolbarView?.frame
-            )
-            styleFloatingHUD(sv)
-            self.sideToolbarView = sv
-            hostSelectionView.addSubview(sv)
         }
 
         updateCaptureActionAvailability()
@@ -766,6 +766,7 @@ class EditWindowController {
         }
         activeTool = tool
         canvasView?.activeTool = tool
+        if tool != .none, tool != .scrollCapture { Defaults.lastEditorTool = tool.rawValueForDefaults }
         normalizeShapeStrokeStyle(for: tool)
         pushCurrentStyleToCanvas()
         toolbars.forEach { $0.updateSelection(tool: tool) }
@@ -1329,13 +1330,6 @@ class EditWindowController {
             toolbarView.frame = toolbarRect(
                 in: hostSelectionView.bounds,
                 size: toolbarView.preferredSize
-            )
-        }
-        if let sideToolbarView {
-            sideToolbarView.frame = sideToolbarRect(
-                in: hostSelectionView.bounds,
-                size: sideToolbarView.preferredSize,
-                avoiding: toolbarView?.frame
             )
         }
         updateSubToolbarPosition()
@@ -3236,48 +3230,68 @@ final class EditorScrollView: NSScrollView {
 class ToolbarView: NSView {
     enum Orientation { case horizontal, vertical }
 
-    /// Button run geometry. `preferredSize` derives the capsule size from
-    /// these so the dark background always wraps the buttons exactly.
-    static let buttonSize: CGFloat = 40
-    static let symbolPointSize: CGFloat = 18
-    static let buttonSpacing: CGFloat = 6
-    /// Inset along the main axis at both ends of the run.
-    static let endPadding: CGFloat = 15
-    /// Inset on the cross axis — keeps a 52pt-thick capsule around 40pt buttons.
+    /// Button run geometry. The bar is a single horizontal strip: a quiet
+    /// close button on the far left, drawing tools, edit actions (undo / redo
+    /// / more), then the outcome actions on the right. Zones are separated by
+    /// a wider gap and a hairline so the eye reads three groups, not sixteen
+    /// buttons.
+    static let buttonSize: CGFloat = 32
+    static let symbolPointSize: CGFloat = 15
+    static let buttonSpacing: CGFloat = 4
+    static let zoneGap: CGFloat = 18
+    static let endPadding: CGFloat = 8
     static let crossPadding: CGFloat = 6
+
+    /// Drawing tools that collapse into one "shape" button when two or more
+    /// of them are on the bar. The button shows the current shape; a second
+    /// click or a long press opens the picker.
+    static let shapeFamily: [ToolbarItemID] = [.rectangle, .ellipse, .arrow, .line]
+    static let outcomeFamily: Set<ToolbarItemID> = [.ocr, .save, .pin, .record, .confirm]
+    static let editFamily: Set<ToolbarItemID> = [.undo, .redo]
 
     let orientation: Orientation
     private let items: [ToolbarItemID]
+    private let overflow: [ToolbarItemID]
 
-    /// Size that fits the current items in the current orientation.
+    /// One slot per visual position after grouping.
+    private enum Slot {
+        case item(ToolbarItemID)
+        case shapeGroup([ToolbarItemID])
+        case more
+        case gap
+    }
+    private var slots: [Slot] = []
+
     var preferredSize: NSSize {
-        let n = items.count
-        let run = CGFloat(n) * Self.buttonSize
-            + CGFloat(max(0, n - 1)) * Self.buttonSpacing
-            + Self.endPadding * 2
-        let thickness = Self.buttonSize + Self.crossPadding * 2
-        switch orientation {
-        case .horizontal: return NSSize(width: max(run, thickness), height: thickness)
-        case .vertical:   return NSSize(width: thickness, height: max(run, thickness))
+        var width = Self.endPadding * 2
+        var first = true
+        for slot in slots {
+            if case .gap = slot { width += Self.zoneGap; continue }
+            if !first { width += Self.buttonSpacing }
+            width += Self.buttonSize
+            first = false
         }
+        let thickness = Self.buttonSize + Self.crossPadding * 2
+        return NSSize(width: max(width, thickness), height: thickness)
     }
 
     var onItemTriggered: ((ToolbarItemID) -> Void)?
-    /// Press-and-drag callbacks for the "move selection" handle. The first
-    /// fires on mouseDown so the controller can capture the starting rect;
-    /// the second fires on every drag with the cumulative window-space
-    /// delta from the press; the third fires on mouseUp.
     var onMoveSelectionStart: (() -> Void)?
     var onMoveSelectionDrag: ((CGSize) -> Void)?
     var onMoveSelectionEnd: (() -> Void)?
 
-    /// Every button keyed by its id — drives selection state, enable/disable,
-    /// and frame lookups. `MoveSelectionDragHandle` values are not `ToolButton`s.
+    /// Every button keyed by its id. Shape ids all map to the group button.
     private var buttons: [ToolbarItemID: NSView] = [:]
-    init(items: [ToolbarItemID], orientation: Orientation) {
+    private var shapeGroupButton: ShapeGroupButton?
+    private var moreButton: ToolButton?
+    private var separatorXs: [CGFloat] = []
+
+    init(items: [ToolbarItemID], overflow: [ToolbarItemID] = [], orientation: Orientation = .horizontal) {
         self.items = items
-        self.orientation = orientation
+        self.overflow = overflow.filter { $0.kind != .dragHandle }
+        self.orientation = .horizontal
         super.init(frame: NSRect(origin: .zero, size: .zero))
+        slots = Self.buildSlots(items: items, hasOverflow: !self.overflow.isEmpty)
         setFrameSize(preferredSize)
         setupButtons()
     }
@@ -3288,65 +3302,118 @@ class ToolbarView: NSView {
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
+    /// Partitions the user's ordered item list into zones. Order inside a
+    /// zone is the user's; zone order is fixed so the bar always reads
+    /// close → tools → edit → outcomes.
+    private static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
+        var leading: [Slot] = []
+        var tools: [Slot] = []
+        var edit: [Slot] = []
+        var outcomes: [Slot] = []
+        let shapesPresent = items.filter { shapeFamily.contains($0) }
+        var shapeGroupPlaced = false
+        for id in items {
+            if id == .close { leading.append(.item(id)); continue }
+            if shapeFamily.contains(id), shapesPresent.count >= 2 {
+                if !shapeGroupPlaced {
+                    tools.append(.shapeGroup(shapeFamily.filter { shapesPresent.contains($0) }))
+                    shapeGroupPlaced = true
+                }
+                continue
+            }
+            if outcomeFamily.contains(id) { outcomes.append(.item(id)); continue }
+            if editFamily.contains(id) { edit.append(.item(id)); continue }
+            tools.append(.item(id))
+        }
+        if hasOverflow { edit.append(.more) }
+        var out: [Slot] = []
+        for zone in [leading, tools, edit, outcomes] where !zone.isEmpty {
+            if !out.isEmpty { out.append(.gap) }
+            out.append(contentsOf: zone)
+        }
+        return out
+    }
+
     func updateSelection(tool: EditTool) {
         for (id, view) in buttons {
-            guard id.kind == .toggleTool, let btn = view as? ToolButton else { continue }
+            guard id.kind == .toggleTool, let btn = view as? ToolButton, btn !== shapeGroupButton else { continue }
             btn.isSelected = (id.editTool == tool)
         }
+        shapeGroupButton?.update(selectedTool: tool)
     }
 
-    /// Sets the active highlight on a stateful button (scroll capture,
-    /// beautify). No-op if this toolbar doesn't hold the item.
     func setActive(_ active: Bool, for id: ToolbarItemID) {
-        (buttons[id] as? ToolButton)?.isSelected = active
+        guard let btn = buttons[id] as? ToolButton, btn !== shapeGroupButton else { return }
+        btn.isSelected = active
     }
 
-    /// Enables/disables a button and dims it when disabled.
     func setEnabled(_ enabled: Bool, for id: ToolbarItemID) {
         guard let btn = buttons[id] as? ToolButton else { return }
         btn.isEnabled = enabled
         btn.alphaValue = enabled ? 1.0 : 0.35
     }
 
-    /// `true` if this toolbar holds the given item.
-    func contains(_ id: ToolbarItemID) -> Bool { buttons[id] != nil }
-
-    /// Frame of an item's button in this toolbar's coordinate space.
+    func contains(_ id: ToolbarItemID) -> Bool { buttons[id] != nil || overflow.contains(id) }
     func frame(for id: ToolbarItemID) -> NSRect? { buttons[id]?.frame }
 
-    // Convenience wrappers so callers don't repeat the id literals.
     func setScrollCaptureActive(_ active: Bool) { setActive(active, for: .scrollCapture) }
     func setScrollCaptureEnabled(_ enabled: Bool) { setEnabled(enabled, for: .scrollCapture) }
     func setBeautifyActive(_ active: Bool) { setActive(active, for: .beautify) }
     func setUndoEnabled(_ enabled: Bool) { setEnabled(enabled, for: .undo) }
     func setRedoEnabled(_ enabled: Bool) { setEnabled(enabled, for: .redo) }
-    func setRecordingEnabled(_ enabled: Bool) {
-        setEnabled(enabled, for: .record)
-    }
+    func setRecordingEnabled(_ enabled: Bool) { setEnabled(enabled, for: .record) }
     var scrollCaptureButtonFrame: NSRect? { frame(for: .scrollCapture) }
 
     private func setupButtons() {
         let size = Self.buttonSize
-        let step = size + Self.buttonSpacing
-        for (index, id) in items.enumerated() {
-            let along = Self.endPadding + CGFloat(index) * step
-            let frame: NSRect
-            switch orientation {
-            case .horizontal:
-                frame = NSRect(x: along, y: Self.crossPadding, width: size, height: size)
-            case .vertical:
-                // AppKit y grows upward, so the first item sits at the top.
-                let y = bounds.height - Self.endPadding - size - CGFloat(index) * step
-                frame = NSRect(x: Self.crossPadding, y: y, width: size, height: size)
+        var x = Self.endPadding
+        var first = true
+        separatorXs = []
+        for slot in slots {
+            if case .gap = slot {
+                separatorXs.append(x + Self.zoneGap / 2)
+                x += Self.zoneGap
+                first = true
+                continue
             }
-            let view = makeButton(for: id, index: index, frame: frame)
-            buttons[id] = view
-            addSubview(view)
+            if !first { x += Self.buttonSpacing }
+            first = false
+            let frame = NSRect(x: x, y: Self.crossPadding, width: size, height: size)
+            x += size
+            switch slot {
+            case .item(let id):
+                let view = makeButton(for: id, frame: frame)
+                buttons[id] = view
+                addSubview(view)
+            case .shapeGroup(let shapes):
+                let btn = ShapeGroupButton(frame: frame, shapes: shapes)
+                btn.onPick = { [weak self] id in self?.onItemTriggered?(id) }
+                btn.onPickerRequested = { [weak self, weak btn] in
+                    guard let self, let btn else { return }
+                    self.showMenu(for: shapes, from: btn)
+                }
+                shapeGroupButton = btn
+                for id in shapes { buttons[id] = btn }
+                addSubview(btn)
+            case .more:
+                let btn = ToolButton(
+                    frame: frame, symbolName: "ellipsis",
+                    normalColor: ToolbarItemID.close.normalColor, selectedColor: Brand.accent,
+                    symbolPointSize: Self.symbolPointSize
+                )
+                btn.hoverTip = L10n.tipMore
+                btn.setAccessibilityLabel(L10n.tipMore)
+                btn.target = self
+                btn.action = #selector(moreTapped(_:))
+                moreButton = btn
+                addSubview(btn)
+            case .gap:
+                break
+            }
         }
     }
 
-    private func makeButton(for id: ToolbarItemID, index: Int, frame: NSRect) -> NSView {
-        // The move-selection handle is a press-drag gesture, not a tap target.
+    private func makeButton(for id: ToolbarItemID, frame: NSRect) -> NSView {
         if id.kind == .dragHandle {
             let handle = MoveSelectionDragHandle(frame: frame)
             handle.hoverTip = id.tooltip
@@ -3364,12 +3431,13 @@ class ToolbarView: NSView {
             symbolPointSize: Self.symbolPointSize,
             iconImage: id.iconImage(pointSize: Self.symbolPointSize)
         )
+        btn.isProminent = (id == .confirm)
         btn.hoverTip = id.tooltip
         btn.setAccessibilityLabel(id.tooltip)
-        btn.setAccessibilityIdentifier("capcap.toolbar.\(id.rawValue)")
+        btn.setAccessibilityIdentifier("clip.toolbar.\(id.rawValue)")
         btn.target = self
         btn.action = #selector(buttonTapped(_:))
-        btn.tag = index
+        btn.itemID = id
         return btn
     }
 
@@ -3380,13 +3448,120 @@ class ToolbarView: NSView {
         Brand.lineStrong.setStroke()
         path.lineWidth = Brand.hairline
         path.stroke()
+        Brand.line.setFill()
+        for x in separatorXs {
+            NSRect(x: x - 0.5, y: bounds.midY - 9, width: 1, height: 18).fill()
+        }
     }
 
     @objc private func buttonTapped(_ sender: ToolButton) {
-        guard sender.tag >= 0, sender.tag < items.count else { return }
-        let id = items[sender.tag]
-        guard id != .moveSelection else { return }
+        guard let id = sender.itemID, id != .moveSelection else { return }
         onItemTriggered?(id)
+    }
+
+    @objc private func moreTapped(_ sender: ToolButton) {
+        showMenu(for: overflow, from: sender)
+    }
+
+    /// Dark menu listing items with their icons and shortcuts. Used for the
+    /// overflow ("more") button and the shape picker.
+    private func showMenu(for ids: [ToolbarItemID], from anchor: NSView) {
+        let menu = NSMenu()
+        menu.appearance = NSAppearance(named: .darkAqua)
+        for id in ids {
+            let item = NSMenuItem(title: id.localizedTitle, action: #selector(menuItemChosen(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = id.rawValue
+            item.image = id.iconImage(pointSize: 13)
+            if let shortcut = id.editorShortcutDisplay {
+                item.title = "\(id.localizedTitle)    \(shortcut)"
+            }
+            menu.addItem(item)
+        }
+        ToolTipWindow.hide()
+        menu.popUp(positioning: nil, at: NSPoint(x: anchor.frame.minX, y: anchor.frame.maxY + 6), in: self)
+    }
+
+    @objc private func menuItemChosen(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let id = ToolbarItemID(rawValue: raw) else { return }
+        onItemTriggered?(id)
+    }
+}
+
+/// One button standing in for the whole shape family. Shows the shape in
+/// use; click selects it, click again (or long-press) opens the picker.
+final class ShapeGroupButton: ToolButton {
+    let shapes: [ToolbarItemID]
+    private(set) var current: ToolbarItemID
+    var onPick: ((ToolbarItemID) -> Void)?
+    var onPickerRequested: (() -> Void)?
+    private var longPressTimer: Timer?
+    private var pickerOpenedFromPress = false
+
+    init(frame: NSRect, shapes: [ToolbarItemID]) {
+        self.shapes = shapes
+        let remembered = Defaults.lastShapeTool.flatMap(ToolbarItemID.init(rawValue:))
+        self.current = (remembered.flatMap { shapes.contains($0) ? $0 : nil }) ?? shapes[0]
+        super.init(
+            frame: frame, symbolName: current.symbolName,
+            normalColor: current.normalColor, selectedColor: current.selectedColor,
+            symbolPointSize: ToolbarView.symbolPointSize,
+            iconImage: current.iconImage(pointSize: ToolbarView.symbolPointSize)
+        )
+        refreshTip()
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func update(selectedTool: EditTool) {
+        if let match = shapes.first(where: { $0.editTool == selectedTool }) {
+            current = match
+            Defaults.lastShapeTool = match.rawValue
+            image = match.iconImage(pointSize: ToolbarView.symbolPointSize)
+            isSelected = true
+            refreshTip()
+        } else {
+            isSelected = false
+        }
+        needsDisplay = true
+    }
+
+    private func refreshTip() {
+        hoverTip = "\(current.tooltip) · \(L10n.tipShapePicker)"
+        setAccessibilityLabel(current.tooltip)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        ToolTipWindow.hide()
+        pickerOpenedFromPress = false
+        longPressTimer?.invalidate()
+        longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.pickerOpenedFromPress = true
+            self.onPickerRequested?()
+        }
+        // Track the press ourselves so a long press can open the picker.
+        isHighlighted = true
+        var isInside = true
+        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
+            let p = convert(next.locationInWindow, from: nil)
+            isInside = bounds.contains(p)
+            isHighlighted = isInside
+            if next.type == .leftMouseUp { break }
+        }
+        isHighlighted = false
+        longPressTimer?.invalidate()
+        longPressTimer = nil
+        guard !pickerOpenedFromPress, isInside else { return }
+        if isSelected {
+            onPickerRequested?()
+        } else {
+            onPick?(current)
+        }
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        onPickerRequested?()
     }
 }
 
@@ -3394,6 +3569,15 @@ class ToolbarView: NSView {
 
 class ToolButton: NSButton {
     var isSelected = false {
+        didSet { needsDisplay = true }
+    }
+
+    /// Which toolbar item this button stands for (nil for synthetic buttons).
+    var itemID: ToolbarItemID?
+
+    /// Filled accent background with an ink glyph — the one button on the
+    /// bar that should read as "the default action".
+    var isProminent = false {
         didSet { needsDisplay = true }
     }
 
@@ -3471,7 +3655,11 @@ class ToolButton: NSButton {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        if isSelected {
+        if isProminent {
+            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: Brand.radius, yRadius: Brand.radius)
+            Brand.accent.withAlphaComponent(isHighlighted ? 0.8 : 1).setFill()
+            bgPath.fill()
+        } else if isSelected {
             contentTintColor = selectedColor
             let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radius, yRadius: Brand.radius)
             AdaptiveChrome.selectedFill.setFill()

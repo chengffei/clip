@@ -178,8 +178,8 @@ extension ToolbarItemID {
     /// Icon tint in the resting state.
     var normalColor: NSColor {
         switch self {
-        case .close:   return toolbarDangerRed
-        case .confirm: return accentGreen
+        case .close:   return Brand.text.withAlphaComponent(0.55)
+        case .confirm: return Brand.onAccent
         default:       return .labelColor
         }
     }
@@ -222,11 +222,13 @@ struct ToolbarLayout: Equatable {
     static var `default`: ToolbarLayout {
         ToolbarLayout(
             primary: [
-                .rectangle, .ellipse, .arrow, .pen, .marker, .mosaic, .numbered, .text, .eraser,
-                .undo, .redo, .moveSelection,
+                .close,
+                .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered,
+                .undo, .redo,
+                .ocr, .save, .pin, .confirm,
             ],
-            side: [.scrollCapture, .ocr, .save, .pin, .record, .close, .confirm],
-            hidden: [.line, .spotlight, .colorPicker, .magnifier, .rotate, .beautify, .qrCode, .emoji, .insertImage]
+            side: [.marker, .eraser, .scrollCapture, .colorPicker, .magnifier, .rotate, .record],
+            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .moveSelection]
         )
     }
 
