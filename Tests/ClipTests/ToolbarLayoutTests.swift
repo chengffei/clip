@@ -3,14 +3,14 @@ import XCTest
 @testable import Clip
 
 final class ToolbarLayoutTests: XCTestCase {
-    func testDefaultPlacesSpotlightBetweenMarkerAndMosaic() throws {
-        let primary = ToolbarLayout.default.primary
-        let markerIndex = try XCTUnwrap(primary.firstIndex(of: .marker))
-        let spotlightIndex = try XCTUnwrap(primary.firstIndex(of: .spotlight))
-        let mosaicIndex = try XCTUnwrap(primary.firstIndex(of: .mosaic))
-
-        XCTAssertEqual(spotlightIndex, markerIndex + 1)
-        XCTAssertEqual(mosaicIndex, spotlightIndex + 1)
+    /// Clip's default keeps the main bar to twelve tools; spotlight is hidden
+    /// until the user drags it in from Settings › Toolbar.
+    func testDefaultKeepsMainBarToTwelveToolsAndHidesSpotlight() {
+        let layout = ToolbarLayout.default
+        XCTAssertEqual(layout.primary.count, 12)
+        XCTAssertTrue(layout.hidden.contains(.spotlight))
+        XCTAssertFalse(layout.primary.contains(.spotlight))
+        XCTAssertEqual(layout.side.last, .confirm)
     }
 
     func testOlderPersistedLayoutAddsSpotlightAfterMarker() throws {
