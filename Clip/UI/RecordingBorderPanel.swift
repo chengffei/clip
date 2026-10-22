@@ -45,7 +45,7 @@ private final class RecordingBorderView: NSView {
 
         let strokeWidth: CGFloat = 3
         let outerRect = selectionRect.insetBy(dx: -(strokeWidth / 2 + 1), dy: -(strokeWidth / 2 + 1))
-        context.setStrokeColor(NSColor.systemRed.cgColor)
+        context.setStrokeColor(Brand.alert.cgColor)
         context.setLineWidth(strokeWidth)
         context.stroke(outerRect)
     }

@@ -54,17 +54,17 @@ enum SettingsTab: CaseIterable {
 
     var iconTint: NSColor {
         switch self {
-        case .general: return NSColor(calibratedRed: 0.62, green: 0.66, blue: 0.72, alpha: 1.0)
+        case .general: return Brand.accent
         case .shortcuts, .capture:
-            return NSColor(calibratedRed: 0.36, green: 0.66, blue: 0.98, alpha: 1.0)
+            return Brand.accent
         case .toolbar, .recording:
-            return NSColor(calibratedRed: 0.95, green: 0.54, blue: 0.62, alpha: 1.0)
-        case .upload: return NSColor(calibratedRed: 0.99, green: 0.72, blue: 0.32, alpha: 1.0)
+            return Brand.accent
+        case .upload: return Brand.accent
         case .translation, .files, .ocr:
-            return NSColor(calibratedRed: 0.38, green: 0.80, blue: 0.78, alpha: 1.0)
-        case .permissions: return NSColor(calibratedRed: 0.36, green: 0.78, blue: 0.50, alpha: 1.0)
+            return Brand.accent
+        case .permissions: return Brand.accent
         case .about, .history:
-            return NSColor(calibratedRed: 0.70, green: 0.56, blue: 0.96, alpha: 1.0)
+            return Brand.accent
         }
     }
 }
@@ -440,9 +440,8 @@ class SettingsView: NSView {
     private func setupBackground() {
         let gradient = CAGradientLayer()
         gradient.colors = [
-            NSColor(calibratedRed: 0.10, green: 0.13, blue: 0.17, alpha: 1.0).cgColor,
-            NSColor(calibratedRed: 0.08, green: 0.10, blue: 0.14, alpha: 1.0).cgColor,
-            NSColor(calibratedRed: 0.11, green: 0.10, blue: 0.10, alpha: 1.0).cgColor,
+            Brand.ink.cgColor,
+            Brand.ink.cgColor,
         ]
         gradient.startPoint = CGPoint(x: 0, y: 1)
         gradient.endPoint = CGPoint(x: 1, y: 0)
@@ -568,7 +567,7 @@ class SettingsView: NSView {
         let divider = SidebarSeparatorView()
         panel.addSubview(divider)
 
-        let bottomBtn = ActionButton(symbolName: "power", title: L10n.launchApp, tint: .systemGreen)
+        let bottomBtn = ActionButton(symbolName: "power", title: L10n.launchApp, tint: Brand.accent)
         bottomBtn.target = self
         bottomBtn.action = #selector(launchClicked)
         bottomBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -2373,7 +2372,7 @@ class SettingsView: NSView {
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd HH:mm"
             label.stringValue = L10n.aboutErrorLogLastCrash(formatter.string(from: entry.date))
-            label.textColor = NSColor(calibratedRed: 0.95, green: 0.55, blue: 0.45, alpha: 1.0)
+            label.textColor = Brand.alert
             errorLogCopyButton?.isEnabled = errorLogLoaded
             errorLogRevealButton?.isEnabled = errorLogLoaded
             errorLogClearButton?.isEnabled = true
@@ -2468,7 +2467,7 @@ class SettingsView: NSView {
 
         let valueLabel = NSTextField(labelWithString: value)
         valueLabel.font = NSFont.systemFont(ofSize: 12, weight: .regular)
-        valueLabel.textColor = NSColor(calibratedRed: 0.42, green: 0.66, blue: 0.98, alpha: 1.0)
+        valueLabel.textColor = Brand.accent
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
         valueLabel.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -2584,8 +2583,8 @@ class SettingsView: NSView {
     @objc private func refreshUpdateRow() {
         guard let statusLabel = aboutUpdateStatusLabel, let button = aboutUpdateButton else { return }
         let dim = NSColor.white.withAlphaComponent(0.55)
-        let accent = NSColor(calibratedRed: 0.42, green: 0.66, blue: 0.98, alpha: 1.0)
-        let warn = NSColor(calibratedRed: 0.95, green: 0.55, blue: 0.45, alpha: 1.0)
+        let accent = Brand.accent
+        let warn = Brand.alert
 
         switch UpdateChecker.shared.state {
         case .idle:
@@ -2988,12 +2987,12 @@ class SettingsView: NSView {
         if isStartup {
             // Accessibility is enough to start: the ⌘⌘ trigger needs it, and a
             // missing Screen Recording grant is requested on the first capture.
-            btn.update(symbolName: "power", title: L10n.launchApp, tint: .systemGreen)
+            btn.update(symbolName: "power", title: L10n.launchApp, tint: Brand.accent)
             btn.isEnabled = AppPermissions.accessibilityGranted
         } else {
             // Red tint — actual destructive confirmation happens in the NSAlert
             // sheet that fires on click.
-            btn.update(symbolName: "power", title: L10n.settingsQuit, tint: .systemRed)
+            btn.update(symbolName: "power", title: L10n.settingsQuit, tint: Brand.alert)
             btn.isEnabled = true
         }
     }
@@ -5487,12 +5486,12 @@ private final class SidebarPanel: NSView {
 
         let g = CAGradientLayer()
         g.colors = [
-            NSColor(calibratedRed: 0.11, green: 0.17, blue: 0.25, alpha: 1.0).cgColor,
-            NSColor(calibratedRed: 0.08, green: 0.12, blue: 0.18, alpha: 1.0).cgColor,
+            Brand.inkRaised.cgColor,
+            Brand.inkRaised.cgColor,
         ]
         g.startPoint = CGPoint(x: 0, y: 1)
         g.endPoint = CGPoint(x: 1, y: 0)
-        g.cornerRadius = 22
+        g.cornerRadius = Brand.radiusLarge
         layer?.insertSublayer(g, at: 0)
         gradientLayer = g
     }
@@ -5524,8 +5523,8 @@ private final class DetailPanel: NSView {
 
         let g = CAGradientLayer()
         g.colors = [
-            NSColor(calibratedRed: 0.13, green: 0.14, blue: 0.17, alpha: 1.0).cgColor,
-            NSColor(calibratedRed: 0.10, green: 0.11, blue: 0.13, alpha: 1.0).cgColor,
+            Brand.inkRaised.cgColor,
+            Brand.inkRaised.cgColor,
         ]
         g.startPoint = CGPoint(x: 0, y: 1)
         g.endPoint = CGPoint(x: 1, y: 0)
@@ -5650,10 +5649,10 @@ private final class TabButton: NSControl {
 
     private func applyAppearance() {
         if isSelected {
-            layer?.backgroundColor = NSColor(calibratedRed: 0.22, green: 0.40, blue: 0.85, alpha: 1.0).cgColor
-            layer?.borderColor = NSColor.white.withAlphaComponent(0.14).cgColor
+            layer?.backgroundColor = Brand.accent.cgColor
+            layer?.borderColor = Brand.accent.cgColor
             layer?.borderWidth = 1
-            label.textColor = .white
+            label.textColor = Brand.onAccent
             iconChip.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.22).cgColor
             iconChip.layer?.borderColor = NSColor.white.withAlphaComponent(0.30).cgColor
             iconView.contentTintColor = .white
@@ -5880,12 +5879,7 @@ private final class SettingsTickSlider: NSControl {
     private let trackHeight: CGFloat = 3.5
     private let tickDiameter: CGFloat = 2.5
     private let tickGap: CGFloat = 5
-    private let accentColor = NSColor(
-        calibratedRed: 0x11 / 255.0,
-        green: 0x7D / 255.0,
-        blue: 0xFF / 255.0,
-        alpha: 1.0
-    )
+    private let accentColor = Brand.accent
 
     init(
         frame: NSRect = .zero,
@@ -6179,12 +6173,7 @@ private final class HistoryPanelModePreviewView: NSView {
         didSet { needsDisplay = true }
     }
 
-    private let accentBlue = NSColor(
-        calibratedRed: 0x11 / 255.0,
-        green: 0x7D / 255.0,
-        blue: 0xFF / 255.0,
-        alpha: 1.0
-    )
+    private let accentBlue = Brand.accent
     private let surfaceColor = NSColor.black
 
     init(mode: HistoryPanelSettingsMode) {
@@ -6383,12 +6372,7 @@ private final class HistoryPanelModeOptionView: NSControl {
         didSet { applyAppearance() }
     }
 
-    private let accentBlue = NSColor(
-        calibratedRed: 0x11 / 255.0,
-        green: 0x7D / 255.0,
-        blue: 0xFF / 255.0,
-        alpha: 1.0
-    )
+    private let accentBlue = Brand.accent
 
     init(mode: HistoryPanelSettingsMode, title: String, subtitle: String) {
         self.mode = mode

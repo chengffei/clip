@@ -3402,9 +3402,12 @@ class ToolbarView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
         AdaptiveChrome.toolbarBackground.setFill()
         path.fill()
+        Brand.line.setStroke()
+        path.lineWidth = Brand.hairline
+        path.stroke()
     }
 
     @objc private func buttonTapped(_ sender: ToolButton) {
@@ -3498,7 +3501,7 @@ class ToolButton: NSButton {
     override func draw(_ dirtyRect: NSRect) {
         if isSelected {
             contentTintColor = selectedColor
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 6, yRadius: 6)
+            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radius, yRadius: Brand.radius)
             AdaptiveChrome.selectedFill.setFill()
             bgPath.fill()
         } else {
@@ -3623,7 +3626,7 @@ final class MoveSelectionDragHandle: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         if isPressed {
-            let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 6, yRadius: 6)
+            let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radius, yRadius: Brand.radius)
             AdaptiveChrome.selectedFill.setFill()
             bg.fill()
         }

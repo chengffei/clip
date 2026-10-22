@@ -1,29 +1,117 @@
-# Clip
+<p align="center">
+  <img src="docs/images/icon.png" width="128" alt="Clip">
+</p>
 
-Felix 自用的 macOS 菜单栏截图工具。三件事：区域截图加标注、区域录屏（mp4 与 gif）、截图 OCR 直接进剪贴板。
+<h1 align="center">Clip</h1>
 
-基于 [realskyrin/capcap](https://github.com/realskyrin/capcap) 1.7.22（MIT）分叉，原作者版权声明见 `LICENSE`。相对上游的改动：
+<p align="center">
+  Double-tap ⌘. Frame it. Done.<br>
+  双击 ⌘，框住，完事。一个只做截图、录屏、OCR 的 macOS 菜单栏工具。
+</p>
 
-- 应用名、包名改为 Clip 与 `com.chengffei.clip`，用个人开发者证书签名，权限授予后不随重编译丢失。
-- 去掉分享扩展、自动更新、多余语言包，只留简体中文与英文。
-- 双击 ⌘ 检测按权限状态选路径并写日志，排查「没反应」。
-- 视觉按 Apple 风重做（进行中）。
+<p align="center">
+  <a href="https://github.com/chengffei/clip/releases/latest"><b>Download</b></a> ·
+  <a href="#中文">中文</a>
+</p>
 
-## 构建
+## Why Clip
 
-需要 Xcode（Command Line Tools 的 SwiftPM 缺 SwiftUI 宏插件）。
+Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the other way. It lives in the menu bar, wakes on a double-tap of ⌘, and does three things: a region screenshot you can annotate, a region recording, and OCR that drops the text straight into your clipboard. Ink surfaces, one acid accent, no telemetry, no account.
 
-```bash
-bash scripts/rebuild-and-open.sh   # 编译、签名、装到 /Applications/Clip.app 并启动
-bash scripts/bundle.sh --release   # 只打包到 build/Clip.app
+## Features
+
+- **Double-tap ⌘** anywhere to start a capture; window edges snap, selections are pixel-precise, multi-display aware
+- **Annotate**: rectangle, ellipse, arrow, pen, highlighter, mosaic, numbered markers, text; every mark stays editable with undo / redo
+- **Record** the selected region to mp4 or gif, with a small HUD for pause and stop
+- **OCR to clipboard**: Apple Vision on-device recognition, copied as text with one shortcut
+- **Scrolling capture**, pin to screen, color picker, local history panel
+- **Native AppKit**, Swift Package Manager, ~15 MB, Apple Silicon and Intel
+
+## Install
+
+1. Download `Clip-<version>.dmg` from the [latest release](https://github.com/chengffei/clip/releases/latest) and drag Clip into Applications.
+2. **First launch**: Clip is signed but not notarized by Apple, so macOS blocks it once. Open it, dismiss the warning, then go to *System Settings › Privacy & Security* and click **Open Anyway**.
+3. Grant two permissions when Clip asks: **Accessibility** (for the ⌘⌘ trigger) and **Screen Recording** (for capture). Clip requests Screen Recording through the system prompt, so it appears in the list by itself.
+
+Requires macOS 14 or later.
+
+## Shortcuts
+
+| Action | Default |
+|---|---|
+| Region screenshot | ⌘ ⌘ (double-tap) |
+| Countdown screenshot | ⌥⌘ ⌥⌘ |
+| Confirm to clipboard while the overlay is up | ⌘ ⌘ |
+| Record, OCR, pin, full screen | set in Settings › Shortcuts |
+
+## Build from source
+
+Requires Xcode 26 or later. The Command Line Tools alone cannot build the SwiftUI macros used by the permission panel.
+
+```sh
+bash scripts/rebuild-and-open.sh   # build, sign, install to /Applications, launch
+bash scripts/make-release.sh       # universal release → dist/Clip-<version>.dmg and .zip
 ```
 
-## 权限
+Trigger diagnostics are written to `~/Library/Logs/Clip/clip.log`.
 
-首次启动在设置窗口授予两项：辅助功能（双击 ⌘）、屏幕录制（截图与录屏）。
+## Credits
 
-排查触发器：
+Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (MIT). The capture engine, editor and recording pipeline come from there; Clip changes the identity, the permission flow and the chrome, and removes what one person does not need.
 
-```bash
-log stream --predicate 'subsystem == "com.chengffei.clip"' --style compact
+## License
+
+[MIT](LICENSE)
+
+---
+
+## 中文
+
+### 为什么做 Clip
+
+截图工具越做越大：云同步、团队版、订阅。Clip 反过来。它住在菜单栏里，双击 ⌘ 唤起，只做三件事：可标注的区域截图、区域录屏、把图上文字直接 OCR 进剪贴板。墨黑底、一个酸性强调色，不联网、不要账号。
+
+### 功能
+
+- **双击 ⌘** 随时截图，窗口边缘自动吸附，选区像素级精准，多显示器可用
+- **标注**：矩形、椭圆、箭头、画笔、高亮、马赛克、序号、文字，放下后还能改，支持撤销重做
+- **录屏**：选区录成 mp4 或 gif，小 HUD 负责暂停与停止
+- **OCR 进剪贴板**：Apple Vision 本机识别，一个快捷键把文字复制走
+- **长截图**、钉图、取色、本地历史面板
+- **原生 AppKit**，Swift Package Manager，约 15 MB，Apple Silicon 与 Intel 通用
+
+### 安装
+
+1. 到 [最新 Release](https://github.com/chengffei/clip/releases/latest) 下载 `Clip-<版本>.dmg`，把 Clip 拖进「应用程序」。
+2. **首次打开**：Clip 有签名但没过 Apple 公证，macOS 会拦一次。打开后关掉提示，到「系统设置 › 隐私与安全性」点 **仍要打开**。
+3. 按提示授予两项权限：**辅助功能**（双击 ⌘）与 **屏幕录制**（截图与录屏）。屏幕录制由 Clip 向系统申请，列表里会自动出现，不用手动拖。
+
+需要 macOS 14 或更高。
+
+### 快捷键
+
+| 动作 | 默认 |
+|---|---|
+| 区域截图 | 双击 ⌘ |
+| 倒计时截图 | 双击 ⌥⌘ |
+| 选区打开时直接复制 | 双击 ⌘ |
+| 录屏、OCR、钉图、全屏 | 在「设置 › 快捷键」里定 |
+
+### 从源码构建
+
+需要 Xcode 26 或更高。只装 Command Line Tools 编不过权限面板用到的 SwiftUI 宏。
+
+```sh
+bash scripts/rebuild-and-open.sh   # 编译、签名、装到 /Applications 并启动
+bash scripts/make-release.sh       # 通用二进制发布包 → dist/
 ```
+
+触发器日志在 `~/Library/Logs/Clip/clip.log`。
+
+### 致谢
+
+Clip 分叉自 realskyrin 的 [capcap](https://github.com/realskyrin/capcap)（MIT）。截图引擎、编辑器、录屏管线都来自那里；Clip 改了身份、权限流程和外观，删掉一个人用不到的部分。
+
+### 许可
+
+[MIT](LICENSE)

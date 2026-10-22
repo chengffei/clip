@@ -66,7 +66,7 @@ private class ChipView: NSView {
     private static let maxWidth: CGFloat = 560
     private static let height: CGFloat = 32
     private static let horizontalPadding: CGFloat = 28
-    private static let font = NSFont.systemFont(ofSize: 12, weight: .medium)
+    private static let font = Brand.mono(12, weight: .medium)
     private static let paragraphStyle: NSParagraphStyle = {
         let style = NSMutableParagraphStyle()
         style.alignment = .center

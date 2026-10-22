@@ -78,7 +78,7 @@ final class RecordingHUDPanel: NSPanel {
 
     func setPaused(_ paused: Bool) {
         isPaused = paused
-        recordDot.textColor = paused ? .systemOrange : .systemRed
+        recordDot.textColor = paused ? Brand.accent : Brand.alert
         pauseButton.toolTip = paused ? L10n.recordingResume : L10n.recordingPause
         updatePauseIcon()
     }
@@ -126,13 +126,13 @@ final class RecordingHUDPanel: NSPanel {
         updatePauseIcon()
 
         recordDot.font = .systemFont(ofSize: 11, weight: .bold)
-        recordDot.textColor = .systemRed
+        recordDot.textColor = Brand.alert
         recordDot.isBezeled = false
         recordDot.drawsBackground = false
         recordDot.isEditable = false
         containerView.addSubview(recordDot)
 
-        timeLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        timeLabel.font = Brand.mono(13, weight: .semibold)
         timeLabel.textColor = .labelColor
         timeLabel.isBezeled = false
         timeLabel.drawsBackground = false
@@ -178,7 +178,7 @@ final class RecordingHUDPanel: NSPanel {
         onTooltip: String,
         offTooltip: String
     ) {
-        button.contentTintColor = enabled ? .systemBlue : .tertiaryLabelColor
+        button.contentTintColor = enabled ? Brand.accent : .tertiaryLabelColor
         button.toolTip = enabled ? onTooltip : offTooltip
         button.alphaValue = enabled ? 1.0 : 0.55   // dim when off
     }

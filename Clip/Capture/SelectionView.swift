@@ -137,11 +137,11 @@ class SelectionView: NSView {
 
     // MARK: - Constants
 
-    private let accentColor = NSColor(red: 0, green: 212.0/255.0, blue: 106.0/255.0, alpha: 1.0)
+    private let accentColor = Brand.accent
     private let handleSize: CGFloat = 8
     private let handleHitSize: CGFloat = 12
     private let borderWidth: CGFloat = 2.0
-    private let dashPattern: [CGFloat] = [6, 4]
+    private let dashPattern: [CGFloat] = [10, 6]
     private let dimmingOverlayAlpha: CGFloat = 0.45
 
     // MARK: - Public
@@ -647,7 +647,7 @@ class SelectionView: NSView {
             // entirely outside the captured rect.
             let strokeWidth: CGFloat = borderWidth + 1
             let outerInset = -(strokeWidth / 2 + 1)
-            context.setStrokeColor(NSColor.systemRed.cgColor)
+            context.setStrokeColor(Brand.alert.cgColor)
             context.setLineWidth(strokeWidth)
             context.stroke(rect.insetBy(dx: outerInset, dy: outerInset))
         } else {
@@ -656,6 +656,7 @@ class SelectionView: NSView {
             context.setLineDash(phase: 0, lengths: dashPattern)
             context.stroke(rect.insetBy(dx: -1, dy: -1))
             context.setLineDash(phase: 0, lengths: [])
+            SelectionView.drawCornerBrackets(context: context, rect: rect, color: accentColor)
         }
 
         if state == .selected && selectionInteractionEnabled {
@@ -706,15 +707,15 @@ class SelectionView: NSView {
                 height: handleSize
             )
             context.setFillColor(accentColor.cgColor)
-            context.fillEllipse(in: handleRect)
+            context.fill(handleRect)
         }
     }
 
     static func drawSizeLabel(context: CGContext, rect: NSRect, text: String? = nil) {
         let text = text ?? "\(Int(rect.width)) x \(Int(rect.height))"
         let attrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: NSColor.white,
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+            .foregroundColor: Brand.accent,
+            .font: Brand.mono(11, weight: .semibold)
         ]
         let size = text.size(withAttributes: attrs)
         // Position above the top-left corner of selection
@@ -723,14 +724,33 @@ class SelectionView: NSView {
         let labelRect = NSRect(x: labelX, y: labelY, width: size.width + 8, height: size.height + 4)
 
         // Draw background
-        context.setFillColor(NSColor.black.withAlphaComponent(0.6).cgColor)
-        let bgPath = CGPath(roundedRect: labelRect, cornerWidth: 3, cornerHeight: 3, transform: nil)
+        context.setFillColor(Brand.ink.withAlphaComponent(0.92).cgColor)
+        let bgPath = CGPath(roundedRect: labelRect, cornerWidth: 2, cornerHeight: 2, transform: nil)
         context.addPath(bgPath)
         context.fillPath()
 
         // Draw text
         let textOrigin = NSPoint(x: labelRect.origin.x + 4, y: labelRect.origin.y + 2)
         text.draw(at: textOrigin, withAttributes: attrs)
+    }
+
+    /// Viewfinder marks at the four corners of the selection, outside the
+    /// captured rect so they never bleed into the image.
+    static func drawCornerBrackets(context: CGContext, rect: NSRect, color: NSColor) {
+        let arm: CGFloat = min(18, max(8, min(rect.width, rect.height) / 4))
+        let thickness: CGFloat = 3
+        let o = rect.insetBy(dx: -4, dy: -4)
+        context.setFillColor(color.cgColor)
+        let corners: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
+            (o.minX, o.minY, 1, 1), (o.maxX, o.minY, -1, 1),
+            (o.minX, o.maxY, 1, -1), (o.maxX, o.maxY, -1, -1),
+        ]
+        for (x, y, sx, sy) in corners {
+            let h = CGRect(x: sx > 0 ? x : x - arm, y: sy > 0 ? y : y - thickness, width: arm, height: thickness)
+            let v = CGRect(x: sx > 0 ? x : x - thickness, y: sy > 0 ? y : y - arm, width: thickness, height: arm)
+            context.fill(h)
+            context.fill(v)
+        }
     }
 
     // MARK: - Handle Positions

@@ -149,7 +149,7 @@ class StatusBarController: NSObject {
             return image
         }
 
-        let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "capcap")
+        let image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Clip")
             ?? NSImage(size: size)
         image.size = size
         image.isTemplate = true

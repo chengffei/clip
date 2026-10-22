@@ -6,7 +6,7 @@ enum EditorStyleDefaults {
         NSColor(red: 0.0, green: 0.48, blue: 1.0, alpha: 1.0),      // Blue
         NSColor(red: 0.0, green: 0.83, blue: 0.42, alpha: 1.0),     // Green
         NSColor(red: 1.0, green: 0.8, blue: 0.0, alpha: 1.0),       // Yellow
-        NSColor(red: 0.843, green: 0.467, blue: 0.341, alpha: 1.0), // #D77757
+        NSColor(red: 0.80, green: 1.0, blue: 0.0, alpha: 1.0),      // #CCFF00 acid
         .white,
         NSColor(white: 0.5, alpha: 1.0),                           // Gray
         .black,

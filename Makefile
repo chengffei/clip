@@ -1,8 +1,11 @@
 check:
 	bash scripts/compile-check.sh
 
-verify:
+run:
 	bash scripts/rebuild-and-open.sh
 
-release-check:
-	CONFIG=release UNIVERSAL=1 bash scripts/bundle.sh
+release:
+	bash scripts/make-release.sh
+
+icons:
+	bash scripts/generate-icon.sh

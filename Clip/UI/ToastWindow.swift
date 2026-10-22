@@ -98,7 +98,7 @@ class ToastWindow: NSPanel {
     private init(message: String) {
         // Measure text to size the chip
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 12, weight: .medium)
+            .font: Brand.mono(12, weight: .medium)
         ]
         let textSize = message.size(withAttributes: attrs)
         let size = NSSize(width: textSize.width + 24, height: 32)
@@ -146,7 +146,7 @@ private class ToastContentView: NSView {
 
         let attrs: [NSAttributedString.Key: Any] = [
             .foregroundColor: NSColor.labelColor,
-            .font: NSFont.systemFont(ofSize: 12, weight: .medium)
+            .font: Brand.mono(12, weight: .medium)
         ]
         let size = message.size(withAttributes: attrs)
         let textRect = NSRect(

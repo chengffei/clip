@@ -8,75 +8,57 @@ import AppKit
 /// from `viewDidChangeEffectiveAppearance`
 enum AdaptiveChrome {
     static let floatingBackground = NSColor(
-        name: NSColor.Name("capcap.floatingBackground")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor(white: 0.15, alpha: 0.94)
-            : NSColor(white: 0.98, alpha: 0.96)
+        name: NSColor.Name("clip.floatingBackground")
+    ) { _ in
+        Brand.inkFloating
     }
 
     static let toolbarBackground = NSColor(
-        name: NSColor.Name("capcap.toolbarBackground")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor(white: 0.12, alpha: 0.90)
-            : NSColor(white: 0.97, alpha: 0.94)
+        name: NSColor.Name("clip.toolbarBackground")
+    ) { _ in
+        Brand.inkFloating
     }
 
     static let panelBackground = NSColor(
-        name: NSColor.Name("capcap.panelBackground")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor(calibratedRed: 0.13, green: 0.14, blue: 0.16, alpha: 0.98)
-            : NSColor(calibratedRed: 0.97, green: 0.975, blue: 0.985, alpha: 0.98)
+        name: NSColor.Name("clip.panelBackground")
+    ) { _ in
+        Brand.ink
     }
 
     static let popoverBackground = NSColor(
-        name: NSColor.Name("capcap.popoverBackground")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor(calibratedRed: 0.12, green: 0.13, blue: 0.15, alpha: 1)
-            : NSColor(calibratedWhite: 0.99, alpha: 1)
+        name: NSColor.Name("clip.popoverBackground")
+    ) { _ in
+        Brand.inkRaised
     }
 
     static let cardBackground = NSColor(
-        name: NSColor.Name("capcap.cardBackground")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor.white.withAlphaComponent(0.06)
-            : NSColor.black.withAlphaComponent(0.055)
+        name: NSColor.Name("clip.cardBackground")
+    ) { _ in
+        Brand.subtleFill
     }
 
     static let border = NSColor(
-        name: NSColor.Name("capcap.border")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor.white.withAlphaComponent(0.16)
-            : NSColor.black.withAlphaComponent(0.16)
+        name: NSColor.Name("clip.border")
+    ) { _ in
+        Brand.line
     }
 
     static let subtleFill = NSColor(
-        name: NSColor.Name("capcap.subtleFill")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor.white.withAlphaComponent(0.10)
-            : NSColor.black.withAlphaComponent(0.08)
+        name: NSColor.Name("clip.subtleFill")
+    ) { _ in
+        Brand.subtleFill
     }
 
     static let selectedFill = NSColor(
-        name: NSColor.Name("capcap.selectedFill")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor.white.withAlphaComponent(0.15)
-            : NSColor.black.withAlphaComponent(0.10)
+        name: NSColor.Name("clip.selectedFill")
+    ) { _ in
+        Brand.accentFill
     }
 
     static let separator = NSColor(
-        name: NSColor.Name("capcap.separator")
-    ) { appearance in
-        isDark(appearance)
-            ? NSColor.white.withAlphaComponent(0.20)
-            : NSColor.black.withAlphaComponent(0.16)
+        name: NSColor.Name("clip.separator")
+    ) { _ in
+        Brand.lineStrong
     }
 
     static func isDark(_ appearance: NSAppearance) -> Bool {
@@ -101,8 +83,8 @@ enum AdaptiveChrome {
 enum FloatingControlChrome {
     static let height: CGFloat = 32
     static let buttonSide: CGFloat = 24
-    static let cornerRadius: CGFloat = 10
-    static let borderWidth: CGFloat = 0.5
+    static let cornerRadius: CGFloat = Brand.radius
+    static let borderWidth: CGFloat = Brand.hairline
     static let gap: CGFloat = 8
     static let screenEdgeInset: CGFloat = 4
 

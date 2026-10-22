@@ -19,7 +19,6 @@ Package.resolved
 .codex/
 .agents/
 .superpowers/
-docs/
 
 # Code-signing secrets — never commit (see scripts/signing/README.md)
 *.p12
