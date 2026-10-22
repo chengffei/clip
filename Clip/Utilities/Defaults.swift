@@ -1,0 +1,2530 @@
+import Foundation
+
+extension Defaults {
+    /// An explicit selection applies to every image-to-text entry point.
+    static var ocrProviderKind: OCRProviderKind {
+        get {
+            OCRProviderKind(rawValue: UserDefaults.standard.string(forKey: "ocr.provider") ?? "") ?? .apple
+        }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "ocr.provider") }
+    }
+}
+
+/// A language the app's UI can be displayed in. Raw values double as the
+/// `appLanguage` UserDefaults value (kept stable for backward compatibility).
+enum AppLanguage: String, CaseIterable {
+    case zh
+    case zhTW = "zh-Hant"
+    case en
+    case ja
+    case ko
+    case fr
+    case ru
+    case vi
+
+    /// Folder name (without extension) of the matching `.lproj` bundle inside
+    /// `capcap.app/Contents/Resources/`.
+    var lprojName: String {
+        switch self {
+        case .zh: return "zh-Hans"
+        case .zhTW: return "zh-Hant"
+        default:  return rawValue
+        }
+    }
+
+    /// Native language name shown in the in-app language picker.
+    var displayName: String {
+        switch self {
+        case .zh: return "简体中文"
+        case .zhTW: return "繁體中文"
+        case .en: return "English"
+        case .ja: return "日本語"
+        case .ko: return "한국어"
+        case .fr: return "Français"
+        case .ru: return "Русский"
+        case .vi: return "Tiếng Việt"
+        }
+    }
+
+    /// Best-effort match of the system's preferred languages to a supported
+    /// app language — used on first launch before the user picks explicitly.
+    static var systemDefault: AppLanguage {
+        for code in Locale.preferredLanguages {
+            let lower = code.lowercased()
+            if lower.hasPrefix("zh-hant") ||
+                lower.hasPrefix("zh-tw") ||
+                lower.hasPrefix("zh-hk") ||
+                lower.hasPrefix("zh-mo") {
+                return .zhTW
+            }
+            if lower.hasPrefix("zh") { return .zh }
+            if lower.hasPrefix("ja") { return .ja }
+            if lower.hasPrefix("ko") { return .ko }
+            if lower.hasPrefix("fr") { return .fr }
+            if lower.hasPrefix("ru") { return .ru }
+            if lower.hasPrefix("vi") { return .vi }
+            if lower.hasPrefix("en") { return .en }
+        }
+        return .en
+    }
+}
+
+extension Notification.Name {
+    static let languageDidChange = Notification.Name("capcap.languageDidChange")
+    static let historyCacheEnabledDidChange = Notification.Name("capcap.historyCacheEnabledDidChange")
+    static let clipboardTextCacheEnabledDidChange = Notification.Name("capcap.clipboardTextCacheEnabledDidChange")
+    static let historyCacheLimitDidChange = Notification.Name("capcap.historyCacheLimitDidChange")
+    static let clipboardTextHistoryLimitDidChange = Notification.Name("capcap.clipboardTextHistoryLimitDidChange")
+    static let historyDidUpdate = Notification.Name("capcap.historyDidUpdate")
+    static let recordingSaveDirectoryDidChange = Notification.Name("capcap.recordingSaveDirectoryDidChange")
+    static let historyPanelDisplayModesDidChange = Notification.Name("capcap.historyPanelDisplayModesDidChange")
+    static let hotkeyDidChange = Notification.Name("capcap.hotkeyDidChange")
+    static let editorShortcutsDidChange = Notification.Name("capcap.editorShortcutsDidChange")
+    static let translationConfigDidChange = Notification.Name("capcap.translationConfigDidChange")
+}
+
+/// Centralized accessor for every user-facing string. Each property resolves a
+/// key from the current language's `Localizable.strings`; the translations
+/// themselves live in `Resources/<lang>.lproj/Localizable.strings`.
+enum L10n {
+    static var lang: AppLanguage { Defaults.language }
+
+    private static func s(_ key: String) -> String { Localizer.string(key) }
+
+    // Settings
+    static var settingsTitle: String { s("settingsTitle") }
+    static var showMenuBarIcon: String { s("showMenuBarIcon") }
+    static var permissionsHeader: String { s("permissionsHeader") }
+    static var accessibilityPermission: String { s("accessibilityPermission") }
+    static var accessibilityDescription: String { s("accessibilityDescription") }
+    static var screenRecordingPermission: String { s("screenRecordingPermission") }
+    static var screenRecordingDescription: String { s("screenRecordingDescription") }
+    static var launchApp: String { s("launchApp") }
+    static var launchAtLogin: String { s("launchAtLogin") }
+    static var pinAcrossSpaces: String { s("pinAcrossSpaces") }
+    static var pinAcrossSpacesHint: String { s("pinAcrossSpacesHint") }
+    static var historyCacheToggleLabel: String { s("historyCacheToggleLabel") }
+    static var historyCacheToggleHint: String { s("historyCacheToggleHint") }
+    static var clipboardTextCacheToggleLabel: String { s("clipboardTextCacheToggleLabel") }
+    static var clipboardTextCacheToggleHint: String { s("clipboardTextCacheToggleHint") }
+    static var clipboardTextHistoryLimitLabel: String { s("clipboardTextHistoryLimitLabel") }
+    static var historyCacheLabel: String { s("historyCacheLabel") }
+    static var historyPanelDisplayModeLabel: String { s("historyPanelDisplayModeLabel") }
+    static var historyPanelDisplayModeHint: String { s("historyPanelDisplayModeHint") }
+    static var historyPanelDialogMode: String { s("historyPanelDialogMode") }
+    static var historyPanelDialogModeHint: String { s("historyPanelDialogModeHint") }
+    static var historyPanelNotchMode: String { s("historyPanelNotchMode") }
+    static var historyPanelNotchModeHint: String { s("historyPanelNotchModeHint") }
+    static var historyNotchTriggerLabel: String { s("historyNotchTriggerLabel") }
+    static var historyNotchTriggerHover: String { s("historyNotchTriggerHover") }
+    static var historyNotchTriggerClick: String { s("historyNotchTriggerClick") }
+    static var countdownLabel: String { s("countdownLabel") }
+    static var countdownHint: String { s("countdownHint") }
+    static var countdownSecondsSuffix: String { s("countdownSecondsSuffix") }
+    static var windowShadowToggleLabel: String { s("windowShadowToggleLabel") }
+    static var windowShadowToggleHint: String { s("windowShadowToggleHint") }
+    static var shadowSizeLabel: String { s("shadowSizeLabel") }
+    static var windowShadowSizeHint: String { s("windowShadowSizeHint") }
+    static var savePathTitle: String { s("savePathTitle") }
+    static var savePathSubtitle: String { s("savePathSubtitle") }
+    static var askSaveLocationLabel: String { s("askSaveLocationLabel") }
+    static var askSaveLocationHint: String { s("askSaveLocationHint") }
+    static var autoRevealSavedFilesLabel: String { s("autoRevealSavedFilesLabel") }
+    static var autoRevealSavedFilesHint: String { s("autoRevealSavedFilesHint") }
+    static var recordingSavePathLabel: String { s("recordingSavePathLabel") }
+    static var recordingSaveFormatSettingLabel: String { s("recordingSaveFormatSettingLabel") }
+    static var screenshotSavePathLabel: String { s("screenshotSavePathLabel") }
+    static var savePathChoose: String { s("savePathChoose") }
+    static var savePathReveal: String { s("savePathReveal") }
+    static var chooseRecordingSavePathTitle: String { s("chooseRecordingSavePathTitle") }
+    static var chooseScreenshotSavePathTitle: String { s("chooseScreenshotSavePathTitle") }
+    static var screenshotQualityTitle: String { s("screenshotQualityTitle") }
+    static var screenshotQualitySubtitle: String { s("screenshotQualitySubtitle") }
+    static var screenshotQualityUploadLabel: String { s("screenshotQualityUploadLabel") }
+    static var screenshotQualitySaveLabel: String { s("screenshotQualitySaveLabel") }
+    static var screenshotQualityClipboardLabel: String { s("screenshotQualityClipboardLabel") }
+    static var screenshotQualityOriginal: String { s("screenshotQualityOriginal") }
+    static var screenshotQualityOriginalHint: String { s("screenshotQualityOriginalHint") }
+    static var screenshotQualityCompressed: String { s("screenshotQualityCompressed") }
+    static var screenshotQualityCompressedHint: String { s("screenshotQualityCompressedHint") }
+    static var screenshotQualityCompressingUpload: String { s("screenshotQualityCompressingUpload") }
+    static var screenshotQualityCompressingSave: String { s("screenshotQualityCompressingSave") }
+    static var screenshotQualityCompressingClipboard: String { s("screenshotQualityCompressingClipboard") }
+    static var screenshotCompressionFailed: String { s("screenshotCompressionFailed") }
+
+    // Screenshot shortcut
+    static var shortcutHeader: String { s("shortcutHeader") }
+    static var shortcutHint: String { s("shortcutHint") }
+    static var shortcutDefaultDisplay: String { s("shortcutDefaultDisplay") }
+    static var shortcutSet: String { s("shortcutSet") }
+    static var shortcutCancel: String { s("shortcutCancel") }
+    static var shortcutWaiting: String { s("shortcutWaiting") }
+    static var shortcutNeedsModifierTitle: String { s("shortcutNeedsModifierTitle") }
+    static var shortcutNeedsModifier: String { s("shortcutNeedsModifier") }
+    static var shortcutRestore: String { s("shortcutRestore") }
+
+    // Pin-image shortcut
+    static var quickPinShortcutHeader: String { s("quickPinShortcutHeader") }
+    static var quickPinShortcutDefaultDisplay: String { s("quickPinShortcutDefaultDisplay") }
+    static var quickPinShortcutClear: String { s("quickPinShortcutClear") }
+    static var selectedImagePinShortcutHeader: String { s("selectedImagePinShortcutHeader") }
+    static var selectedImagePinShortcutDefaultDisplay: String { s("selectedImagePinShortcutDefaultDisplay") }
+    static var selectedImagePinShortcutClear: String { s("selectedImagePinShortcutClear") }
+    static var clipboardImagePinShortcutHeader: String { s("clipboardImagePinShortcutHeader") }
+    static var clipboardImagePinShortcutDefaultDisplay: String { s("clipboardImagePinShortcutDefaultDisplay") }
+    static var clipboardImagePinShortcutClear: String { s("clipboardImagePinShortcutClear") }
+    static var clipboardTextPinShortcutHeader: String { s("clipboardTextPinShortcutHeader") }
+    static var clipboardTextPinShortcutDefaultDisplay: String { s("clipboardTextPinShortcutDefaultDisplay") }
+    static var clipboardTextPinShortcutClear: String { s("clipboardTextPinShortcutClear") }
+    static var selectedImagePinNoImage: String { s("selectedImagePinNoImage") }
+    static var clipboardImagePinNoImage: String { s("clipboardImagePinNoImage") }
+    static var clipboardTextPinNoText: String { s("clipboardTextPinNoText") }
+    static var pinFromFinderHint: String { s("pinFromFinderHint") }
+    static var pinFromClipboardHint: String { s("pinFromClipboardHint") }
+    static var pinFromClipboardTextHint: String { s("pinFromClipboardTextHint") }
+    static var pinToolbarClose: String { s("pinToolbarClose") }
+    static var pinToolbarCopy: String { s("pinToolbarCopy") }
+    static var pinToolbarDrag: String { s("pinToolbarDrag") }
+    static var pinToolbarEdit: String { s("pinToolbarEdit") }
+    static var pinToolbarEditText: String { s("pinToolbarEditText") }
+
+    // Image-edit shortcuts
+    static var selectedImageEditShortcutHeader: String { s("selectedImageEditShortcutHeader") }
+    static var selectedImageEditShortcutHint: String { s("selectedImageEditShortcutHint") }
+    static var selectedImageEditShortcutDefaultDisplay: String { s("selectedImageEditShortcutDefaultDisplay") }
+    static var clipboardImageEditShortcutHeader: String { s("clipboardImageEditShortcutHeader") }
+    static var clipboardImageEditShortcutHint: String { s("clipboardImageEditShortcutHint") }
+    static var clipboardImageEditShortcutDefaultDisplay: String { s("clipboardImageEditShortcutDefaultDisplay") }
+    static var textRecognitionShortcutHeader: String { s("textRecognitionShortcutHeader") }
+    static var textRecognitionShortcutDefaultDisplay: String { s("textRecognitionShortcutDefaultDisplay") }
+    static var copyImageTextShortcutHeader: String { s("copyImageTextShortcutHeader") }
+    static var copyImageTextShortcutDefaultDisplay: String { s("copyImageTextShortcutDefaultDisplay") }
+    static var screenshotTranslationShortcutHeader: String { s("screenshotTranslationShortcutHeader") }
+    static var screenshotTranslationShortcutDefaultDisplay: String { s("screenshotTranslationShortcutDefaultDisplay") }
+    static var recordShortcutHeader: String { s("recordShortcutHeader") }
+    static var recordShortcutDefaultDisplay: String { s("recordShortcutDefaultDisplay") }
+    static var imageMergeShortcutHeader: String { s("imageMergeShortcutHeader") }
+    static var imageMergeShortcutDefaultDisplay: String { s("imageMergeShortcutDefaultDisplay") }
+    static var fileUploadShortcutHeader: String { s("fileUploadShortcutHeader") }
+    static var finderUploadShortcutDefaultDisplay: String { s("finderUploadShortcutDefaultDisplay") }
+    static var fullScreenScreenshotShortcutHeader: String { s("fullScreenScreenshotShortcutHeader") }
+    static var fullScreenScreenshotShortcutDefaultDisplay: String { s("fullScreenScreenshotShortcutDefaultDisplay") }
+    static var colorPickerShortcutHeader: String { s("colorPickerShortcutHeader") }
+    static var colorPickerShortcutDefaultDisplay: String { s("colorPickerShortcutDefaultDisplay") }
+
+    // Magnifier lens panel (overlay magnifier lens panel)
+    static var magnifierLensPanelCoordinatesLabel: String { s("magnifierLensPanelCoordinatesLabel") }
+    static var magnifierLensPanelColorValueLabel: String { s("magnifierLensPanelColorValueLabel") }
+    static var magnifierLensPanelCoordinates: String { s("magnifierLensPanelCoordinates") }
+    static var magnifierLensPanelHex: String { s("magnifierLensPanelHex") }
+    static var magnifierLensPanelRgb: String { s("magnifierLensPanelRgb") }
+    static var magnifierLensPanelCopyHint: String { s("magnifierLensPanelCopyHint") }
+    static var magnifierLensPanelFormatHint: String { s("magnifierLensPanelFormatHint") }
+    static var magnifierLensPanelAspectFree: String { s("magnifierLensPanelAspectFree") }
+    static var magnifierLensPanelAspectHint: String { s("magnifierLensPanelAspectHint") }
+    static func magnifierLensPanelRgbString(r: Int, g: Int, b: Int) -> String {
+        String(format: s("magnifierLensPanelRgbString"), r, g, b)
+    }
+
+    // Copy-to-clipboard shortcut (editor confirm)
+    static var clipboardShortcutHeader: String { s("clipboardShortcutHeader") }
+    static var clipboardShortcutHint: String { s("clipboardShortcutHint") }
+    static var clipboardShortcutDefaultDisplay: String { s("clipboardShortcutDefaultDisplay") }
+
+    // History navigation shortcuts (editor)
+    static var previousHistoryImageShortcutHeader: String { s("previousHistoryImageShortcutHeader") }
+    static var nextHistoryImageShortcutHeader: String { s("nextHistoryImageShortcutHeader") }
+    static var historyPanelShortcutHeader: String { s("historyPanelShortcutHeader") }
+    static var historyPanelShortcutDefaultDisplay: String { s("historyPanelShortcutDefaultDisplay") }
+
+    // Save-to-file shortcut (editor save)
+    static var fileSaveShortcutHeader: String { s("fileSaveShortcutHeader") }
+    static var fileSaveShortcutHint: String { s("fileSaveShortcutHint") }
+
+    // Shortcut conflict
+    static var shortcutConflictTitle: String { s("shortcutConflictTitle") }
+    static var shortcutConflictScreenshot: String { s("shortcutConflictScreenshot") }
+    static var shortcutConflictCountdown: String { s("shortcutConflictCountdown") }
+    static var shortcutConflictQuickPin: String { s("shortcutConflictQuickPin") }
+    static var shortcutConflictSelectedImagePin: String { s("shortcutConflictSelectedImagePin") }
+    static var shortcutConflictClipboardImagePin: String { s("shortcutConflictClipboardImagePin") }
+    static var shortcutConflictClipboardTextPin: String { s("shortcutConflictClipboardTextPin") }
+    static var shortcutConflictClipboard: String { s("shortcutConflictClipboard") }
+    static var shortcutConflictFileSave: String { s("shortcutConflictFileSave") }
+    static var shortcutConflictPreviousHistoryImage: String { s("shortcutConflictPreviousHistoryImage") }
+    static var shortcutConflictNextHistoryImage: String { s("shortcutConflictNextHistoryImage") }
+    static var shortcutConflictHistoryPanel: String { s("shortcutConflictHistoryPanel") }
+    static var shortcutConflictSelectedImageEdit: String { s("shortcutConflictSelectedImageEdit") }
+    static var shortcutConflictClipboardImageEdit: String { s("shortcutConflictClipboardImageEdit") }
+    static var shortcutConflictTextRecognition: String { s("shortcutConflictTextRecognition") }
+    static var shortcutConflictCopyImageText: String { s("shortcutConflictCopyImageText") }
+    static var shortcutConflictScreenshotTranslation: String { s("shortcutConflictScreenshotTranslation") }
+    static var shortcutConflictRecord: String { s("shortcutConflictRecord") }
+    static var shortcutConflictImageMerge: String { s("shortcutConflictImageMerge") }
+    static var shortcutConflictFileUpload: String { s("shortcutConflictFileUpload") }
+    static var shortcutConflictFullScreenScreenshot: String { s("shortcutConflictFullScreenScreenshot") }
+    static var shortcutConflictColorPicker: String { s("shortcutConflictColorPicker") }
+
+    // Menu bar
+    static var takeScreenshot: String { s("takeScreenshot") }
+    static var takeFullScreenScreenshot: String { s("takeFullScreenScreenshot") }
+    static var record: String { s("record") }
+    static var mergeImages: String { s("mergeImages") }
+    static var uploadFilesMenu: String { s("uploadFilesMenu") }
+    static var colorPicker: String { s("colorPicker") }
+    static var settings: String { s("settings") }
+    static var quitApp: String { s("quitApp") }
+    static var historyMenu: String { s("historyMenu") }
+    static var historyClear: String { s("historyClear") }
+    static var historyCleared: String { s("historyCleared") }
+    static var historyShowInFinder: String { s("historyShowInFinder") }
+    static var historyPanelLock: String { s("historyPanelLock") }
+    static var historyPanelUnlock: String { s("historyPanelUnlock") }
+    static var historyPanelMenu: String { s("historyPanelMenu") }
+    static var historyPanelDeleteAll: String { s("historyPanelDeleteAll") }
+    static func historyPanelDeleteSelected(_ count: Int) -> String {
+        let key = count == 1 ? "historyPanelDeleteSelectedOne" : "historyPanelDeleteSelected"
+        return String(format: s(key), count)
+    }
+    static func historyPanelDeletedSelected(_ count: Int) -> String {
+        let key = count == 1 ? "historyPanelDeletedSelectedOne" : "historyPanelDeletedSelected"
+        return String(format: s(key), count)
+    }
+    static var historyPanelFavorite: String { s("historyPanelFavorite") }
+    static var historyPanelUnfavorite: String { s("historyPanelUnfavorite") }
+    static var historyPanelItemFavorited: String { s("historyPanelItemFavorited") }
+    static var historyPanelItemUnfavorited: String { s("historyPanelItemUnfavorited") }
+    static var historyPanelFavoriteFailed: String { s("historyPanelFavoriteFailed") }
+    static func historyDeletedSkippingFavorites(removed: Int, skipped: Int) -> String {
+        String(format: s("historyDeletedSkippingFavorites"), removed, skipped)
+    }
+    static var historyPanelFilterAll: String { s("historyPanelFilterAll") }
+    static var historyPanelFilterScreenshots: String { s("historyPanelFilterScreenshots") }
+    static var historyPanelFilterGIF: String { s("historyPanelFilterGIF") }
+    static var historyPanelFilterMP4: String { s("historyPanelFilterMP4") }
+    static var historyPanelFilterColors: String { s("historyPanelFilterColors") }
+    static var historyPanelFilterText: String { s("historyPanelFilterText") }
+    static var historyPanelFilterFiles: String { s("historyPanelFilterFiles") }
+    static var historyPanelFolder: String { s("historyPanelFolder") }
+    static var historyPanelSearchFiles: String { s("historyPanelSearchFiles") }
+    static var historyPanelSourceUnavailable: String { s("historyPanelSourceUnavailable") }
+    static var historyPanelSourceUnavailableHint: String { s("historyPanelSourceUnavailableHint") }
+    static var historyFilePreviewPrevious: String { s("historyFilePreviewPrevious") }
+    static var historyFilePreviewNext: String { s("historyFilePreviewNext") }
+    static var historyFilePreviewLoading: String { s("historyFilePreviewLoading") }
+    static var historyFilePreviewRetry: String { s("historyFilePreviewRetry") }
+    static var historyFilePreviewUnavailable: String { s("historyFilePreviewUnavailable") }
+    static var historyPanelSearchColorsAndText: String { s("historyPanelSearchColorsAndText") }
+    static var historyPanelSearchColors: String { s("historyPanelSearchColors") }
+    static var historyPanelSearchText: String { s("historyPanelSearchText") }
+    static var historyPanelClearSearch: String { s("historyPanelClearSearch") }
+    static var historyPanelSearchNoResults: String { s("historyPanelSearchNoResults") }
+    static var historyPreviewTextSaveFailed: String { s("historyPreviewTextSaveFailed") }
+    static var historyPreviewCopyText: String { s("historyPreviewCopyText") }
+    static var historyPreviewTranslateText: String { s("historyPreviewTranslateText") }
+    static var historyPreviewConvertToQRCode: String { s("historyPreviewConvertToQRCode") }
+    static var historyPreviewQRCodeTooLong: String { s("historyPreviewQRCodeTooLong") }
+    static var historyPreviewOriginalText: String { s("historyPreviewOriginalText") }
+    static var historyPreviewQRCodeTitle: String { s("historyPreviewQRCodeTitle") }
+    static var historyPanelCopyHint: String { s("historyPanelCopyHint") }
+    static var historyPanelCopyDragHint: String { s("historyPanelCopyDragHint") }
+    static var historyPanelCopyMarkdownLink: String { s("historyPanelCopyMarkdownLink") }
+    static var historyPanelCopyPlainLink: String { s("historyPanelCopyPlainLink") }
+    static var historyPanelEmpty: String { s("historyPanelEmpty") }
+    static var historyPanelShortcutGuide: String { s("historyPanelShortcutGuide") }
+    static var historyPanelShortcutGuideHide: String { s("historyPanelShortcutGuideHide") }
+    static var historyPanelShortcutKeyClick: String { s("historyPanelShortcutKeyClick") }
+    static var historyPanelShortcutKeyDrag: String { s("historyPanelShortcutKeyDrag") }
+    static var historyPanelShortcutKeySpace: String { s("historyPanelShortcutKeySpace") }
+    static var historyPanelShortcutSearch: String { s("historyPanelShortcutSearch") }
+    static var historyPanelShortcutSwitchFilter: String { s("historyPanelShortcutSwitchFilter") }
+    static var historyPanelShortcutSwitchItem: String { s("historyPanelShortcutSwitchItem") }
+    static var historyPanelShortcutToggleSelection: String { s("historyPanelShortcutToggleSelection") }
+    static var historyPanelShortcutRangeSelection: String { s("historyPanelShortcutRangeSelection") }
+    static var historyPanelShortcutSelectAll: String { s("historyPanelShortcutSelectAll") }
+    static var historyPanelShortcutCancel: String { s("historyPanelShortcutCancel") }
+    static var historyPanelShortcutCopyItem: String { s("historyPanelShortcutCopyItem") }
+    static var historyPanelShortcutDragItem: String { s("historyPanelShortcutDragItem") }
+    static var historyPanelShortcutOpenPreview: String { s("historyPanelShortcutOpenPreview") }
+    static var historyPanelShortcutBrowsePreview: String { s("historyPanelShortcutBrowsePreview") }
+    static var historyPanelShortcutClosePreview: String { s("historyPanelShortcutClosePreview") }
+    static var historyPanelShortcutCopyPreview: String { s("historyPanelShortcutCopyPreview") }
+    static var historyPanelShortcutEditImage: String { s("historyPanelShortcutEditImage") }
+    static var historyPanelShortcutPinImage: String { s("historyPanelShortcutPinImage") }
+    static var historyPanelShortcutUploadImage: String { s("historyPanelShortcutUploadImage") }
+    static var historyPanelShortcutTranslateText: String { s("historyPanelShortcutTranslateText") }
+    static var historyPanelShortcutQRCode: String { s("historyPanelShortcutQRCode") }
+    static var historyPanelShortcutToggleGuide: String { s("historyPanelShortcutToggleGuide") }
+
+    // Cursor chip
+    static var dragToScreenshot: String { s("dragToScreenshot") }
+    static var dragToQuickPin: String { s("dragToQuickPin") }
+    static var dragToScreenshotAspectFree: String { s("dragToScreenshotAspectFree") }
+    static func dragToScreenshotAspect(_ ratio: String) -> String {
+        String(format: s("dragToScreenshotAspect"), ratio)
+    }
+    static var dragToTextRecognition: String { s("dragToTextRecognition") }
+    static var dragToCopyImageText: String { s("dragToCopyImageText") }
+    static var dragToScreenshotTranslation: String { s("dragToScreenshotTranslation") }
+    static var dragToRecord: String { s("dragToRecord") }
+    static var dragToRecordAspectFree: String { s("dragToRecordAspectFree") }
+    static func dragToRecordAspect(_ ratio: String) -> String {
+        String(format: s("dragToRecordAspect"), ratio)
+    }
+
+    // Toast
+    static var copiedToClipboard: String { s("copiedToClipboard") }
+    static var mergedLongScreenshot: String { s("mergedLongScreenshot") }
+    static var autoScrollPermissionNeeded: String { s("autoScrollPermissionNeeded") }
+    static var cropLongScreenshotHint: String { s("cropLongScreenshotHint") }
+    static var scrollCaptureHint: String { s("scrollCaptureHint") }
+    static var scrollCaptureManualHint: String { s("scrollCaptureManualHint") }
+    static var finderEditExitHint: String { s("finderEditExitHint") }
+    static var clipboardEditExitHint: String { s("clipboardEditExitHint") }
+    static var pinEditExitHint: String { s("pinEditExitHint") }
+    static var fullScreenEditExitHint: String { s("fullScreenEditExitHint") }
+    static var editSuspendedToast: String { s("editSuspendedToast") }
+    static var editSuspendedResumeToast: String { s("editSuspendedResumeToast") }
+    static var fullScreenScreenshotFailed: String { s("fullScreenScreenshotFailed") }
+    static var openImageNoImage: String { s("openImageNoImage") }
+    static var selectedImageEditNoImage: String { s("selectedImageEditNoImage") }
+    static var clipboardImageEditNoImage: String { s("clipboardImageEditNoImage") }
+    static var mergeEditExitHint: String { s("mergeEditExitHint") }
+    static var imageMergeNeedTwoImages: String { s("imageMergeNeedTwoImages") }
+    static var imageMergeSomeImagesSkipped: String { s("imageMergeSomeImagesSkipped") }
+    static var imageMergeNoClipboardImage: String { s("imageMergeNoClipboardImage") }
+    static var imageMergeFailed: String { s("imageMergeFailed") }
+    static var imageMergeSaved: String { s("imageMergeSaved") }
+    static func recordingSaved(to path: String) -> String {
+        String(format: s("recordingSaved"), path)
+    }
+    static var recordingCancelled: String { s("recordingCancelled") }
+    static var recordingExportingGIF: String { s("recordingExportingGIF") }
+    static var saveRecording: String { s("saveRecording") }
+    static var saveRecordingPrompt: String { s("saveRecordingPrompt") }
+    static var recordingFormatLabel: String { s("recordingFormatLabel") }
+    static var recordingFormatManual: String { s("recordingFormatManual") }
+    static var recordingFormatMP4: String { s("recordingFormatMP4") }
+    static var recordingFormatGIF: String { s("recordingFormatGIF") }
+    static var recordingFormatChoiceTitle: String { s("recordingFormatChoiceTitle") }
+    static var recordingFormatChoiceMessage: String { s("recordingFormatChoiceMessage") }
+
+    // Recording audio
+    static var recordingSystemAudioLabel: String { s("recordingSystemAudioLabel") }
+    static var recordingSystemAudioHint: String { s("recordingSystemAudioHint") }
+    static var recordingMicrophoneLabel: String { s("recordingMicrophoneLabel") }
+    static var recordingMicrophoneHint: String { s("recordingMicrophoneHint") }
+    static var recordingMicrophoneDeniedTitle: String { s("recordingMicrophoneDeniedTitle") }
+    static var recordingMicrophoneDeniedMessage: String { s("recordingMicrophoneDeniedMessage") }
+    static var recordingMicrophoneOpenSettings: String { s("recordingMicrophoneOpenSettings") }
+    static var recordingMicrophoneTooltipOn: String { s("recordingMicrophoneTooltipOn") }
+    static var recordingMicrophoneTooltipOff: String { s("recordingMicrophoneTooltipOff") }
+    static var recordingSystemAudioTooltipOn: String { s("recordingSystemAudioTooltipOn") }
+    static var recordingSystemAudioTooltipOff: String { s("recordingSystemAudioTooltipOff") }
+    static var recordingMicrophoneDeviceLabel: String { s("recordingMicrophoneDeviceLabel") }
+    static var recordingMicrophoneDeviceDefault: String { s("recordingMicrophoneDeviceDefault") }
+    static var recordingMicrophoneDeviceMenuHint: String { s("recordingMicrophoneDeviceMenuHint") }
+    static var recordingSystemAudioChangeFailed: String { s("recordingSystemAudioChangeFailed") }
+    static var recordingMicrophoneStartFailed: String { s("recordingMicrophoneStartFailed") }
+
+    // Microphone permission row
+    static var microphonePermission: String { s("microphonePermission") }
+    static var microphoneDescription: String { s("microphoneDescription") }
+    static func screenshotSaved(to path: String) -> String {
+        String(format: s("screenshotSaved"), path)
+    }
+    static var recordingStop: String { s("recordingStop") }
+    static var recordingPause: String { s("recordingPause") }
+    static var recordingResume: String { s("recordingResume") }
+    static func recordingFailed(_ message: String) -> String {
+        String(format: s("recordingFailed"), message)
+    }
+    static func screenshotSaveFailed(_ message: String) -> String {
+        String(format: s("screenshotSaveFailed"), message)
+    }
+    static func colorCopied(_ hex: String) -> String {
+        String(format: s("colorCopied"), hex)
+    }
+    static var qrCodeCopied: String { s("qrCodeCopied") }
+    static var qrCodeNotFound: String { s("qrCodeNotFound") }
+
+    // Toolbar tooltips
+    static var tipRectangle: String { s("tipRectangle") }
+    static var tipEllipse: String { s("tipEllipse") }
+    static var tipArrow: String { s("tipArrow") }
+    static var tipLine: String { s("tipLine") }
+    static var tipPen: String { s("tipPen") }
+    static var tipMarker: String { s("tipMarker") }
+    static var tipSpotlight: String { s("tipSpotlight") }
+    static var tipMosaic: String { s("tipMosaic") }
+    static var mosaicGranularity: String { s("mosaicGranularity") }
+    static var mosaicBlur: String { s("mosaicBlur") }
+    static var mosaicBlurAmount: String { s("mosaicBlurAmount") }
+    static var tipEraser: String { s("tipEraser") }
+    static var tipMagnifier: String { s("tipMagnifier") }
+    static var tipNumbered: String { s("tipNumbered") }
+    static var tipText: String { s("tipText") }
+    static var tipQRCode: String { s("tipQRCode") }
+    static var tipEmoji: String { s("tipEmoji") }
+    static var tipMoreEmoji: String { s("tipMoreEmoji") }
+    static var tipMoreBeautifyPresets: String { s("tipMoreBeautifyPresets") }
+    static var tipInsertImage: String { s("tipInsertImage") }
+    static var tipColorPicker: String { s("tipColorPicker") }
+    static var tipPickedInkBottle: String { s("tipPickedInkBottle") }
+    static var tipUndo: String { s("tipUndo") }
+    static var tipRedo: String { s("tipRedo") }
+    static var tipMoveSelection: String { s("tipMoveSelection") }
+    static var tipScrollCapture: String { s("tipScrollCapture") }
+    static var tipBeautify: String { s("tipBeautify") }
+    static var tipRotate: String { s("tipRotate") }
+    static var tipRotateLeft: String { s("tipRotateLeft") }
+    static var tipRotateRight: String { s("tipRotateRight") }
+    static var tipOCR: String { s("tipOCR") }
+    static var tipScreenshotTranslate: String { s("tipScreenshotTranslate") }
+    static var tipSave: String { s("tipSave") }
+    static var tipPin: String { s("tipPin") }
+    static var tipRecord: String { s("tipRecord") }
+    static var windowCapturePreparing: String { s("windowCapturePreparing") }
+    static var tipCancel: String { s("tipCancel") }
+    static var tipConfirm: String { s("tipConfirm") }
+    static var tipScrollCropConfirm: String { s("tipScrollCropConfirm") }
+    static var copyQRCodeContent: String { s("copyQRCodeContent") }
+
+    // Beautify
+    static var beautify: String { s("beautify") }
+    static var beautifyPresetTransparent: String { s("beautifyPresetTransparent") }
+    static var beautifyPresetPeachBlue: String { s("beautifyPresetPeachBlue") }
+    static var beautifyPresetMintTeal: String { s("beautifyPresetMintTeal") }
+    static var beautifyPresetPeachPink: String { s("beautifyPresetPeachPink") }
+    static var beautifyPresetBluePurple: String { s("beautifyPresetBluePurple") }
+    static var beautifyPresetWarmOrange: String { s("beautifyPresetWarmOrange") }
+    static var beautifyPresetTealPink: String { s("beautifyPresetTealPink") }
+    static var beautifyPresetDeepPurple: String { s("beautifyPresetDeepPurple") }
+    static var beautifyPresetNeutralGray: String { s("beautifyPresetNeutralGray") }
+    static var beautifyPresetWallpaper: String { s("beautifyPresetWallpaper") }
+    static var beautifyPresetAurora: String { s("beautifyPresetAurora") }
+    static var beautifyPresetSunsetGlow: String { s("beautifyPresetSunsetGlow") }
+    static var beautifyPresetOceanBlue: String { s("beautifyPresetOceanBlue") }
+    static var beautifyPresetLavenderMist: String { s("beautifyPresetLavenderMist") }
+    static var beautifyPresetForestMint: String { s("beautifyPresetForestMint") }
+    static var beautifyPresetRoseGold: String { s("beautifyPresetRoseGold") }
+    static var beautifyPresetMorningSky: String { s("beautifyPresetMorningSky") }
+    static var beautifyPresetCandyPop: String { s("beautifyPresetCandyPop") }
+    static var beautifyPresetCitrusGlow: String { s("beautifyPresetCitrusGlow") }
+    static var beautifyPresetMidnight: String { s("beautifyPresetMidnight") }
+    static var beautifyPresetCoralBloom: String { s("beautifyPresetCoralBloom") }
+    static var beautifyPresetArcticIce: String { s("beautifyPresetArcticIce") }
+    static var beautifyPresetSageCream: String { s("beautifyPresetSageCream") }
+    static var beautifyPresetGraphite: String { s("beautifyPresetGraphite") }
+    static var beautifyShadowSizeHint: String { s("beautifyShadowSizeHint") }
+
+    // Text tool
+    static var textStrokeEffect: String { s("textStrokeEffect") }
+    static var textCalloutEffect: String { s("textCalloutEffect") }
+    static var textFontLabel: String { s("textFontLabel") }
+    static var textFontSystemDefault: String { s("textFontSystemDefault") }
+
+    // Shape tool
+    static var shapeFillEffect: String { s("shapeFillEffect") }
+    static var shapeFillNone: String { s("shapeFillNone") }
+    static var shapeFillOpaque: String { s("shapeFillOpaque") }
+    static var shapeFillTranslucent: String { s("shapeFillTranslucent") }
+    static var shapeStyleStandard: String { s("shapeStyleStandard") }
+    static var shapeStyleRounded: String { s("shapeStyleRounded") }
+    static var shapeStyleHandDrawn: String { s("shapeStyleHandDrawn") }
+    static var arrowStyleTapered: String { s("arrowStyleTapered") }
+    static var arrowStyleDoubleEnded: String { s("arrowStyleDoubleEnded") }
+    static var arrowStyleLine: String { s("arrowStyleLine") }
+    static var arrowStyleDotTail: String { s("arrowStyleDotTail") }
+
+    // Insert tools
+    static var insertImageFromClipboard: String { s("insertImageFromClipboard") }
+    static var insertImageFromFile: String { s("insertImageFromFile") }
+    static var insertImageChooseFile: String { s("insertImageChooseFile") }
+    static var insertImageNoClipboardImage: String { s("insertImageNoClipboardImage") }
+    static var scrollCaptureAutoScroll: String { s("scrollCaptureAutoScroll") }
+    static var scrollCaptureManualScroll: String { s("scrollCaptureManualScroll") }
+
+    // Language
+    static var languageHeader: String { s("languageHeader") }
+
+    // Settings sidebar tabs
+    static var settingsTabGeneral: String { s("settingsTabGeneral") }
+    static var settingsGeneralBasic: String { s("settingsGeneralBasic") }
+    static var settingsGeneralCapture: String { s("settingsGeneralCapture") }
+    static var settingsGeneralRecording: String { s("settingsGeneralRecording") }
+    static var settingsGeneralHistory: String { s("settingsGeneralHistory") }
+    static var settingsGeneralFiles: String { s("settingsGeneralFiles") }
+    static var settingsTabShortcuts: String { s("settingsTabShortcuts") }
+    static var settingsTabPermissions: String { s("settingsTabPermissions") }
+    static var settingsTabUpload: String { s("settingsTabUpload") }
+    static var settingsTabAbout: String { s("settingsTabAbout") }
+    static var settingsTabTranslation: String { s("settingsTabTranslation") }
+    static var settingsTabToolbar: String { s("settingsTabToolbar") }
+    static var settingsQuit: String { s("settingsQuit") }
+
+    // Toolbar settings
+    static var toolbarSettingsPrimaryTitle: String { s("toolbarSettingsPrimaryTitle") }
+    static var toolbarSettingsPrimaryHint: String { s("toolbarSettingsPrimaryHint") }
+    static var toolbarSettingsSideTitle: String { s("toolbarSettingsSideTitle") }
+    static var toolbarSettingsSideHint: String { s("toolbarSettingsSideHint") }
+    static var toolbarSettingsHiddenTitle: String { s("toolbarSettingsHiddenTitle") }
+    static var toolbarSettingsHiddenHint: String { s("toolbarSettingsHiddenHint") }
+    static var toolbarSettingsFootnote: String { s("toolbarSettingsFootnote") }
+    static var toolbarSettingsShortcutHint: String { s("toolbarSettingsShortcutHint") }
+    static func toolbarSettingsShortcutRecording(_ action: String) -> String {
+        String(format: s("toolbarSettingsShortcutRecording"), action)
+    }
+    static var toolbarSettingsShortcutRecord: String { s("toolbarSettingsShortcutRecord") }
+    static var toolbarSettingsShortcutClear: String { s("toolbarSettingsShortcutClear") }
+    static var toolbarSettingsShortcutRestore: String { s("toolbarSettingsShortcutRestore") }
+    static var toolbarSettingsShortcutResetAll: String { s("toolbarSettingsShortcutResetAll") }
+    static var toolbarSettingsShortcutNone: String { s("toolbarSettingsShortcutNone") }
+    static var toolbarSettingsShortcutUnavailable: String { s("toolbarSettingsShortcutUnavailable") }
+    static var toolbarSettingsAdditionalShortcuts: String { s("toolbarSettingsAdditionalShortcuts") }
+    static var toolbarSettingsReset: String { s("toolbarSettingsReset") }
+    static var toolbarSettingsCancel: String { s("toolbarSettingsCancel") }
+    static var toolbarSettingsApply: String { s("toolbarSettingsApply") }
+    static var editorShortcutSelect: String { s("editorShortcutSelect") }
+    static var editorShortcutShapeFill: String { s("editorShortcutShapeFill") }
+    static func editorShortcutConflict(_ action: String) -> String {
+        String(format: s("editorShortcutConflict"), action)
+    }
+    static var editorShortcutReserved: String { s("editorShortcutReserved") }
+
+    // About pane
+    static var aboutTagline: String { s("aboutTagline") }
+    static var aboutLicense: String { s("aboutLicense") }
+    static var aboutSourceCode: String { s("aboutSourceCode") }
+    static var aboutStarOnGitHub: String { s("aboutStarOnGitHub") }
+    static var aboutFeatureRequest: String { s("aboutFeatureRequest") }
+    static var aboutBugReport: String { s("aboutBugReport") }
+    static var aboutUpdateTitle: String { s("aboutUpdateTitle") }
+
+    // Error log — About pane
+    static var aboutErrorLog: String { s("aboutErrorLog") }
+    static var aboutErrorLogNoCrash: String { s("aboutErrorLogNoCrash") }
+    static func aboutErrorLogLastCrash(_ date: String) -> String {
+        String(format: s("aboutErrorLogLastCrash"), date)
+    }
+    static var aboutErrorLogCopy: String { s("aboutErrorLogCopy") }
+    static var aboutErrorLogCopied: String { s("aboutErrorLogCopied") }
+    static var aboutErrorLogReveal: String { s("aboutErrorLogReveal") }
+    static var aboutErrorLogRefresh: String { s("aboutErrorLogRefresh") }
+    static var aboutErrorLogClear: String { s("aboutErrorLogClear") }
+    static var aboutErrorLogEmptyBody: String { s("aboutErrorLogEmptyBody") }
+
+    // Updates — About pane
+    static var checkForUpdates: String { s("checkForUpdates") }
+    static var updateChecking: String { s("updateChecking") }
+    static var updateUpToDateStatus: String { s("updateUpToDateStatus") }
+    static func updateNewVersionStatus(_ v: String) -> String {
+        String(format: s("updateNewVersionStatus"), v)
+    }
+    static var updateFailedStatus: String { s("updateFailedStatus") }
+    static var updateDownloadButton: String { s("updateDownloadButton") }
+    static var updateRetryButton: String { s("updateRetryButton") }
+    static var updateInstallNowButton: String { s("updateInstallNowButton") }
+    static func updateDownloadingStatus(_ percent: Int) -> String {
+        String(format: s("updateDownloadingStatus"), percent)
+    }
+    static var updateInstallingStatus: String { s("updateInstallingStatus") }
+    static var updateInstallFailedStatus: String { s("updateInstallFailedStatus") }
+
+    // Updates — menu bar
+    static var checkForUpdatesMenu: String { s("checkForUpdatesMenu") }
+    static var checkingForUpdatesMenu: String { s("checkingForUpdatesMenu") }
+    static func updateAvailableMenu(_ v: String) -> String {
+        String(format: s("updateAvailableMenu"), v)
+    }
+    static func updateDownloadingMenu(_ percent: Int) -> String {
+        String(format: s("updateDownloadingMenu"), percent)
+    }
+    static var updateInstallingMenu: String { s("updateInstallingMenu") }
+    static var updateInstallFailedMenu: String { s("updateInstallFailedMenu") }
+
+    // Updates — progress HUD
+    static var updateCheckingHUD: String { s("updateCheckingHUD") }
+    static func updateDownloadingHUD(_ percent: Int) -> String {
+        String(format: s("updateDownloadingHUD"), percent)
+    }
+    static var updateVerifyingHUD: String { s("updateVerifyingHUD") }
+    static var updateUnzippingHUD: String { s("updateUnzippingHUD") }
+    static var updateInstallingHUD: String { s("updateInstallingHUD") }
+
+    // Updates — manual check result alert
+    static func updateAvailableTitle(_ v: String) -> String {
+        String(format: s("updateAvailableTitle"), v)
+    }
+    static var updateAvailableBody: String { s("updateAvailableBody") }
+    static var updateUpToDateTitle: String { s("updateUpToDateTitle") }
+    static func updateUpToDateBody(_ v: String) -> String {
+        String(format: s("updateUpToDateBody"), v)
+    }
+    static var updateFailedTitle: String { s("updateFailedTitle") }
+    static var updateFailedBody: String { s("updateFailedBody") }
+    static var updateInstallFailedTitle: String { s("updateInstallFailedTitle") }
+    static var updateInstallFailedBody: String { s("updateInstallFailedBody") }
+    static var updateOpenPageButton: String { s("updateOpenPageButton") }
+    static var updateSkipButton: String { s("updateSkipButton") }
+    static var updateLaterButton: String { s("updateLaterButton") }
+    static var updateOKButton: String { s("updateOKButton") }
+
+    // Quit confirmation dialog
+    static var quitConfirmTitle: String { s("quitConfirmTitle") }
+    static var quitConfirmMessage: String { s("quitConfirmMessage") }
+    static var quitConfirmAction: String { s("quitConfirmAction") }
+    static var quitConfirmCancel: String { s("quitConfirmCancel") }
+
+    // Upload — toolbar / toast / progress
+    static var tipUpload: String { s("tipUpload") }
+    static var uploadingTitle: String { s("uploadingTitle") }
+    static var uploadCopied: String { s("uploadCopied") }
+    static var uploadCopiedMarkdown: String { s("uploadCopiedMarkdown") }
+    static var uploadNoProvider: String { s("uploadNoProvider") }
+    static var uploadFailedPrefix: String { s("uploadFailedPrefix") }
+
+    // Upload — settings tab
+    static var uploadDefaultProvider: String { s("uploadDefaultProvider") }
+    static var uploadDefaultNone: String { s("uploadDefaultNone") }
+    static var uploadSetDefaultButton: String { s("uploadSetDefaultButton") }
+    static var uploadSaveButton: String { s("uploadSaveButton") }
+    static var uploadClearButton: String { s("uploadClearButton") }
+    static var uploadSavedToast: String { s("uploadSavedToast") }
+    static var uploadCurrentDefault: String { s("uploadCurrentDefault") }
+    static var uploadMarkdownToggleTitle: String { s("uploadMarkdownToggleTitle") }
+    static var uploadMarkdownToggleSubtitle: String { s("uploadMarkdownToggleSubtitle") }
+    static var filenameRuleTitle: String { s("filenameRuleTitle") }
+    static var filenameRuleSubtitle: String { s("filenameRuleSubtitle") }
+    static var filenameRulePresetLabel: String { s("filenameRulePresetLabel") }
+    static var filenameRulePresetCustom: String { s("filenameRulePresetCustom") }
+    static var filenameRulePresetShort: String { s("filenameRulePresetShort") }
+    static var filenameRulePresetCompact: String { s("filenameRulePresetCompact") }
+    static var filenameRulePresetUnique: String { s("filenameRulePresetUnique") }
+    static var filenameRulePresetCounter: String { s("filenameRulePresetCounter") }
+    static var filenameRulePresetRestore: String { s("filenameRulePresetRestore") }
+    static var filenameRuleImageLabel: String { s("filenameRuleImageLabel") }
+    static var filenameRuleRecordingLabel: String { s("filenameRuleRecordingLabel") }
+    static var filenameRuleVariablesLabel: String { s("filenameRuleVariablesLabel") }
+    static var filenameRuleVariableDate: String { s("filenameRuleVariableDate") }
+    static var filenameRuleVariableTime: String { s("filenameRuleVariableTime") }
+    static var filenameRuleVariableDaily: String { s("filenameRuleVariableDaily") }
+    static var filenameRuleVariableRandom: String { s("filenameRuleVariableRandom") }
+    static var filenameRuleVariableSize: String { s("filenameRuleVariableSize") }
+    static func filenameRulePreview(_ value: String) -> String {
+        String(format: s("filenameRulePreview"), value)
+    }
+
+    // Upload — provider field labels
+    static var uploadFieldBucket: String { s("uploadFieldBucket") }
+    static var uploadFieldBucketSpace: String { s("uploadFieldBucketSpace") }
+    static var uploadFieldRegion: String { s("uploadFieldRegion") }
+    static var uploadFieldRegionOptional: String { s("uploadFieldRegionOptional") }
+    static var uploadFieldPathOptional: String { s("uploadFieldPathOptional") }
+    static var uploadFieldCustomUrlOptional: String { s("uploadFieldCustomUrlOptional") }
+    static var uploadFieldPublicDomain: String { s("uploadFieldPublicDomain") }
+    static var uploadFieldEndpointArea: String { s("uploadFieldEndpointArea") }
+    static var uploadFieldEndpointOptional: String { s("uploadFieldEndpointOptional") }
+    static var uploadFieldAccountId: String { s("uploadFieldAccountId") }
+    static var uploadTestImageFailed: String { s("uploadTestImageFailed") }
+
+    // Upload — file dialog
+    static var finderUploadDialogTitle: String { s("finderUploadDialogTitle") }
+    static var finderUploadDialogHeading: String { s("finderUploadDialogHeading") }
+    static func finderUploadSummary(_ count: Int, _ provider: String) -> String {
+        String(format: s("finderUploadSummary"), count, provider)
+    }
+    static var finderUploadSelectAll: String { s("finderUploadSelectAll") }
+    static func finderUploadAction(_ count: Int) -> String {
+        String(format: s("finderUploadAction"), count)
+    }
+    static func finderUploadRetryAction(_ count: Int) -> String {
+        String(format: s("finderUploadRetryAction"), count)
+    }
+    static func finderUploadingProgress(_ current: Int, _ total: Int) -> String {
+        String(format: s("finderUploadingProgress"), current, total)
+    }
+    static var finderUploadSucceeded: String { s("finderUploadSucceeded") }
+    static var finderUploadFailed: String { s("finderUploadFailed") }
+    static var finderUploadErrorLogTitle: String { s("finderUploadErrorLogTitle") }
+    static var finderUploadUnknownSize: String { s("finderUploadUnknownSize") }
+    static func finderUploadReadFailed(_ message: String) -> String {
+        String(format: s("finderUploadReadFailed"), message)
+    }
+    static func finderUploadCompleted(_ count: Int) -> String {
+        String(format: s("finderUploadCompleted"), count)
+    }
+    // Upload — provider names
+    static var providerTencentCOS: String { s("providerTencentCOS") }
+    static var providerQiniuKodo: String { s("providerQiniuKodo") }
+    static var providerAliyunOSS: String { s("providerAliyunOSS") }
+
+    // Upload — errors
+    static var uploadErrMissingConfig: String { s("uploadErrMissingConfig") }
+    static var uploadErrInvalidConfigPrefix: String { s("uploadErrInvalidConfigPrefix") }
+    static var uploadErrNetworkPrefix: String { s("uploadErrNetworkPrefix") }
+    static func uploadErrServerPrefix(_ code: Int) -> String {
+        String(format: s("uploadErrServerPrefix"), code)
+    }
+    static var uploadErrUnexpectedResponsePrefix: String { s("uploadErrUnexpectedResponsePrefix") }
+    static func missingField(_ key: String) -> String {
+        String(format: s("missingField"), key)
+    }
+
+    // Upload — test/validation pill
+    static var uploadStatusUntested: String { s("uploadStatusUntested") }
+    static var uploadStatusTesting: String { s("uploadStatusTesting") }
+    static var uploadStatusValid: String { s("uploadStatusValid") }
+    static var uploadStatusInvalid: String { s("uploadStatusInvalid") }
+
+    // Upload — log lines
+    static var uploadLogStartingTest: String { s("uploadLogStartingTest") }
+    static var uploadLogConfigSaved: String { s("uploadLogConfigSaved") }
+    static func uploadLogMissingFields(_ keys: [String]) -> String {
+        String(format: s("uploadLogMissingFields"), keys.joined(separator: ", "))
+    }
+    static func uploadLogTestSucceeded(_ url: String) -> String {
+        String(format: s("uploadLogTestSucceeded"), url)
+    }
+    static func uploadLogTestFailed(_ message: String) -> String {
+        String(format: s("uploadLogTestFailed"), message)
+    }
+    static var uploadLogProviderDisabled: String { s("uploadLogProviderDisabled") }
+    static var uploadLogConfigCleared: String { s("uploadLogConfigCleared") }
+
+    // Permissions — status label
+    static var permissionGranted: String { s("permissionGranted") }
+    static var permissionNotGranted: String { s("permissionNotGranted") }
+
+    // OCR & Translation — result panel
+    static var ocrTextHeader: String { s("ocrTextHeader") }
+    static var settingsTabOCR: String { s("settingsTabOCR") }
+    static var ocrProviderApple: String { s("ocrProviderApple") }
+    static var ocrProviderBaidu: String { s("ocrProviderBaidu") }
+    static var ocrProviderTencent: String { s("ocrProviderTencent") }
+    static var ocrProviderCompatible: String { s("ocrProviderCompatible") }
+    static var ocrProviderLabel: String { s("ocrProviderLabel") }
+    static var ocrEndpointLabel: String { s("ocrEndpointLabel") }
+    static var ocrModelLabel: String { s("ocrModelLabel") }
+    static var ocrRegionLabel: String { s("ocrRegionLabel") }
+    static var ocrOptionalKey: String { s("ocrOptionalKey") }
+    static var ocrVisionModelHint: String { s("ocrVisionModelHint") }
+    static var ocrLocalDescription: String { s("ocrLocalDescription") }
+    static var ocrCloudDescription: String { s("ocrCloudDescription") }
+    static var ocrCompatibleDescription: String { s("ocrCompatibleDescription") }
+    static var ocrOllamaDescription: String { s("ocrOllamaDescription") }
+    static var ocrTextOnlyDescription: String { s("ocrTextOnlyDescription") }
+    static var ocrDocumentation: String { s("ocrDocumentation") }
+    static var ocrSettingsSaved: String { s("ocrSettingsSaved") }
+    static var ocrConfigurationError: String { s("ocrConfigurationError") }
+    static var ocrEndpointError: String { s("ocrEndpointError") }
+    static var ocrImageError: String { s("ocrImageError") }
+    static var ocrResponseError: String { s("ocrResponseError") }
+    static var ocrTimeoutError: String { s("ocrTimeoutError") }
+    static var ocrRequestFailed: String { s("ocrRequestFailed") }
+    static var ocrRecognizing: String { s("ocrRecognizing") }
+    static var ocrNoText: String { s("ocrNoText") }
+    static var ocrCopy: String { s("ocrCopy") }
+    static var ocrCopied: String { s("ocrCopied") }
+    static var ocrRetry: String { s("ocrRetry") }
+    static var ocrTranslating: String { s("ocrTranslating") }
+    static var ocrTranslateFailedPrefix: String { s("ocrTranslateFailedPrefix") }
+    static var ocrNoProviderTitle: String { s("ocrNoProviderTitle") }
+    static var ocrNoProviderHint: String { s("ocrNoProviderHint") }
+    static var ocrOpenSettings: String { s("ocrOpenSettings") }
+    static var ocrLineCopied: String { s("ocrLineCopied") }
+    static var copyImageTextCopying: String { s("copyImageTextCopying") }
+    static var copyImageTextCopied: String { s("copyImageTextCopied") }
+    static var copyImageTextNoText: String { s("copyImageTextNoText") }
+    static var screenshotTranslationHeader: String { s("screenshotTranslationHeader") }
+    static func screenshotTranslationLanguageButton(_ language: String) -> String {
+        String(format: s("screenshotTranslationLanguageButton"), language)
+    }
+    static var dictionaryEntryLabel: String { s("dictionaryEntryLabel") }
+    static var dictionaryPhoneticLabel: String { s("dictionaryPhoneticLabel") }
+    static var dictionaryPartOfSpeechLabel: String { s("dictionaryPartOfSpeechLabel") }
+    static var dictionaryDefinitionLabel: String { s("dictionaryDefinitionLabel") }
+    static var dictionaryExampleLabel: String { s("dictionaryExampleLabel") }
+    static var dictionaryDifficultyLabel: String { s("dictionaryDifficultyLabel") }
+    static var dictionaryNoProviderTitle: String { s("dictionaryNoProviderTitle") }
+    static var dictionaryNoProviderHint: String { s("dictionaryNoProviderHint") }
+
+    // Translation — settings tab
+    static var translationDictionaryModeTitle: String { s("translationDictionaryModeTitle") }
+    static var translationDictionaryModeSubtitle: String { s("translationDictionaryModeSubtitle") }
+    static var translationTargetLanguage: String { s("translationTargetLanguage") }
+    static var translationTargetHint: String { s("translationTargetHint") }
+    static var translationApiKey: String { s("translationApiKey") }
+    static var translationApiKeyOptional: String { s("translationApiKeyOptional") }
+    static var translationModel: String { s("translationModel") }
+    static var translationEndpoint: String { s("translationEndpoint") }
+    static var translationEndpointOptional: String { s("translationEndpointOptional") }
+    static var translationSave: String { s("translationSave") }
+    static var translationClear: String { s("translationClear") }
+    static var translationConfigSaved: String { s("translationConfigSaved") }
+    static var translationTesting: String { s("translationTesting") }
+    static var translationTestPassed: String { s("translationTestPassed") }
+    static var translationTestFailed: String { s("translationTestFailed") }
+    static var translationTestFailedTitle: String { s("translationTestFailedTitle") }
+    static var translationProviderCustom: String { s("translationProviderCustom") }
+    static var translationAppleSubtitle: String { s("translationAppleSubtitle") }
+    static var translationErrAppleUnavailable: String { s("translationErrAppleUnavailable") }
+    static var translationMoveUp: String { s("translationMoveUp") }
+    static var translationMoveDown: String { s("translationMoveDown") }
+
+    // Translation — target language names
+    static var transLangChinese: String { s("transLangChinese") }
+    static var transLangEnglish: String { s("transLangEnglish") }
+    static var transLangJapanese: String { s("transLangJapanese") }
+    static var transLangKorean: String { s("transLangKorean") }
+
+    // Translation — errors
+    static var translationErrMissingAPIKey: String { s("translationErrMissingAPIKey") }
+    static var translationErrBadEndpoint: String { s("translationErrBadEndpoint") }
+    static var translationErrBadResponse: String { s("translationErrBadResponse") }
+
+    // Image Merge workbench
+    static var imageMergeWindowTitle: String { s("imageMergeWindowTitle") }
+    static var imageMergeSources: String { s("imageMergeSources") }
+    static var imageMergeAddFiles: String { s("imageMergeAddFiles") }
+    static var imageMergeAddFromClipboard: String { s("imageMergeAddFromClipboard") }
+    static var imageMergeImageList: String { s("imageMergeImageList") }
+    static var imageMergeTemplate: String { s("imageMergeTemplate") }
+    static var imageMergeTemplateHorizontal: String { s("imageMergeTemplateHorizontal") }
+    static var imageMergeTemplateVertical: String { s("imageMergeTemplateVertical") }
+    static var imageMergeTemplateGrid: String { s("imageMergeTemplateGrid") }
+    static var imageMergeTemplateLongStitch: String { s("imageMergeTemplateLongStitch") }
+    static var imageMergeLayout: String { s("imageMergeLayout") }
+    static var imageMergeSpacing: String { s("imageMergeSpacing") }
+    static var imageMergeMargin: String { s("imageMergeMargin") }
+    static var imageMergeCornerRadius: String { s("imageMergeCornerRadius") }
+    static var imageMergeBackground: String { s("imageMergeBackground") }
+    static var imageMergeTransparent: String { s("imageMergeTransparent") }
+    static var imageMergeSolid: String { s("imageMergeSolid") }
+    static var imageMergeOutput: String { s("imageMergeOutput") }
+    static var imageMergeCopy: String { s("imageMergeCopy") }
+    static var imageMergeSave: String { s("imageMergeSave") }
+    static var imageMergeContinueEditing: String { s("imageMergeContinueEditing") }
+    static var imageMergeClose: String { s("imageMergeClose") }
+    static var imageMergeEmptyTitle: String { s("imageMergeEmptyTitle") }
+    static var imageMergeEmptyBody: String { s("imageMergeEmptyBody") }
+    static var imageMergeClipboardSourceName: String { s("imageMergeClipboardSourceName") }
+}
+
+struct Defaults {
+    private static var defaults: UserDefaults {
+        UserDefaults.standard
+    }
+
+    static var doubleTapInterval: TimeInterval {
+        get {
+            let val = defaults.double(forKey: "doubleTapInterval")
+            return val > 0 ? val : 0.3
+        }
+        set {
+            defaults.set(newValue, forKey: "doubleTapInterval")
+        }
+    }
+
+    // Custom screenshot hotkey. When the key is absent, no custom hotkey is set
+    // (fall back to double-tap ⌘). keyCode 0 is a valid value — it is the `A` key
+    // (kVK_ANSI_A) — so presence must be checked via `hasCustomScreenshotHotkey`,
+    // never by comparing the key code to 0.
+    // Modifiers are stored using Carbon flags (cmdKey | shiftKey | optionKey | controlKey).
+
+    static var screenshotHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "screenshotHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "screenshotHotkeyKeyCode") }
+    }
+
+    static var screenshotHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "screenshotHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "screenshotHotkeyModifiers") }
+    }
+
+    static var hasCustomScreenshotHotkey: Bool {
+        defaults.object(forKey: "screenshotHotkeyKeyCode") != nil
+    }
+
+    static func clearScreenshotHotkey() {
+        defaults.removeObject(forKey: "screenshotHotkeyKeyCode")
+        defaults.removeObject(forKey: "screenshotHotkeyModifiers")
+    }
+
+    static let selectionAspectRatioPresets: [CGFloat] = [
+        1.0,
+        2.35,
+        3.0,
+        3.0 / 2.0,
+        4.0 / 3.0,
+        9.0 / 16.0,
+        16.0 / 9.0,
+    ]
+
+    static var selectionAspectRatio: Double {
+        get {
+            let ratio = defaults.double(forKey: "selectionAspectRatio")
+            return ratio > 0 && ratio.isFinite ? ratio : 0
+        }
+        set {
+            guard newValue > 0, newValue.isFinite else {
+                clearSelectionAspectRatio()
+                return
+            }
+            defaults.set(newValue, forKey: "selectionAspectRatio")
+        }
+    }
+
+    static var hasSelectionAspectRatio: Bool {
+        defaults.object(forKey: "selectionAspectRatio") != nil && selectionAspectRatio > 0
+    }
+
+    static func clearSelectionAspectRatio() {
+        defaults.removeObject(forKey: "selectionAspectRatio")
+    }
+
+    private static func clearLegacyPinHotkey() {
+        defaults.removeObject(forKey: "pinHotkeyKeyCode")
+        defaults.removeObject(forKey: "pinHotkeyModifiers")
+    }
+
+    // Custom pin-image hotkeys. They are global Carbon hotkeys with no
+    // defaults: users opt in from Settings. Quick Pin captures a screen
+    // selection; the other shortcuts read Finder or clipboard content.
+
+    static var quickPinHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "quickPinHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "quickPinHotkeyKeyCode") }
+    }
+
+    static var quickPinHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "quickPinHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "quickPinHotkeyModifiers") }
+    }
+
+    static var hasCustomQuickPinHotkey: Bool {
+        defaults.object(forKey: "quickPinHotkeyKeyCode") != nil
+    }
+
+    static func clearQuickPinHotkey() {
+        defaults.removeObject(forKey: "quickPinHotkeyKeyCode")
+        defaults.removeObject(forKey: "quickPinHotkeyModifiers")
+    }
+
+    static var selectedImagePinHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "selectedImagePinHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "selectedImagePinHotkeyKeyCode") }
+    }
+
+    static var selectedImagePinHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "selectedImagePinHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "selectedImagePinHotkeyModifiers") }
+    }
+
+    static var hasCustomSelectedImagePinHotkey: Bool {
+        defaults.object(forKey: "selectedImagePinHotkeyKeyCode") != nil
+    }
+
+    static func clearSelectedImagePinHotkey() {
+        defaults.removeObject(forKey: "selectedImagePinHotkeyKeyCode")
+        defaults.removeObject(forKey: "selectedImagePinHotkeyModifiers")
+    }
+
+    static var clipboardImagePinHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "clipboardImagePinHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "clipboardImagePinHotkeyKeyCode") }
+    }
+
+    static var clipboardImagePinHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "clipboardImagePinHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "clipboardImagePinHotkeyModifiers") }
+    }
+
+    static var hasCustomClipboardImagePinHotkey: Bool {
+        defaults.object(forKey: "clipboardImagePinHotkeyKeyCode") != nil
+    }
+
+    static func clearClipboardImagePinHotkey() {
+        defaults.removeObject(forKey: "clipboardImagePinHotkeyKeyCode")
+        defaults.removeObject(forKey: "clipboardImagePinHotkeyModifiers")
+    }
+
+    static var clipboardTextPinHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "clipboardTextPinHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "clipboardTextPinHotkeyKeyCode") }
+    }
+
+    static var clipboardTextPinHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "clipboardTextPinHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "clipboardTextPinHotkeyModifiers") }
+    }
+
+    static var hasCustomClipboardTextPinHotkey: Bool {
+        defaults.object(forKey: "clipboardTextPinHotkeyKeyCode") != nil
+    }
+
+    static func clearClipboardTextPinHotkey() {
+        defaults.removeObject(forKey: "clipboardTextPinHotkeyKeyCode")
+        defaults.removeObject(forKey: "clipboardTextPinHotkeyModifiers")
+    }
+
+    static func resetShortcutHotkeysToDefaults() {
+        clearScreenshotHotkey()
+        clearLegacyPinHotkey()
+        clearQuickPinHotkey()
+        clearSelectedImagePinHotkey()
+        clearClipboardImagePinHotkey()
+        clearClipboardTextPinHotkey()
+        clearSelectedImageEditHotkey()
+        clearClipboardImageEditHotkey()
+        clearTextRecognitionHotkey()
+        clearCopyImageTextHotkey()
+        clearScreenshotTranslationHotkey()
+        clearRecordHotkey()
+        clearImageMergeHotkey()
+        clearFinderUploadHotkey()
+        clearFullScreenScreenshotHotkey()
+        clearColorPickerHotkey()
+        clearClipboardHotkey()
+        clearFileSaveHotkey()
+        clearPreviousHistoryImageHotkey()
+        clearNextHistoryImageHotkey()
+        clearHistoryPanelHotkey()
+    }
+
+    // Custom image-edit hotkeys. They are global Carbon hotkeys with no
+    // defaults: users opt in from Settings. The selected-image shortcut reads
+    // one image selected in Finder; the clipboard-image shortcut reads only
+    // the clipboard image.
+
+    static var selectedImageEditHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "selectedImageEditHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "selectedImageEditHotkeyKeyCode") }
+    }
+
+    static var selectedImageEditHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "selectedImageEditHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "selectedImageEditHotkeyModifiers") }
+    }
+
+    static var hasCustomSelectedImageEditHotkey: Bool {
+        defaults.object(forKey: "selectedImageEditHotkeyKeyCode") != nil
+    }
+
+    static func clearSelectedImageEditHotkey() {
+        defaults.removeObject(forKey: "selectedImageEditHotkeyKeyCode")
+        defaults.removeObject(forKey: "selectedImageEditHotkeyModifiers")
+    }
+
+    static var clipboardImageEditHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "clipboardImageEditHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "clipboardImageEditHotkeyKeyCode") }
+    }
+
+    static var clipboardImageEditHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "clipboardImageEditHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "clipboardImageEditHotkeyModifiers") }
+    }
+
+    static var hasCustomClipboardImageEditHotkey: Bool {
+        defaults.object(forKey: "clipboardImageEditHotkeyKeyCode") != nil
+    }
+
+    static func clearClipboardImageEditHotkey() {
+        defaults.removeObject(forKey: "clipboardImageEditHotkeyKeyCode")
+        defaults.removeObject(forKey: "clipboardImageEditHotkeyModifiers")
+    }
+
+    // Custom OCR/translation hotkeys. They are global Carbon hotkeys with no
+    // defaults: users opt in from Settings, then select a region that is sent
+    // straight to the corresponding result panel.
+
+    static var textRecognitionHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "textRecognitionHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "textRecognitionHotkeyKeyCode") }
+    }
+
+    static var textRecognitionHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "textRecognitionHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "textRecognitionHotkeyModifiers") }
+    }
+
+    static var hasCustomTextRecognitionHotkey: Bool {
+        defaults.object(forKey: "textRecognitionHotkeyKeyCode") != nil
+    }
+
+    static func clearTextRecognitionHotkey() {
+        defaults.removeObject(forKey: "textRecognitionHotkeyKeyCode")
+        defaults.removeObject(forKey: "textRecognitionHotkeyModifiers")
+    }
+
+    static var copyImageTextHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "copyImageTextHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "copyImageTextHotkeyKeyCode") }
+    }
+
+    static var copyImageTextHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "copyImageTextHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "copyImageTextHotkeyModifiers") }
+    }
+
+    static var hasCustomCopyImageTextHotkey: Bool {
+        defaults.object(forKey: "copyImageTextHotkeyKeyCode") != nil
+    }
+
+    static func clearCopyImageTextHotkey() {
+        defaults.removeObject(forKey: "copyImageTextHotkeyKeyCode")
+        defaults.removeObject(forKey: "copyImageTextHotkeyModifiers")
+    }
+
+    static var screenshotTranslationHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "screenshotTranslationHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "screenshotTranslationHotkeyKeyCode") }
+    }
+
+    static var screenshotTranslationHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "screenshotTranslationHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "screenshotTranslationHotkeyModifiers") }
+    }
+
+    static var hasCustomScreenshotTranslationHotkey: Bool {
+        defaults.object(forKey: "screenshotTranslationHotkeyKeyCode") != nil
+    }
+
+    static func clearScreenshotTranslationHotkey() {
+        defaults.removeObject(forKey: "screenshotTranslationHotkeyKeyCode")
+        defaults.removeObject(forKey: "screenshotTranslationHotkeyModifiers")
+    }
+
+    static var recordHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "recordHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "recordHotkeyKeyCode") }
+    }
+
+    static var recordHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "recordHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "recordHotkeyModifiers") }
+    }
+
+    static var hasCustomRecordHotkey: Bool {
+        defaults.object(forKey: "recordHotkeyKeyCode") != nil
+    }
+
+    static func clearRecordHotkey() {
+        defaults.removeObject(forKey: "recordHotkeyKeyCode")
+        defaults.removeObject(forKey: "recordHotkeyModifiers")
+    }
+
+    static var imageMergeHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "imageMergeHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "imageMergeHotkeyKeyCode") }
+    }
+
+    static var imageMergeHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "imageMergeHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "imageMergeHotkeyModifiers") }
+    }
+
+    static var hasCustomImageMergeHotkey: Bool {
+        defaults.object(forKey: "imageMergeHotkeyKeyCode") != nil
+    }
+
+    static func clearImageMergeHotkey() {
+        defaults.removeObject(forKey: "imageMergeHotkeyKeyCode")
+        defaults.removeObject(forKey: "imageMergeHotkeyModifiers")
+    }
+
+    // Custom file upload shortcut. This is a global Carbon hotkey with
+    // no default so users can choose a combination that fits their workflow.
+    static var finderUploadHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "finderUploadHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "finderUploadHotkeyKeyCode") }
+    }
+
+    static var finderUploadHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "finderUploadHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "finderUploadHotkeyModifiers") }
+    }
+
+    static var hasCustomFinderUploadHotkey: Bool {
+        defaults.object(forKey: "finderUploadHotkeyKeyCode") != nil
+    }
+
+    static func clearFinderUploadHotkey() {
+        defaults.removeObject(forKey: "finderUploadHotkeyKeyCode")
+        defaults.removeObject(forKey: "finderUploadHotkeyModifiers")
+    }
+
+    static var fullScreenScreenshotHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "fullScreenScreenshotHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "fullScreenScreenshotHotkeyKeyCode") }
+    }
+
+    static var fullScreenScreenshotHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "fullScreenScreenshotHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "fullScreenScreenshotHotkeyModifiers") }
+    }
+
+    static var hasCustomFullScreenScreenshotHotkey: Bool {
+        defaults.object(forKey: "fullScreenScreenshotHotkeyKeyCode") != nil
+    }
+
+    static func clearFullScreenScreenshotHotkey() {
+        defaults.removeObject(forKey: "fullScreenScreenshotHotkeyKeyCode")
+        defaults.removeObject(forKey: "fullScreenScreenshotHotkeyModifiers")
+    }
+
+    static var colorPickerHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "colorPickerHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "colorPickerHotkeyKeyCode") }
+    }
+
+    static var colorPickerHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "colorPickerHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "colorPickerHotkeyModifiers") }
+    }
+
+    static var hasCustomColorPickerHotkey: Bool {
+        defaults.object(forKey: "colorPickerHotkeyKeyCode") != nil
+    }
+
+    static func clearColorPickerHotkey() {
+        defaults.removeObject(forKey: "colorPickerHotkeyKeyCode")
+        defaults.removeObject(forKey: "colorPickerHotkeyModifiers")
+    }
+
+    static var imageMergeTemplate: ImageMergeTemplate {
+        get {
+            let rawValue = defaults.integer(forKey: "imageMergeTemplate")
+            return ImageMergeTemplate(rawValue: rawValue) ?? .horizontal
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "imageMergeTemplate")
+        }
+    }
+
+    static var imageMergeSpacing: Double {
+        get {
+            if defaults.object(forKey: "imageMergeSpacing") == nil {
+                return 12
+            }
+            return min(max(defaults.double(forKey: "imageMergeSpacing"), 0), 80)
+        }
+        set {
+            defaults.set(min(max(newValue.rounded(), 0), 80), forKey: "imageMergeSpacing")
+        }
+    }
+
+    static var imageMergeMargin: Double {
+        get {
+            if defaults.object(forKey: "imageMergeMargin") == nil {
+                return 24
+            }
+            return min(max(defaults.double(forKey: "imageMergeMargin"), 0), 120)
+        }
+        set {
+            defaults.set(min(max(newValue.rounded(), 0), 120), forKey: "imageMergeMargin")
+        }
+    }
+
+    static var imageMergeCornerRadius: Double {
+        get {
+            if defaults.object(forKey: "imageMergeCornerRadius") == nil {
+                return 0
+            }
+            return min(max(defaults.double(forKey: "imageMergeCornerRadius"), 0), 80)
+        }
+        set {
+            defaults.set(min(max(newValue.rounded(), 0), 80), forKey: "imageMergeCornerRadius")
+        }
+    }
+
+    static var imageMergeBackgroundIsSolid: Bool {
+        get { defaults.bool(forKey: "imageMergeBackgroundIsSolid") }
+        set { defaults.set(newValue, forKey: "imageMergeBackgroundIsSolid") }
+    }
+
+    static var imageMergeBackgroundColorHex: String {
+        get {
+            normalizedHexColor(defaults.string(forKey: "imageMergeBackgroundColorHex")) ?? "#FFFFFF"
+        }
+        set {
+            defaults.set(normalizedHexColor(newValue) ?? "#FFFFFF", forKey: "imageMergeBackgroundColorHex")
+        }
+    }
+
+    static var recordingSaveFormat: ScreenRecordingFormat {
+        get {
+            guard let raw = defaults.string(forKey: "recordingSaveFormat"),
+                  let format = ScreenRecordingFormat(rawValue: raw)
+            else {
+                return .mp4
+            }
+            return format
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "recordingSaveFormat")
+        }
+    }
+
+    static var recordingSavePreference: RecordingSavePreference {
+        get {
+            guard let raw = defaults.string(forKey: "recordingSavePreference"),
+                  let preference = RecordingSavePreference(rawValue: raw)
+            else {
+                return .manual
+            }
+            return preference
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "recordingSavePreference")
+        }
+    }
+
+    /// Whether the next recording should capture system audio (what the Mac is
+    /// playing). Requires screen-recording permission (already needed for video)
+    /// — no separate permission prompt for the user.
+    static var recordingSystemAudioEnabled: Bool {
+        get {
+            if defaults.object(forKey: "recordingSystemAudioEnabled") == nil {
+                return false
+            }
+            return defaults.bool(forKey: "recordingSystemAudioEnabled")
+        }
+        set {
+            defaults.set(newValue, forKey: "recordingSystemAudioEnabled")
+        }
+    }
+
+    /// Whether the next recording should capture microphone audio. Requires
+    /// microphone permission; permission is requested lazily when the user
+    /// first enables this toggle.
+    static var recordingMicrophoneEnabled: Bool {
+        get {
+            if defaults.object(forKey: "recordingMicrophoneEnabled") == nil {
+                return false
+            }
+            return defaults.bool(forKey: "recordingMicrophoneEnabled")
+        }
+        set {
+            defaults.set(newValue, forKey: "recordingMicrophoneEnabled")
+        }
+    }
+
+    /// UID of the CoreAudio input device used for microphone recording.
+    /// nil means the system default input device. If the persisted device is
+    /// unplugged at recording time, the system default is used instead.
+    static var recordingMicrophoneDeviceUID: String? {
+        get {
+            defaults.string(forKey: "recordingMicrophoneDeviceUID")
+        }
+        set {
+            defaults.set(newValue, forKey: "recordingMicrophoneDeviceUID")
+        }
+    }
+
+    /// When true (default), screenshot "Save to file" shows a save panel.
+    /// When false, screenshots write straight to `screenshotSaveDirectory`.
+    static var askSaveLocation: Bool {
+        get {
+            if defaults.object(forKey: "askSaveLocation") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "askSaveLocation")
+        }
+        set {
+            defaults.set(newValue, forKey: "askSaveLocation")
+        }
+    }
+
+    static var autoRevealSavedFiles: Bool {
+        get {
+            if defaults.object(forKey: "autoRevealSavedFiles") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "autoRevealSavedFiles")
+        }
+        set {
+            defaults.set(newValue, forKey: "autoRevealSavedFiles")
+        }
+    }
+
+    static var defaultRecordingSaveDirectory: URL {
+        defaultDocumentsDirectory.appendingPathComponent("record", isDirectory: true)
+    }
+
+    static var defaultScreenshotSaveDirectory: URL {
+        defaultDocumentsDirectory.appendingPathComponent("screenshots", isDirectory: true)
+    }
+
+    static var recordingSaveDirectory: URL {
+        get {
+            normalizedDirectoryURL(
+                defaults.string(forKey: "recordingSaveDirectory"),
+                fallback: defaultRecordingSaveDirectory
+            )
+        }
+        set {
+            let normalized = newValue.standardizedFileURL
+            let oldValue = recordingSaveDirectory
+            defaults.set(normalized.path, forKey: "recordingSaveDirectory")
+            if oldValue != normalized {
+                NotificationCenter.default.post(name: .recordingSaveDirectoryDidChange, object: nil)
+            }
+        }
+    }
+
+    static var screenshotSaveDirectory: URL {
+        get {
+            normalizedDirectoryURL(
+                defaults.string(forKey: "screenshotSaveDirectory"),
+                fallback: defaultScreenshotSaveDirectory
+            )
+        }
+        set {
+            defaults.set(newValue.standardizedFileURL.path, forKey: "screenshotSaveDirectory")
+        }
+    }
+
+    static var screenshotUploadQuality: ScreenshotImageQuality {
+        get { screenshotQuality(forKey: "screenshotUploadQuality") }
+        set { defaults.set(newValue.rawValue, forKey: "screenshotUploadQuality") }
+    }
+
+    static var screenshotSaveQuality: ScreenshotImageQuality {
+        get { screenshotQuality(forKey: "screenshotSaveQuality") }
+        set { defaults.set(newValue.rawValue, forKey: "screenshotSaveQuality") }
+    }
+
+    static var screenshotClipboardQuality: ScreenshotImageQuality {
+        get { screenshotQuality(forKey: "screenshotClipboardQuality") }
+        set { defaults.set(newValue.rawValue, forKey: "screenshotClipboardQuality") }
+    }
+
+    private static func screenshotQuality(forKey key: String) -> ScreenshotImageQuality {
+        guard let raw = defaults.string(forKey: key) else {
+            return ScreenshotImageQuality.defaultValue
+        }
+        if raw == "balanced" || raw == "compact" {
+            return .compressed
+        }
+        return ScreenshotImageQuality(rawValue: raw) ?? ScreenshotImageQuality.defaultValue
+    }
+
+    static let defaultImageFilenameTemplate = "capcap-{date}-{time}"
+    static let defaultRecordingFilenameTemplate = "capcap-rec-{date}-{time}"
+
+    static var imageFilenameTemplate: String {
+        get {
+            normalizedFilenameTemplate(
+                defaults.string(forKey: "imageFilenameTemplate"),
+                fallback: defaultImageFilenameTemplate
+            )
+        }
+        set {
+            defaults.set(
+                normalizedFilenameTemplate(newValue, fallback: defaultImageFilenameTemplate),
+                forKey: "imageFilenameTemplate"
+            )
+        }
+    }
+
+    static var recordingFilenameTemplate: String {
+        get {
+            normalizedFilenameTemplate(
+                defaults.string(forKey: "recordingFilenameTemplate"),
+                fallback: defaultRecordingFilenameTemplate
+            )
+        }
+        set {
+            defaults.set(
+                normalizedFilenameTemplate(newValue, fallback: defaultRecordingFilenameTemplate),
+                forKey: "recordingFilenameTemplate"
+            )
+        }
+    }
+
+    private static func normalizedFilenameTemplate(_ value: String?, fallback: String) -> String {
+        let trimmed = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? fallback : trimmed
+    }
+
+    private static var defaultDocumentsDirectory: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Documents", isDirectory: true)
+    }
+
+    private static func normalizedDirectoryURL(_ value: String?, fallback: URL) -> URL {
+        let trimmed = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return fallback.standardizedFileURL }
+        let expanded = (trimmed as NSString).expandingTildeInPath
+        return URL(fileURLWithPath: expanded, isDirectory: true).standardizedFileURL
+    }
+
+    static func filenameSequenceValue(scope: String, dayStamp: String?, consume: Bool) -> Int {
+        if let dayStamp {
+            let counterKey = "filenameDailyCounter.\(scope)"
+            let dayKey = "filenameDailyCounterDay.\(scope)"
+            let currentDay = defaults.string(forKey: dayKey)
+            let currentValue = currentDay == dayStamp ? defaults.integer(forKey: counterKey) : 0
+            let nextValue = currentValue + 1
+            if consume {
+                defaults.set(dayStamp, forKey: dayKey)
+                defaults.set(nextValue, forKey: counterKey)
+            }
+            return nextValue
+        }
+
+        let key = "filenameCounter.\(scope)"
+        let nextValue = defaults.integer(forKey: key) + 1
+        if consume {
+            defaults.set(nextValue, forKey: key)
+        }
+        return nextValue
+    }
+
+    // Custom copy-to-clipboard hotkey used inside the editor overlay to
+    // confirm the screenshot. When absent, the default is "double-tap ⌘",
+    // detected via the global flag monitor (KeyMonitor) — see AppDelegate.
+    // Unlike the screenshot and pin hotkeys this is matched locally against
+    // keyDown events instead of registered as a Carbon global hotkey, so it
+    // may be bare (no modifiers). Presence must be checked via
+    // `hasCustomClipboardHotkey` since key code 0 (`A`) is a valid value.
+
+    private static func migrateLegacySaveHotkeyIfNeeded() {
+        // capcap ≤ 1.x stored this same hotkey under "saveHotkey*". Migrate
+        // once on first read so existing users don't lose their binding.
+        let migratedKey = "clipboardHotkeyMigrated"
+        guard !defaults.bool(forKey: migratedKey) else { return }
+        defaults.set(true, forKey: migratedKey)
+        guard defaults.object(forKey: "saveHotkeyKeyCode") != nil,
+              defaults.object(forKey: "clipboardHotkeyKeyCode") == nil
+        else { return }
+        defaults.set(defaults.integer(forKey: "saveHotkeyKeyCode"), forKey: "clipboardHotkeyKeyCode")
+        defaults.set(defaults.integer(forKey: "saveHotkeyModifiers"), forKey: "clipboardHotkeyModifiers")
+        defaults.removeObject(forKey: "saveHotkeyKeyCode")
+        defaults.removeObject(forKey: "saveHotkeyModifiers")
+    }
+
+    static var clipboardHotkeyKeyCode: Int {
+        get {
+            migrateLegacySaveHotkeyIfNeeded()
+            return defaults.integer(forKey: "clipboardHotkeyKeyCode")
+        }
+        set { defaults.set(newValue, forKey: "clipboardHotkeyKeyCode") }
+    }
+
+    static var clipboardHotkeyModifiers: Int {
+        get {
+            migrateLegacySaveHotkeyIfNeeded()
+            return defaults.integer(forKey: "clipboardHotkeyModifiers")
+        }
+        set { defaults.set(newValue, forKey: "clipboardHotkeyModifiers") }
+    }
+
+    static var hasCustomClipboardHotkey: Bool {
+        migrateLegacySaveHotkeyIfNeeded()
+        return defaults.object(forKey: "clipboardHotkeyKeyCode") != nil
+    }
+
+    static func clearClipboardHotkey() {
+        defaults.removeObject(forKey: "clipboardHotkeyKeyCode")
+        defaults.removeObject(forKey: "clipboardHotkeyModifiers")
+    }
+
+    // Custom save-to-file hotkey used inside the editor overlay to invoke
+    // the configured-directory file save. When absent, defaults to ⌘S.
+    // Matched locally against keyDown events, same as the clipboard hotkey.
+
+    static var fileSaveHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "fileSaveHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "fileSaveHotkeyKeyCode") }
+    }
+
+    static var fileSaveHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "fileSaveHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "fileSaveHotkeyModifiers") }
+    }
+
+    static var hasCustomFileSaveHotkey: Bool {
+        defaults.object(forKey: "fileSaveHotkeyKeyCode") != nil
+    }
+
+    static func clearFileSaveHotkey() {
+        defaults.removeObject(forKey: "fileSaveHotkeyKeyCode")
+        defaults.removeObject(forKey: "fileSaveHotkeyModifiers")
+    }
+
+    // History navigation hotkeys used inside the editor overlay. Defaults are
+    // comma for previous and period for next. Like clipboard/save editor
+    // hotkeys, bare keys are allowed because matching is local to the editor.
+
+    static var previousHistoryImageHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "previousHistoryImageHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "previousHistoryImageHotkeyKeyCode") }
+    }
+
+    static var previousHistoryImageHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "previousHistoryImageHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "previousHistoryImageHotkeyModifiers") }
+    }
+
+    static var hasCustomPreviousHistoryImageHotkey: Bool {
+        defaults.object(forKey: "previousHistoryImageHotkeyKeyCode") != nil
+    }
+
+    static func clearPreviousHistoryImageHotkey() {
+        defaults.removeObject(forKey: "previousHistoryImageHotkeyKeyCode")
+        defaults.removeObject(forKey: "previousHistoryImageHotkeyModifiers")
+    }
+
+    static var nextHistoryImageHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "nextHistoryImageHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "nextHistoryImageHotkeyKeyCode") }
+    }
+
+    static var nextHistoryImageHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "nextHistoryImageHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "nextHistoryImageHotkeyModifiers") }
+    }
+
+    static var hasCustomNextHistoryImageHotkey: Bool {
+        defaults.object(forKey: "nextHistoryImageHotkeyKeyCode") != nil
+    }
+
+    static func clearNextHistoryImageHotkey() {
+        defaults.removeObject(forKey: "nextHistoryImageHotkeyKeyCode")
+        defaults.removeObject(forKey: "nextHistoryImageHotkeyModifiers")
+    }
+
+    // History panel shortcut. Defaults to unset; users can opt in from
+    // Settings. The global hotkey opens the dialog mode when enabled, or the
+    // notch mode when dialog mode is disabled.
+
+    static var historyPanelHotkeyKeyCode: Int {
+        get { defaults.integer(forKey: "historyPanelHotkeyKeyCode") }
+        set { defaults.set(newValue, forKey: "historyPanelHotkeyKeyCode") }
+    }
+
+    static var historyPanelHotkeyModifiers: Int {
+        get { defaults.integer(forKey: "historyPanelHotkeyModifiers") }
+        set { defaults.set(newValue, forKey: "historyPanelHotkeyModifiers") }
+    }
+
+    static var hasCustomHistoryPanelHotkey: Bool {
+        defaults.object(forKey: "historyPanelHotkeyKeyCode") != nil
+    }
+
+    static func clearHistoryPanelHotkey() {
+        defaults.removeObject(forKey: "historyPanelHotkeyKeyCode")
+        defaults.removeObject(forKey: "historyPanelHotkeyModifiers")
+    }
+
+    static var penColor: Int {
+        get {
+            let val = defaults.integer(forKey: "penColor")
+            return val == 0 ? 0xFF0000 : val
+        }
+        set {
+            defaults.set(newValue, forKey: "penColor")
+        }
+    }
+
+    static var penWidth: Double {
+        get {
+            let val = defaults.double(forKey: "penWidth")
+            return val > 0 ? val : 3.0
+        }
+        set {
+            defaults.set(newValue, forKey: "penWidth")
+        }
+    }
+
+    static let editorLineWidthMin: Double = 1
+    static let editorLineWidthMax: Double = 16
+    static let markerLineWidthMax: Double = 10
+    static let numberSizeMin: Double = 1
+    static let numberSizeDefault: Double = 5
+    static let numberSizeMax: Double = 25
+
+    static var lastEditorColorHex: String? {
+        get {
+            normalizedHexColor(defaults.string(forKey: "lastEditorColorHex"))
+        }
+        set {
+            if let normalized = normalizedHexColor(newValue) {
+                defaults.set(normalized, forKey: "lastEditorColorHex")
+            } else {
+                defaults.removeObject(forKey: "lastEditorColorHex")
+            }
+        }
+    }
+
+    static var lastEditorLineWidth: Double {
+        get {
+            if defaults.object(forKey: "lastEditorLineWidth") == nil {
+                return 4.0
+            }
+            return clampedEditorLineWidth(defaults.double(forKey: "lastEditorLineWidth"))
+        }
+        set {
+            defaults.set(clampedEditorLineWidth(newValue), forKey: "lastEditorLineWidth")
+        }
+    }
+
+    static var lastNumberSize: Double {
+        get {
+            guard defaults.object(forKey: "lastNumberSize") != nil else {
+                return numberSizeDefault
+            }
+            return clampedNumberSize(defaults.double(forKey: "lastNumberSize"))
+        }
+        set {
+            defaults.set(clampedNumberSize(newValue), forKey: "lastNumberSize")
+        }
+    }
+
+    static var lastMarkerColorHex: String? {
+        get {
+            normalizedHexColor(defaults.string(forKey: "lastMarkerColorHex"))
+        }
+        set {
+            if let normalized = normalizedHexColor(newValue) {
+                defaults.set(normalized, forKey: "lastMarkerColorHex")
+            } else {
+                defaults.removeObject(forKey: "lastMarkerColorHex")
+            }
+        }
+    }
+
+    static var lastMarkerLineWidth: Double {
+        get {
+            if defaults.object(forKey: "lastMarkerLineWidth") == nil {
+                return 5.0
+            }
+            return clampedMarkerLineWidth(defaults.double(forKey: "lastMarkerLineWidth"))
+        }
+        set {
+            defaults.set(clampedMarkerLineWidth(newValue), forKey: "lastMarkerLineWidth")
+        }
+    }
+
+    static var mosaicBlockSize: Double {
+        get {
+            let val = defaults.double(forKey: "mosaicBlockSize")
+            guard val > 0 else { return 12.0 }
+            return min(max(val, mosaicBlockSizeMin), mosaicBlockSizeMax)
+        }
+        set {
+            defaults.set(min(max(newValue, mosaicBlockSizeMin), mosaicBlockSizeMax), forKey: "mosaicBlockSize")
+        }
+    }
+
+    static let mosaicBlockSizeMin: Double = 4
+    static let mosaicBlockSizeMax: Double = 48
+
+    static var mosaicStyle: MosaicStyle {
+        get { MosaicStyle(rawValue: defaults.string(forKey: "mosaicStyle") ?? "") ?? .pixelate }
+        set { defaults.set(newValue.rawValue, forKey: "mosaicStyle") }
+    }
+
+    static let mosaicBlurRadiusMin: Double = 1
+    static let mosaicBlurRadiusMax: Double = 48
+
+    static var mosaicBlurRadius: Double {
+        get {
+            guard defaults.object(forKey: "mosaicBlurRadius") != nil else { return 12 }
+            return normalizedMosaicBlurRadius(defaults.double(forKey: "mosaicBlurRadius"))
+        }
+        set { defaults.set(normalizedMosaicBlurRadius(newValue), forKey: "mosaicBlurRadius") }
+    }
+
+    static func normalizedMosaicBlurRadius(_ value: Double) -> Double {
+        value.isFinite ? min(max(value, mosaicBlurRadiusMin), mosaicBlurRadiusMax) : 12
+    }
+
+    static let textFontSizeMin: Double = 10
+    static let textFontSizeMax: Double = 100
+
+    static var lastTextFontSize: Double {
+        get {
+            if defaults.object(forKey: "lastTextFontSize") == nil {
+                return 20
+            }
+            let val = defaults.double(forKey: "lastTextFontSize")
+            return min(max(val, textFontSizeMin), textFontSizeMax)
+        }
+        set {
+            defaults.set(min(max(newValue, textFontSizeMin), textFontSizeMax), forKey: "lastTextFontSize")
+        }
+    }
+
+    /// Last font family selected in the editor's font picker, reused for new text annotations
+    /// Normalized at the persistence boundary: a family that is no longer
+    /// installed reads back as nil, i.e. the system bold default.
+    static var textFontName: String? {
+        get {
+            guard let name = defaults.string(forKey: "textFontName"), !name.isEmpty else {
+                return nil
+            }
+            return FontCatalog.isInstalled(name) ? name : nil
+        }
+        set {
+            if let newValue, !newValue.isEmpty {
+                defaults.set(newValue, forKey: "textFontName")
+            } else {
+                defaults.removeObject(forKey: "textFontName")
+            }
+        }
+    }
+
+    /// Whether the text tool's outline checkbox was last left on.
+    static var lastTextStroke: Bool {
+        get { defaults.bool(forKey: "lastTextStroke") }
+        set { defaults.set(newValue, forKey: "lastTextStroke") }
+    }
+
+    /// Whether the text tool's callout checkbox was last left on.
+    static var lastTextCallout: Bool {
+        get { defaults.bool(forKey: "lastTextCallout") }
+        set { defaults.set(newValue, forKey: "lastTextCallout") }
+    }
+
+    /// Last rectangle/ellipse fill mode. Migrates the previous checkbox
+    /// preference by treating its "on" state as the old opaque fill.
+    static var lastShapeFillMode: ShapeFillMode {
+        get {
+            guard let raw = defaults.string(forKey: "lastShapeFillMode"),
+                  let mode = ShapeFillMode(rawValue: raw) else {
+                return defaults.bool(forKey: "lastShapeFill") ? .opaque : .none
+            }
+            return mode
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "lastShapeFillMode")
+            defaults.set(newValue.isFilled, forKey: "lastShapeFill")
+        }
+    }
+
+    static var lastShapeStrokeStyle: ShapeStrokeStyle {
+        get {
+            guard let raw = defaults.string(forKey: "lastShapeStrokeStyle"),
+                  let style = ShapeStrokeStyle(rawValue: raw) else {
+                return .standard
+            }
+            return style
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "lastShapeStrokeStyle")
+        }
+    }
+
+    /// Whether the rectangle/ellipse tool's legacy fill checkbox was last left on.
+    static var lastShapeFill: Bool {
+        get { lastShapeFillMode.isFilled }
+        set { lastShapeFillMode = newValue ? .opaque : .none }
+    }
+
+    static var lastArrowStyle: ArrowStyle {
+        get {
+            guard let raw = defaults.string(forKey: "lastArrowStyle"),
+                  let style = ArrowStyle(rawValue: raw) else {
+                return .tapered
+            }
+            return style
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "lastArrowStyle")
+        }
+    }
+
+    static var lastPickedColorHex: String? {
+        get {
+            guard historyCacheEnabled else { return nil }
+            return normalizedHexColor(defaults.string(forKey: "lastPickedColorHex"))
+        }
+        set {
+            if let normalized = normalizedHexColor(newValue) {
+                defaults.set(normalized, forKey: "lastPickedColorHex")
+            } else {
+                defaults.removeObject(forKey: "lastPickedColorHex")
+            }
+        }
+    }
+
+    static var recentEmojis: [String] {
+        get {
+            normalizedEmojiList(defaults.stringArray(forKey: "recentEmojis") ?? [])
+        }
+        set {
+            let normalized = normalizedEmojiList(newValue)
+            if normalized.isEmpty {
+                defaults.removeObject(forKey: "recentEmojis")
+            } else {
+                defaults.set(normalized, forKey: "recentEmojis")
+            }
+        }
+    }
+
+    private static func normalizedEmojiList(_ values: [String]) -> [String] {
+        var result: [String] = []
+        for value in values {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !result.contains(trimmed) else { continue }
+            result.append(trimmed)
+            if result.count == 10 { break }
+        }
+        return result
+    }
+
+    private static func normalizedHexColor(_ hex: String?) -> String? {
+        guard var trimmed = hex?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() else {
+            return nil
+        }
+        if trimmed.hasPrefix("#") { trimmed.removeFirst() }
+        guard trimmed.count == 6, UInt32(trimmed, radix: 16) != nil else { return nil }
+        return "#\(trimmed)"
+    }
+
+    private static func clampedEditorLineWidth(_ width: Double) -> Double {
+        min(max(width, editorLineWidthMin), editorLineWidthMax)
+    }
+
+    private static func clampedNumberSize(_ size: Double) -> Double {
+        min(max(size, numberSizeMin), numberSizeMax)
+    }
+
+    private static func clampedMarkerLineWidth(_ width: Double) -> Double {
+        min(max(width, editorLineWidthMin), markerLineWidthMax)
+    }
+
+    private static func clampedUnitInterval(_ value: Double) -> Double {
+        min(1, max(0, value))
+    }
+
+    private static func normalizedMagnifierLensPanelMagnifiedSize(_ value: Int) -> Int {
+        switch value {
+        case 96, 144, 192:
+            return value
+        default:
+            return 144
+        }
+    }
+
+    private static func normalizedMagnifierLensPanelMagnification(_ value: Double) -> Double {
+        guard value.isFinite else { return 4.0 }
+        return min(16.0, max(1.0, value))
+    }
+
+    static var lastBeautifyPresetID: String? {
+        get { defaults.string(forKey: "lastBeautifyPresetID") }
+        set { defaults.set(newValue, forKey: "lastBeautifyPresetID") }
+    }
+
+    static var beautifyToolbarPresetIDs: [String] {
+        get {
+            normalizedUniqueStringList(
+                defaults.stringArray(forKey: "beautifyToolbarPresetIDs") ?? [],
+                limit: 8
+            )
+        }
+        set {
+            let normalized = normalizedUniqueStringList(newValue, limit: 8)
+            if normalized.isEmpty {
+                defaults.removeObject(forKey: "beautifyToolbarPresetIDs")
+            } else {
+                defaults.set(normalized, forKey: "beautifyToolbarPresetIDs")
+            }
+        }
+    }
+
+    static var lastBeautifyShadowSize: Double {
+        get {
+            // Preserve the old slider position once, without sharing any state
+            // with the window-capture projection preferences.
+            if defaults.object(forKey: "lastBeautifyShadowSize") == nil {
+                let legacy = defaults.object(forKey: "lastBeautifyPadding") as? NSNumber
+                let size = BeautifyRenderer.normalizedShadowSize(
+                    CGFloat(legacy?.doubleValue ?? Double(BeautifyRenderer.shadowSizeDefault))
+                )
+                defaults.set(Double(size), forKey: "lastBeautifyShadowSize")
+            }
+            return Double(BeautifyRenderer.normalizedShadowSize(
+                CGFloat(defaults.double(forKey: "lastBeautifyShadowSize"))
+            ))
+        }
+        set {
+            defaults.set(
+                Double(BeautifyRenderer.normalizedShadowSize(CGFloat(newValue))),
+                forKey: "lastBeautifyShadowSize"
+            )
+        }
+    }
+
+    private static func normalizedUniqueStringList(_ values: [String], limit: Int) -> [String] {
+        var result: [String] = []
+        for value in values {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, !result.contains(trimmed) else { continue }
+            result.append(trimmed)
+            if result.count == limit { break }
+        }
+        return result
+    }
+
+    /// The user's last explicit beautify toggle, independent of temporary editor state
+    static var lastBeautifyEnabled: Bool {
+        get {
+            if defaults.object(forKey: "lastBeautifyEnabled") == nil {
+                defaults.set(defaults.bool(forKey: "beautifyAutoEnabled"), forKey: "lastBeautifyEnabled")
+                defaults.removeObject(forKey: "beautifyAutoEnabled")
+            }
+            return defaults.bool(forKey: "lastBeautifyEnabled")
+        }
+        set {
+            defaults.set(newValue, forKey: "lastBeautifyEnabled")
+            defaults.removeObject(forKey: "beautifyAutoEnabled")
+        }
+    }
+
+    static let historyCacheMin: Int = 10
+    static let historyCacheMax: Int = 200
+    static let historyCacheStep: Int = 10
+    static let clipboardTextHistoryLimitMin: Int = 50
+    static let clipboardTextHistoryLimitMax: Int = 500
+    static let clipboardTextHistoryLimitStep: Int = 50
+
+    static var historyCacheEnabled: Bool {
+        get {
+            if defaults.object(forKey: "historyCacheEnabled") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "historyCacheEnabled")
+        }
+        set {
+            let oldValue = historyCacheEnabled
+            defaults.set(newValue, forKey: "historyCacheEnabled")
+            if !newValue {
+                lastPickedColorHex = nil
+            }
+            if oldValue != newValue {
+                NotificationCenter.default.post(name: .historyCacheEnabledDidChange, object: nil)
+            }
+        }
+    }
+
+    /// Background color used in dark mode (when `magnifierLensPanelFollowSystemAppearance` is on).
+    /// Stored as 0–1 RGBA components. Default: black with 80% alpha.
+    static var magnifierLensPanelDarkBackgroundRed: Double {
+        get { defaults.object(forKey: "magnifierLensPanelDarkBackgroundRed") == nil ? 0 : defaults.double(forKey: "magnifierLensPanelDarkBackgroundRed") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelDarkBackgroundRed") }
+    }
+    static var magnifierLensPanelDarkBackgroundGreen: Double {
+        get { defaults.object(forKey: "magnifierLensPanelDarkBackgroundGreen") == nil ? 0 : defaults.double(forKey: "magnifierLensPanelDarkBackgroundGreen") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelDarkBackgroundGreen") }
+    }
+    static var magnifierLensPanelDarkBackgroundBlue: Double {
+        get { defaults.object(forKey: "magnifierLensPanelDarkBackgroundBlue") == nil ? 0 : defaults.double(forKey: "magnifierLensPanelDarkBackgroundBlue") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelDarkBackgroundBlue") }
+    }
+    static var magnifierLensPanelDarkBackgroundAlpha: Double {
+        get { defaults.object(forKey: "magnifierLensPanelDarkBackgroundAlpha") == nil ? 0.80 : defaults.double(forKey: "magnifierLensPanelDarkBackgroundAlpha") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelDarkBackgroundAlpha") }
+    }
+
+    /// Background color used in light mode (when `magnifierLensPanelFollowSystemAppearance` is on).
+    /// Stored as 0–1 RGBA components. Default: white with 80% alpha.
+    static var magnifierLensPanelLightBackgroundRed: Double {
+        get { defaults.object(forKey: "magnifierLensPanelLightBackgroundRed") == nil ? 1 : defaults.double(forKey: "magnifierLensPanelLightBackgroundRed") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelLightBackgroundRed") }
+    }
+    static var magnifierLensPanelLightBackgroundGreen: Double {
+        get { defaults.object(forKey: "magnifierLensPanelLightBackgroundGreen") == nil ? 1 : defaults.double(forKey: "magnifierLensPanelLightBackgroundGreen") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelLightBackgroundGreen") }
+    }
+    static var magnifierLensPanelLightBackgroundBlue: Double {
+        get { defaults.object(forKey: "magnifierLensPanelLightBackgroundBlue") == nil ? 1 : defaults.double(forKey: "magnifierLensPanelLightBackgroundBlue") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelLightBackgroundBlue") }
+    }
+    static var magnifierLensPanelLightBackgroundAlpha: Double {
+        get { defaults.object(forKey: "magnifierLensPanelLightBackgroundAlpha") == nil ? 0.80 : defaults.double(forKey: "magnifierLensPanelLightBackgroundAlpha") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelLightBackgroundAlpha") }
+    }
+
+    /// When `true`, the lens picks the dark/light background color based on the
+    /// current macOS appearance. When `false`, the dark color is always used.
+    static var magnifierLensPanelFollowSystemAppearance: Bool {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelFollowSystemAppearance") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "magnifierLensPanelFollowSystemAppearance")
+        }
+        set {
+            defaults.set(newValue, forKey: "magnifierLensPanelFollowSystemAppearance")
+        }
+    }
+
+    /// Side length (in points) of the magnified area. One of 96, 144, 192.
+    static var magnifierLensPanelMagnifiedSize: Int {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelMagnifiedSize") == nil {
+                return 144
+            }
+            return normalizedMagnifierLensPanelMagnifiedSize(defaults.integer(forKey: "magnifierLensPanelMagnifiedSize"))
+        }
+        set {
+            defaults.set(normalizedMagnifierLensPanelMagnifiedSize(newValue), forKey: "magnifierLensPanelMagnifiedSize")
+        }
+    }
+
+    /// Magnification factor for the lens. Controls how many source pixels are
+    /// sampled: source region = magnified display size / magnification.
+    /// Higher values = tighter zoom (smaller source region). Default 4×,
+    /// clamped to 1×...16× for hidden UserDefaults overrides.
+    static var magnifierLensPanelMagnification: Double {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelMagnification") == nil {
+                return 4.0
+            }
+            return normalizedMagnifierLensPanelMagnification(
+                defaults.double(forKey: "magnifierLensPanelMagnification")
+            )
+        }
+        set {
+            defaults.set(
+                normalizedMagnifierLensPanelMagnification(newValue),
+                forKey: "magnifierLensPanelMagnification"
+            )
+        }
+    }
+
+    /// Horizontal offset (in points) between the cursor and the panel's left edge.
+    static var magnifierLensPanelOffsetX: Double {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelOffsetX") == nil {
+                return 15
+            }
+            return defaults.double(forKey: "magnifierLensPanelOffsetX")
+        }
+        set {
+            defaults.set(newValue, forKey: "magnifierLensPanelOffsetX")
+        }
+    }
+
+    /// Vertical offset (in points) between the cursor and the panel's top edge
+    /// when the panel sits below the cursor.
+    static var magnifierLensPanelOffsetY: Double {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelOffsetY") == nil {
+                return 15
+            }
+            return defaults.double(forKey: "magnifierLensPanelOffsetY")
+        }
+        set {
+            defaults.set(newValue, forKey: "magnifierLensPanelOffsetY")
+        }
+    }
+
+    /// Whether to show the "Press ⌘+C to copy color" hint row in the lens.
+    static var magnifierLensPanelShowCopyHint: Bool {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelShowCopyHint") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "magnifierLensPanelShowCopyHint")
+        }
+        set {
+            defaults.set(newValue, forKey: "magnifierLensPanelShowCopyHint")
+        }
+    }
+
+    /// Whether to show the "Press F to switch color format" hint row in the lens.
+    /// The stored key keeps its original name for preference compatibility.
+    static var magnifierLensPanelShowFormatHint: Bool {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelShowShiftHint") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "magnifierLensPanelShowShiftHint")
+        }
+        set {
+            defaults.set(newValue, forKey: "magnifierLensPanelShowShiftHint")
+        }
+    }
+
+    /// Coordinate mode for the lens display: `.points` shows AppKit
+    /// screen-point coordinates (default); `.pixels` shows physical
+    /// CGImage pixel coordinates matching the snapshot resolution.
+    enum MagnifierLensPanelCoordinateMode: String {
+        case points
+        case pixels
+    }
+    static var magnifierLensPanelCoordinateMode: MagnifierLensPanelCoordinateMode {
+        get {
+            guard let raw = defaults.string(forKey: "magnifierLensPanelCoordinateMode"),
+                  let mode = MagnifierLensPanelCoordinateMode(rawValue: raw) else {
+                return .pixels
+            }
+            return mode
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: "magnifierLensPanelCoordinateMode")
+        }
+    }
+
+    /// Crosshair colour — RGBA components stored as 0–1 doubles.
+    /// Default: #A8BDFC at 65% alpha.
+    static var magnifierLensPanelCrosshairRed: Double {
+        get { defaults.object(forKey: "magnifierLensPanelCrosshairRed") == nil ? 0xA8 / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairRed") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairRed") }
+    }
+    static var magnifierLensPanelCrosshairGreen: Double {
+        get { defaults.object(forKey: "magnifierLensPanelCrosshairGreen") == nil ? 0xBD / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairGreen") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairGreen") }
+    }
+    static var magnifierLensPanelCrosshairBlue: Double {
+        get { defaults.object(forKey: "magnifierLensPanelCrosshairBlue") == nil ? 0xFC / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairBlue") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairBlue") }
+    }
+    static var magnifierLensPanelCrosshairAlpha: Double {
+        get { defaults.object(forKey: "magnifierLensPanelCrosshairAlpha") == nil ? 0.65 : defaults.double(forKey: "magnifierLensPanelCrosshairAlpha") }
+        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairAlpha") }
+    }
+
+    /// Crosshair line width in points. Default 6, clamped to 1–30.
+    static var magnifierLensPanelCrosshairWidth: Double {
+        get {
+            if defaults.object(forKey: "magnifierLensPanelCrosshairWidth") == nil { return 6 }
+            return defaults.double(forKey: "magnifierLensPanelCrosshairWidth")
+        }
+        set { defaults.set(min(30, max(1, newValue)), forKey: "magnifierLensPanelCrosshairWidth") }
+    }
+
+    static var clipboardTextCacheEnabled: Bool {
+        get {
+            if defaults.object(forKey: "clipboardTextCacheEnabled") == nil {
+                return false
+            }
+            return defaults.bool(forKey: "clipboardTextCacheEnabled")
+        }
+        set {
+            let oldValue = clipboardTextCacheEnabled
+            defaults.set(newValue, forKey: "clipboardTextCacheEnabled")
+            if oldValue != newValue {
+                NotificationCenter.default.post(name: .clipboardTextCacheEnabledDidChange, object: nil)
+            }
+        }
+    }
+
+    static var clipboardTextHistoryLimit: Int {
+        get {
+            if defaults.object(forKey: "clipboardTextHistoryLimit") == nil {
+                return 100
+            }
+            let value = defaults.integer(forKey: "clipboardTextHistoryLimit")
+            return normalizedClipboardTextHistoryLimit(value)
+        }
+        set {
+            defaults.set(
+                normalizedClipboardTextHistoryLimit(newValue),
+                forKey: "clipboardTextHistoryLimit"
+            )
+            NotificationCenter.default.post(name: .clipboardTextHistoryLimitDidChange, object: nil)
+        }
+    }
+
+    static var isHistoryCacheAvailable: Bool {
+        historyCacheEnabled || clipboardTextCacheEnabled || HistoryManager.shared.hasFavoriteEntries()
+    }
+
+    static let countdownSecondsMin: Int = 3
+    static let countdownSecondsMax: Int = 10
+
+    static var countdownSeconds: Int {
+        get {
+            if defaults.object(forKey: "countdownSeconds") == nil {
+                return countdownSecondsMin
+            }
+            let val = defaults.integer(forKey: "countdownSeconds")
+            return min(max(val, countdownSecondsMin), countdownSecondsMax)
+        }
+        set {
+            let clamped = min(max(newValue, countdownSecondsMin), countdownSecondsMax)
+            defaults.set(clamped, forKey: "countdownSeconds")
+        }
+    }
+
+    static var historyCacheLimit: Int {
+        get {
+            if defaults.object(forKey: "historyCacheLimit") == nil {
+                return 10
+            }
+            let val = defaults.integer(forKey: "historyCacheLimit")
+            return normalizedHistoryCacheLimit(val)
+        }
+        set {
+            defaults.set(normalizedHistoryCacheLimit(newValue), forKey: "historyCacheLimit")
+            NotificationCenter.default.post(name: .historyCacheLimitDidChange, object: nil)
+        }
+    }
+
+    private static func normalizedHistoryCacheLimit(_ value: Int) -> Int {
+        let clamped = min(max(value, historyCacheMin), historyCacheMax)
+        let offset = clamped - historyCacheMin
+        let snapped = historyCacheMin + ((offset + historyCacheStep / 2) / historyCacheStep) * historyCacheStep
+        return min(max(snapped, historyCacheMin), historyCacheMax)
+    }
+
+    private static func normalizedClipboardTextHistoryLimit(_ value: Int) -> Int {
+        let clamped = min(max(value, clipboardTextHistoryLimitMin), clipboardTextHistoryLimitMax)
+        let offset = clamped - clipboardTextHistoryLimitMin
+        let snapped = clipboardTextHistoryLimitMin
+            + ((offset + clipboardTextHistoryLimitStep / 2) / clipboardTextHistoryLimitStep)
+            * clipboardTextHistoryLimitStep
+        return min(max(snapped, clipboardTextHistoryLimitMin), clipboardTextHistoryLimitMax)
+    }
+
+    enum HistoryNotchTriggerMode: String, CaseIterable {
+        case hover
+        case click
+
+        var localizedTitle: String {
+            switch self {
+            case .hover: return L10n.historyNotchTriggerHover
+            case .click: return L10n.historyNotchTriggerClick
+            }
+        }
+    }
+
+    static var historyNotchTriggerMode: HistoryNotchTriggerMode {
+        get {
+            HistoryNotchTriggerMode(rawValue: defaults.string(forKey: "historyNotchTriggerMode") ?? "") ?? .hover
+        }
+        set { defaults.set(newValue.rawValue, forKey: "historyNotchTriggerMode") }
+    }
+
+    static var historyPanelDialogEnabled: Bool {
+        get {
+            historyPanelDisplayMode == .dialog
+        }
+        set {
+            if newValue {
+                setHistoryPanelDisplayMode(.dialog)
+            }
+        }
+    }
+
+    static var historyPanelNotchEnabled: Bool {
+        get {
+            historyPanelDisplayMode == .notch
+        }
+        set {
+            if newValue {
+                setHistoryPanelDisplayMode(historyPanelNotchAvailable ? .notch : .dialog)
+            }
+        }
+    }
+
+    static var historyPanelNotchAvailable: Bool {
+        DisplayCapabilities.supportsHistoryPanelNotch
+    }
+
+    private enum HistoryPanelDisplayMode {
+        case dialog
+        case notch
+    }
+
+    private static var historyPanelDisplayMode: HistoryPanelDisplayMode {
+        let hasDialog = defaults.object(forKey: "historyPanelDialogEnabled") != nil
+        let hasNotch = defaults.object(forKey: "historyPanelNotchEnabled") != nil
+        guard hasDialog || hasNotch else {
+            return historyPanelNotchAvailable ? .notch : .dialog
+        }
+
+        let dialog = hasDialog ? defaults.bool(forKey: "historyPanelDialogEnabled") : false
+        let notch = hasNotch ? defaults.bool(forKey: "historyPanelNotchEnabled") : false
+        if dialog { return .dialog }
+        if notch, historyPanelNotchAvailable { return .notch }
+        return .dialog
+    }
+
+    private static func setHistoryPanelDisplayMode(_ mode: HistoryPanelDisplayMode) {
+        let mode = mode == .notch && !historyPanelNotchAvailable ? .dialog : mode
+        let oldMode = historyPanelDisplayMode
+        defaults.set(mode == .dialog, forKey: "historyPanelDialogEnabled")
+        defaults.set(mode == .notch, forKey: "historyPanelNotchEnabled")
+        if oldMode != mode {
+            NotificationCenter.default.post(name: .historyPanelDisplayModesDidChange, object: nil)
+        }
+    }
+
+    static var showMenuBar: Bool {
+        get {
+            if defaults.object(forKey: "showMenuBar") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "showMenuBar")
+        }
+        set {
+            defaults.set(newValue, forKey: "showMenuBar")
+        }
+    }
+
+    static var pinAcrossSpaces: Bool {
+        get { defaults.bool(forKey: "pinAcrossSpaces") }
+        set { defaults.set(newValue, forKey: "pinAcrossSpaces") }
+    }
+
+    // Window-capture drop shadow. When enabled, single-window screenshots get
+    // rounded corners and a macOS-style drop shadow in the final output.
+    // Rounded corners are always applied to window captures; this toggle only
+    // governs the shadow.
+
+    static let windowShadowSizeMin: Double = 6
+    static let windowShadowSizeMax: Double = 60
+
+    static var windowShadowEnabled: Bool {
+        get {
+            if defaults.object(forKey: "windowShadowEnabled") == nil {
+                return true
+            }
+            return defaults.bool(forKey: "windowShadowEnabled")
+        }
+        set {
+            defaults.set(newValue, forKey: "windowShadowEnabled")
+        }
+    }
+
+    static var windowShadowSize: Double {
+        get {
+            if defaults.object(forKey: "windowShadowSize") == nil {
+                return 22
+            }
+            let val = defaults.double(forKey: "windowShadowSize")
+            return min(max(val, windowShadowSizeMin), windowShadowSizeMax)
+        }
+        set {
+            defaults.set(min(max(newValue, windowShadowSizeMin), windowShadowSizeMax), forKey: "windowShadowSize")
+        }
+    }
+
+    static var language: AppLanguage {
+        get {
+            // Explicit user choice wins; otherwise follow the system locale on
+            // first launch so a fresh install opens in a familiar language.
+            if let raw = defaults.string(forKey: "appLanguage"),
+               let lang = AppLanguage(rawValue: raw) {
+                return lang
+            }
+            return AppLanguage.systemDefault
+        }
+        set {
+            let old = language
+            defaults.set(newValue.rawValue, forKey: "appLanguage")
+            if newValue != old {
+                NotificationCenter.default.post(name: .languageDidChange, object: nil)
+            }
+        }
+    }
+}

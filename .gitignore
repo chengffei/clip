@@ -1,0 +1,26 @@
+# Build
+.build/
+build/
+dist/
+DerivedData/
+*.xcodeproj/xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Claude
+.claude/
+.codex/
+.agents/
+.superpowers/
+docs/
+
+# Code-signing secrets — never commit (see scripts/signing/README.md)
+*.p12
+*.p12.base64
