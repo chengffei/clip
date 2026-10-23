@@ -24,10 +24,75 @@ struct RecognizedTextLine: Equatable {
 
 /// OCR routing plus Apple recognition helpers. Native Live Text remains
 /// exclusive to Apple results so it cannot replace another provider's text.
+/// Recognize and copy, with toasts. Shared by the toolbar button, the
+/// text-recognition shortcut and the copy-image-text shortcut.
+enum OCRActions {
+    static func copyText(from image: NSImage, screen: NSScreen, anchorRect: NSRect) {
+        let centerAnchor = NSPoint(x: anchorRect.midX, y: anchorRect.midY)
+        ToastWindow.show(message: L10n.copyImageTextCopying, on: screen, centerAnchor: centerAnchor, duration: 60)
+        let hint = DispatchWorkItem {
+            ToastWindow.show(message: L10n.ocrWarmingUp, on: screen, centerAnchor: centerAnchor, duration: 60)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: hint)
+        Task { @MainActor in
+            let text: String
+            do {
+                text = try await OCRService.recognizeResult(image: image).text
+            } catch {
+                hint.cancel()
+                guard !Task.isCancelled else { return }
+                ToastWindow.show(message: error.localizedDescription, on: screen, centerAnchor: centerAnchor, duration: 2.5)
+                return
+            }
+            hint.cancel()
+            guard !Task.isCancelled else { return }
+            if text.isEmpty {
+                ToastWindow.show(message: L10n.copyImageTextNoText, on: screen, centerAnchor: centerAnchor, duration: 1.5)
+            } else {
+                ClipboardManager.copyToClipboard(text: text)
+                ToastWindow.show(message: L10n.copyImageTextCopied, on: screen, centerAnchor: centerAnchor, duration: 1.5)
+            }
+        }
+    }
+
+    /// Toolbar OCR and the text-recognition shortcut follow the setting.
+    static func handleRecognition(image: NSImage, screen: NSScreen, anchorRect: NSRect) {
+        switch Defaults.ocrResultBehavior {
+        case .copy: copyText(from: image, screen: screen, anchorRect: anchorRect)
+        case .panel: OCRPanel.presentTextRecognition(image: image, anchorRect: anchorRect, screen: screen)
+        }
+    }
+}
+
 enum OCRService {
-    private static let preferredRecognitionLanguages = [
-        "zh-Hans", "zh-Hant", "en-US", "ja-JP", "ko-KR"
-    ]
+    /// Languages come from the user's setting. Two models load in about a
+    /// second on first use; five can take tens of seconds while the OS
+    /// prepares them.
+    private static var preferredRecognitionLanguages: [String] {
+        Defaults.ocrLanguageSet.languages
+    }
+
+    /// Vision prepares its language models on first use in a process, which
+    /// can take from one second to a minute. Running a tiny request at launch
+    /// moves that cost away from the user's first capture.
+    static func warmUp() {
+        DispatchQueue.global(qos: .utility).async {
+            let size = CGSize(width: 64, height: 32)
+            guard let ctx = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+            ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+            ctx.fill(CGRect(origin: .zero, size: size))
+            guard let cg = ctx.makeImage() else { return }
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+            request.recognitionLanguages = preferredRecognitionLanguages
+            let start = Date()
+            try? VNImageRequestHandler(cgImage: cg, options: [:]).perform([request])
+            FileLog.write(String(format: "OCR warm-up %.2fs languages=%@", Date().timeIntervalSince(start), preferredRecognitionLanguages.joined(separator: ",")))
+        }
+    }
 
     @MainActor
     static func recognizeResult(image: NSImage) async throws -> OCRResult {
@@ -119,7 +184,7 @@ enum OCRService {
         // Read results after synchronous perform returns. Its completion handler
         // can run before perform throws; resuming from both paths was unsafe.
         // Include image decoding and token assembly in the deadline as well.
-        return (try? await AsyncDeadline.run(seconds: 15) {
+        return (try? await AsyncDeadline.run(seconds: 90) {
             await withTaskCancellationHandler {
                 await withCheckedContinuation { continuation in
                     DispatchQueue.global(qos: .userInitiated).async {
@@ -146,7 +211,9 @@ enum OCRService {
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
             request.recognitionLanguages = OCRService.preferredRecognitionLanguages
-            request.automaticallyDetectsLanguage = true
+            request.automaticallyDetectsLanguage = false
+            let started = Date()
+            defer { FileLog.write(String(format: "OCR %dx%d %.2fs", cgImage.width, cgImage.height, Date().timeIntervalSince(started))) }
 
             lock.lock()
             guard !cancelled else { lock.unlock(); return [] }

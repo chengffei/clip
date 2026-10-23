@@ -555,6 +555,13 @@ enum L10n {
     static var settingsSectionCapture: String { s("settingsSectionCapture") }
     static var settingsSectionSystem: String { s("settingsSectionSystem") }
     static var tipMore: String { s("tipMore") }
+    static var ocrResultBehaviorLabel: String { s("ocrResultBehaviorLabel") }
+    static var ocrResultBehaviorCopy: String { s("ocrResultBehaviorCopy") }
+    static var ocrResultBehaviorPanel: String { s("ocrResultBehaviorPanel") }
+    static var ocrLanguageSetLabel: String { s("ocrLanguageSetLabel") }
+    static var ocrLanguageSetChineseEnglish: String { s("ocrLanguageSetChineseEnglish") }
+    static var ocrLanguageSetEastAsian: String { s("ocrLanguageSetEastAsian") }
+    static var ocrWarmingUp: String { s("ocrWarmingUp") }
     static var tipShapePicker: String { s("tipShapePicker") }
     static var settingsTabTranslation: String { s("settingsTabTranslation") }
     static var settingsTabToolbar: String { s("settingsTabToolbar") }
@@ -1916,6 +1923,32 @@ struct Defaults {
     private static func normalizedMagnifierLensPanelMagnification(_ value: Double) -> Double {
         guard value.isFinite else { return 4.0 }
         return min(16.0, max(1.0, value))
+    }
+
+    /// What the OCR button / shortcut does with the recognized text.
+    enum OCRResultBehavior: String, CaseIterable {
+        case copy      // copy to clipboard, toast, no panel
+        case panel     // open the result panel
+    }
+    static var ocrResultBehavior: OCRResultBehavior {
+        get { OCRResultBehavior(rawValue: defaults.string(forKey: "ocr.resultBehavior") ?? "") ?? .copy }
+        set { defaults.set(newValue.rawValue, forKey: "ocr.resultBehavior") }
+    }
+
+    /// Which Vision language models to load. Fewer models start faster.
+    enum OCRLanguageSet: String, CaseIterable {
+        case chineseEnglish
+        case eastAsian
+        var languages: [String] {
+            switch self {
+            case .chineseEnglish: return ["zh-Hans", "en-US"]
+            case .eastAsian: return ["zh-Hans", "zh-Hant", "en-US", "ja-JP", "ko-KR"]
+            }
+        }
+    }
+    static var ocrLanguageSet: OCRLanguageSet {
+        get { OCRLanguageSet(rawValue: defaults.string(forKey: "ocr.languageSet") ?? "") ?? .chineseEnglish }
+        set { defaults.set(newValue.rawValue, forKey: "ocr.languageSet") }
     }
 
     static var lastEditorTool: String? {

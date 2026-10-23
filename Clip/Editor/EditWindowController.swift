@@ -2252,7 +2252,7 @@ class EditWindowController {
         tearDown()
         onComplete(nil)
         guard let baseImage else { return }
-        OCRPanel.presentTextRecognition(image: baseImage, anchorRect: anchorRect, screen: targetScreen)
+        OCRActions.handleRecognition(image: baseImage, screen: targetScreen, anchorRect: anchorRect)
     }
 
     private func performQRCodeRecognition() {

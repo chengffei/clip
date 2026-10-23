@@ -5,6 +5,8 @@ import AppKit
 final class OCRSettingsPane: NSView, NSTextFieldDelegate {
     private var kind = Defaults.ocrProviderKind
     private let providerPopup = NSPopUpButton()
+    private let behaviorPopup = NSPopUpButton()
+    private let languagePopup = NSPopUpButton()
     private let descriptionLabel = NSTextField(wrappingLabelWithString: "")
     private let geometryLabel = NSTextField(wrappingLabelWithString: "")
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
@@ -43,6 +45,16 @@ final class OCRSettingsPane: NSView, NSTextFieldDelegate {
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -22),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -22)
         ])
+
+        behaviorPopup.target = self
+        behaviorPopup.action = #selector(behaviorChanged)
+        stack.addArrangedSubview(makeRow("behavior", field: behaviorPopup))
+
+        languagePopup.target = self
+        languagePopup.action = #selector(languageSetChanged)
+        let languageRow = makeRow("languageSet", field: languagePopup)
+        rows["languageSet"] = languageRow
+        stack.addArrangedSubview(languageRow)
 
         providerPopup.target = self
         providerPopup.action = #selector(providerChanged)
@@ -120,12 +132,34 @@ final class OCRSettingsPane: NSView, NSTextFieldDelegate {
     }
 
     @objc private func languageChanged() { refreshLocalization() }
+
+    @objc private func behaviorChanged() {
+        let cases = Defaults.OCRResultBehavior.allCases
+        guard cases.indices.contains(behaviorPopup.indexOfSelectedItem) else { return }
+        Defaults.ocrResultBehavior = cases[behaviorPopup.indexOfSelectedItem]
+    }
+
+    @objc private func languageSetChanged() {
+        let cases = Defaults.OCRLanguageSet.allCases
+        guard cases.indices.contains(languagePopup.indexOfSelectedItem) else { return }
+        Defaults.ocrLanguageSet = cases[languagePopup.indexOfSelectedItem]
+        OCRService.warmUp()
+    }
     @objc private func openDocumentation() { NSWorkspace.shared.open(kind.documentationURL) }
 
     private func refreshLocalization() {
         providerPopup.removeAllItems()
         providerPopup.addItems(withTitles: OCRProviderKind.allCases.map(\.displayName))
         providerPopup.selectItem(at: OCRProviderKind.allCases.firstIndex(of: kind) ?? 0)
+        behaviorPopup.removeAllItems()
+        behaviorPopup.addItems(withTitles: [L10n.ocrResultBehaviorCopy, L10n.ocrResultBehaviorPanel])
+        behaviorPopup.selectItem(at: Defaults.OCRResultBehavior.allCases.firstIndex(of: Defaults.ocrResultBehavior) ?? 0)
+        labels["behavior"]?.stringValue = L10n.ocrResultBehaviorLabel
+        languagePopup.removeAllItems()
+        languagePopup.addItems(withTitles: [L10n.ocrLanguageSetChineseEnglish, L10n.ocrLanguageSetEastAsian])
+        languagePopup.selectItem(at: Defaults.OCRLanguageSet.allCases.firstIndex(of: Defaults.ocrLanguageSet) ?? 0)
+        labels["languageSet"]?.stringValue = L10n.ocrLanguageSetLabel
+        rows["languageSet"]?.isHidden = kind != .apple
         labels["provider"]?.stringValue = L10n.ocrProviderLabel
         labels["apiKey"]?.stringValue = kind == .tencent ? "SecretId" : "API Key"
         labels["secretKey"]?.stringValue = kind == .tencent ? "SecretKey" : "Secret Key"

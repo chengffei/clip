@@ -105,6 +105,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             onOpenSettings: { [weak self] in self?.openSettings() }
         )
         statusBarController.setMenuBarVisible(Defaults.showMenuBar)
+        OCRService.warmUp()
 
         keyMonitor = KeyMonitor(
             onTrigger: { [weak self] context in

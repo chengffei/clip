@@ -1775,17 +1775,9 @@ extension OverlayWindowController: SelectionViewDelegate {
         case .quickPin:
             PinLauncher.pin(image: baseImage, at: request.screenRect.origin)
         case .textRecognition:
-            OCRPanel.presentTextRecognition(
-                image: baseImage,
-                anchorRect: request.screenRect,
-                screen: request.screen
-            )
+            OCRActions.handleRecognition(image: baseImage, screen: request.screen, anchorRect: request.screenRect)
         case .copyImageText:
-            copyRecognizedTextToClipboard(
-                from: baseImage,
-                screen: request.screen,
-                anchorRect: request.screenRect
-            )
+            OCRActions.copyText(from: baseImage, screen: request.screen, anchorRect: request.screenRect)
         case .edit, .record:
             break
         }
@@ -2065,45 +2057,6 @@ extension OverlayWindowController: SelectionViewDelegate {
             return ScreenCapturer.crop(from: preSnapshot, captureRect: captureRect, screen: screen)
         }
         return nil
-    }
-
-    private func copyRecognizedTextToClipboard(from image: NSImage, screen: NSScreen, anchorRect: NSRect) {
-        let centerAnchor = NSPoint(x: anchorRect.midX, y: anchorRect.midY)
-        ToastWindow.show(
-            message: L10n.copyImageTextCopying,
-            on: screen,
-            centerAnchor: centerAnchor,
-            duration: 60
-        )
-
-        Task { @MainActor in
-            let text: String
-            do {
-                text = try await OCRService.recognizeResult(image: image).text
-            } catch {
-                guard !Task.isCancelled else { return }
-                ToastWindow.show(message: error.localizedDescription, on: screen,
-                                 centerAnchor: centerAnchor, duration: 2.5)
-                return
-            }
-            guard !Task.isCancelled else { return }
-            if text.isEmpty {
-                ToastWindow.show(
-                    message: L10n.copyImageTextNoText,
-                    on: screen,
-                    centerAnchor: centerAnchor,
-                    duration: 1.5
-                )
-            } else {
-                ClipboardManager.copyToClipboard(text: text)
-                ToastWindow.show(
-                    message: L10n.copyImageTextCopied,
-                    on: screen,
-                    centerAnchor: centerAnchor,
-                    duration: 1.5
-                )
-            }
-        }
     }
 
     private func imageForWindowSelection(

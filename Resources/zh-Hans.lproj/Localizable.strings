@@ -347,6 +347,13 @@
 "settingsSectionCapture" = "截图与录制";
 "settingsSectionSystem" = "识别与系统";
 "tipMore" = "更多";
+"ocrResultBehaviorLabel" = "识别后";
+"ocrResultBehaviorCopy" = "直接复制到剪贴板";
+"ocrResultBehaviorPanel" = "打开结果面板";
+"ocrLanguageSetLabel" = "识别语言";
+"ocrLanguageSetChineseEnglish" = "中文与英文（启动快）";
+"ocrLanguageSetEastAsian" = "中、英、日、韩、繁体";
+"ocrWarmingUp" = "首次识别正在加载模型，之后会快";
 "tipShapePicker" = "再点一次换形状";
 "settingsTabTranslation" = "翻译";
 "settingsTabToolbar" = "工具栏";

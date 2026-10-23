@@ -347,6 +347,13 @@
 "settingsSectionCapture" = "Capture";
 "settingsSectionSystem" = "Recognition & System";
 "tipMore" = "More";
+"ocrResultBehaviorLabel" = "After recognition";
+"ocrResultBehaviorCopy" = "Copy to clipboard";
+"ocrResultBehaviorPanel" = "Open the result panel";
+"ocrLanguageSetLabel" = "Languages";
+"ocrLanguageSetChineseEnglish" = "Chinese and English (fast start)";
+"ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
+"ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
 "tipShapePicker" = "click again for other shapes";
 "settingsTabTranslation" = "Translation";
 "settingsTabToolbar" = "Toolbar";
