@@ -212,8 +212,10 @@
 "mergedLongScreenshot" = "Long screenshot merged";
 "autoScrollPermissionNeeded" = "Scroll capture needs Accessibility access — grant Clip in System Settings → Privacy & Security → Accessibility";
 "cropLongScreenshotHint" = "Drag the top/bottom edges to crop — press Enter or tap ✓";
-"scrollCaptureHint" = "Press any key to finish scrolling";
-"scrollCaptureManualHint" = "Scroll manually, then press any key or click the green button to finish";
+"scrollCaptureHint" = "Scrolling automatically; click Done or press any key to finish";
+"scrollCaptureFinish" = "Done";
+"scrollCaptureNothingCaptured" = "No new content was captured, so no long screenshot was made";
+"scrollCaptureManualHint" = "Scroll inside the selection, then click Done or press any key";
 "finderEditExitHint" = "Editing from Finder. Press X to exit editing";
 "clipboardEditExitHint" = "Editing from clipboard. Press X to exit editing";
 "pinEditExitHint" = "Editing pinned image. Press X to exit editing";

@@ -562,6 +562,8 @@ enum L10n {
     static var ocrLanguageSetChineseEnglish: String { s("ocrLanguageSetChineseEnglish") }
     static var ocrLanguageSetEastAsian: String { s("ocrLanguageSetEastAsian") }
     static var ocrWarmingUp: String { s("ocrWarmingUp") }
+    static var scrollCaptureFinish: String { s("scrollCaptureFinish") }
+    static var scrollCaptureNothingCaptured: String { s("scrollCaptureNothingCaptured") }
     static var tipShapePicker: String { s("tipShapePicker") }
     static var settingsTabTranslation: String { s("settingsTabTranslation") }
     static var settingsTabToolbar: String { s("settingsTabToolbar") }

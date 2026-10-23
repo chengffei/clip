@@ -1858,6 +1858,7 @@ class EditWindowController {
         }
 
         isScrollCapturing = true
+        FileLog.write("scroll capture start mode=\(mode) rect=\(Int(captureRect.width))x\(Int(captureRect.height))")
         activeTool = .none
         canvasView?.activeTool = .none
         toolbars.forEach { $0.updateSelection(tool: .none) }
@@ -2015,6 +2016,7 @@ class EditWindowController {
             return
         }
         finishingCapturer.stopAndStitch { [weak self] stitchedImage in
+            FileLog.write("scroll capture stop frames=\(finishingCapturer.frameCount) stitched=\(stitchedImage.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "nil")")
             self?.finishScrollCapture(stitchedImage: stitchedImage)
         }
     }
@@ -2028,6 +2030,7 @@ class EditWindowController {
             updateEditorInteractionState()
             updateCaptureActionAvailability()
             bringEditorToFront()
+            ToastWindow.show(message: L10n.scrollCaptureNothingCaptured, on: screen)
             return
         }
 
@@ -3049,16 +3052,26 @@ class EditWindowController {
     }
 
     private func showScrollCaptureControl() {
-        guard
-            let hostSelectionView,
-            let hostWindow = hostSelectionView.window,
-            let scrollToolbar = toolbars.first(where: { $0.contains(.scrollCapture) }),
-            let buttonFrame = scrollToolbar.scrollCaptureButtonFrame
-        else {
-            return
-        }
+        guard let hostSelectionView, let hostWindow = hostSelectionView.window else { return }
 
-        let frameInSelectionView = scrollToolbar.convert(buttonFrame, to: hostSelectionView)
+        // The "Done" pill replaces the toolbar while capturing. Anchor it where
+        // the bar's right end was; fall back to the selection's bottom-right
+        // corner when there is no bar at all.
+        let pillSize = NSSize(width: 92, height: 32)
+        let frameInSelectionView: NSRect
+        if let toolbarView {
+            frameInSelectionView = NSRect(
+                x: toolbarView.frame.maxX - pillSize.width - ToolbarView.endPadding,
+                y: toolbarView.frame.minY + ToolbarView.crossPadding,
+                width: pillSize.width, height: pillSize.height
+            )
+        } else {
+            frameInSelectionView = NSRect(
+                x: selectionRect.maxX - pillSize.width,
+                y: max(8, selectionRect.minY - pillSize.height - 8),
+                width: pillSize.width, height: pillSize.height
+            )
+        }
         let frameInWindow = hostSelectionView.convert(frameInSelectionView, to: nil)
         let frameOnScreen = hostWindow.convertToScreen(frameInWindow)
 
@@ -3927,11 +3940,14 @@ private final class ScrollCaptureControlWindow: NSPanel {
 
 private final class ScrollCaptureControlView: NSView {
     private let onTap: () -> Void
+    private var isPressed = false { didSet { needsDisplay = true } }
 
     init(frame: NSRect, onTap: @escaping () -> Void) {
         self.onTap = onTap
         super.init(frame: frame)
-        setup()
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
+        setAccessibilityLabel(L10n.scrollCaptureFinish)
     }
 
     required init?(coder: NSCoder) {
@@ -3940,27 +3956,46 @@ private final class ScrollCaptureControlView: NSView {
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    private func setup() {
-        let button = ToolButton(
-            frame: bounds.insetBy(dx: 6, dy: 6),
-            symbolName: "arrow.up.and.down.text.horizontal",
-            normalColor: .labelColor,
-            selectedColor: accentGreen
-        )
-        button.isSelected = true
-        button.target = self
-        button.action = #selector(buttonTapped)
-        addSubview(button)
-    }
-
-    @objc private func buttonTapped() {
-        onTap()
+    override func mouseDown(with event: NSEvent) {
+        isPressed = true
+        var inside = true
+        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
+            inside = bounds.contains(convert(next.locationInWindow, from: nil))
+            isPressed = inside
+            if next.type == .leftMouseUp { break }
+        }
+        isPressed = false
+        if inside { onTap() }
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        let pill = NSBezierPath(roundedRect: bounds.insetBy(dx: 6, dy: 6), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
+        Brand.accent.withAlphaComponent(isPressed ? 0.75 : 1).setFill()
+        pill.fill()
+
+        let title = L10n.scrollCaptureFinish as NSString
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+            .foregroundColor: Brand.onAccent,
+        ]
+        let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .bold)
+        let check = NSImage(systemSymbolName: "checkmark", accessibilityDescription: nil)?.withSymbolConfiguration(config)
+        let textSize = title.size(withAttributes: attrs)
+        let iconWidth: CGFloat = check?.size.width ?? 0
+        let gap: CGFloat = 6
+        let total = iconWidth + gap + textSize.width
+        var x = bounds.midX - total / 2
+        if let check {
+            let tinted = NSImage(size: check.size, flipped: false) { rect in
+                check.draw(in: rect)
+                Brand.onAccent.setFill()
+                rect.fill(using: .sourceAtop)
+                return true
+            }
+            tinted.draw(in: NSRect(x: x, y: (bounds.midY - check.size.height / 2).rounded(), width: check.size.width, height: check.size.height))
+            x += iconWidth + gap
+        }
+        title.draw(at: NSPoint(x: x, y: (bounds.midY - textSize.height / 2).rounded()), withAttributes: attrs)
     }
 }
 

@@ -212,8 +212,10 @@
 "mergedLongScreenshot" = "已合并长截图";
 "autoScrollPermissionNeeded" = "长截图需要辅助功能权限，请在系统设置 → 隐私与安全性 → 辅助功能中授权 Clip";
 "cropLongScreenshotHint" = "拖动上下边裁剪长图，回车或点对勾确认";
-"scrollCaptureHint" = "按任意键结束滚动";
-"scrollCaptureManualHint" = "手动滚动页面，按任意键或点击绿色按钮结束";
+"scrollCaptureHint" = "自动滚动中，点「完成」或按任意键结束";
+"scrollCaptureManualHint" = "在选区内滚动页面，滚完点「完成」或按任意键";
+"scrollCaptureFinish" = "完成";
+"scrollCaptureNothingCaptured" = "没有采到新内容，长截图未生成";
 "finderEditExitHint" = "从访达编辑，按 X 退出编辑";
 "clipboardEditExitHint" = "从剪贴板编辑，按 X 退出编辑";
 "pinEditExitHint" = "正在编辑钉图，按 X 退出编辑";

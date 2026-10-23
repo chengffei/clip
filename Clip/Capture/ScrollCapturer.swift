@@ -26,6 +26,7 @@ final class ScrollCapturer {
     }
 
     var onPreviewUpdated: ((NSImage) -> Void)?
+    var frameCount: Int { captureQueue.sync { frames.count } }
 
     private let captureRect: CGRect
     private let screen: NSScreen
