@@ -554,7 +554,7 @@ class EditWindowController {
             close()
         case .confirm:
             confirm()
-        case .moveSelection:
+        case .moveSelection, .divider1, .divider2, .divider3, .divider4:
             return false
         case .rectangle, .ellipse, .arrow, .line, .pen, .marker, .spotlight,
              .mosaic, .eraser, .magnifier, .numbered, .text, .emoji:
@@ -3244,9 +3244,7 @@ class ToolbarView: NSView {
     /// Drawing tools that collapse into one "shape" button when two or more
     /// of them are on the bar. The button shows the current shape; a second
     /// click or a long press opens the picker.
-    static let shapeFamily: [ToolbarItemID] = [.rectangle, .ellipse, .arrow, .line]
-    static let outcomeFamily: Set<ToolbarItemID> = [.ocr, .save, .pin, .record, .confirm]
-    static let editFamily: Set<ToolbarItemID> = [.undo, .redo]
+    static let shapeFamily: [ToolbarItemID] = ToolbarLayout.shapeFamily
 
     let orientation: Orientation
     private let items: [ToolbarItemID]
@@ -3301,34 +3299,33 @@ class ToolbarView: NSView {
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    /// Partitions the user's ordered item list into zones. Order inside a
-    /// zone is the user's; zone order is fixed so the bar always reads
-    /// close → tools → edit → outcomes.
+    /// Turns the user's ordered item list into slots. Dividers become gaps
+    /// (collapsed when adjacent, dropped at either end); the shape family
+    /// collapses into one button at the first shape's position; "more" is
+    /// appended at the end when the overflow menu has items.
     static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
-        var leading: [Slot] = []
-        var tools: [Slot] = []
-        var edit: [Slot] = []
-        var outcomes: [Slot] = []
+        var out: [Slot] = []
         let shapesPresent = items.filter { shapeFamily.contains($0) }
         var shapeGroupPlaced = false
         for id in items {
-            if id == .close { leading.append(.item(id)); continue }
+            if id.isDivider {
+                if let last = out.last, case .gap = last { continue }
+                if !out.isEmpty { out.append(.gap) }
+                continue
+            }
             if shapeFamily.contains(id), shapesPresent.count >= 2 {
                 if !shapeGroupPlaced {
-                    tools.append(.shapeGroup(shapeFamily.filter { shapesPresent.contains($0) }))
+                    out.append(.shapeGroup(shapeFamily.filter { shapesPresent.contains($0) }))
                     shapeGroupPlaced = true
                 }
                 continue
             }
-            if outcomeFamily.contains(id) { outcomes.append(.item(id)); continue }
-            if editFamily.contains(id) { edit.append(.item(id)); continue }
-            tools.append(.item(id))
+            out.append(.item(id))
         }
-        if hasOverflow { edit.append(.more) }
-        var out: [Slot] = []
-        for zone in [leading, tools, edit, outcomes] where !zone.isEmpty {
+        if let last = out.last, case .gap = last { out.removeLast() }
+        if hasOverflow {
             if !out.isEmpty { out.append(.gap) }
-            out.append(contentsOf: zone)
+            out.append(.more)
         }
         return out
     }
@@ -3470,6 +3467,10 @@ class ToolbarView: NSView {
         let menu = NSMenu()
         menu.appearance = NSAppearance(named: .aqua)
         for id in ids {
+            if id.isDivider {
+                if let last = menu.items.last, !last.isSeparatorItem { menu.addItem(.separator()) }
+                continue
+            }
             let item = NSMenuItem(title: id.localizedTitle, action: #selector(menuItemChosen(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = id.rawValue

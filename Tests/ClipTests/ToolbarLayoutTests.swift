@@ -40,3 +40,50 @@ final class ToolbarLayoutTests: XCTestCase {
         )
     }
 }
+
+final class ToolbarDividerTests: XCTestCase {
+    func testDefaultLayoutCarriesThreeDividersAndParksTheSpare() {
+        let layout = ToolbarLayout.default
+        XCTAssertEqual(layout.primary.filter(\.isDivider).count, 3)
+        XCTAssertTrue(layout.hidden.contains(.divider4))
+    }
+
+    func testLegacyLayoutGainsDividersAlongTheOldZones() {
+        let legacy = ToolbarLayout(dictionary: [
+            "primary": ["close", "rectangle", "pen", "undo", "redo", "ocr", "save", "confirm"],
+            "side": ["marker"],
+            "hidden": [],
+        ]).normalized()
+        // normalized() also slots in tools the legacy dictionary lacked, so
+        // compare the relative order of the ones we named.
+        let named: Set<String> = ["close", "divider1", "rectangle", "pen", "divider2", "undo", "redo", "divider3", "ocr", "save", "confirm"]
+        XCTAssertEqual(
+            legacy.primary.map(\.rawValue).filter { named.contains($0) },
+            ["close", "divider1", "rectangle", "pen", "divider2", "undo", "redo", "divider3", "ocr", "save", "confirm"]
+        )
+        XCTAssertTrue(legacy.hidden.contains(.divider4))
+        XCTAssertEqual((legacy.primary + legacy.side + legacy.hidden).filter(\.isDivider).count, 4)
+    }
+
+    func testDividersBecomeGapsAndMoreGoesLast() {
+        let slots = ToolbarView.buildSlots(
+            items: [.divider1, .close, .divider2, .divider3, .pen, .text, .divider4],
+            hasOverflow: true
+        )
+        var picture: [String] = []
+        for slot in slots {
+            switch slot {
+            case .item(let id): picture.append(id.rawValue)
+            case .gap: picture.append("|")
+            case .more: picture.append("more")
+            case .shapeGroup: picture.append("shapes")
+            }
+        }
+        XCTAssertEqual(picture, ["close", "|", "pen", "text", "|", "more"])
+    }
+
+    func testDividersNeverTakeShortcuts() {
+        XCTAssertFalse(ToolbarItemID.divider1.supportsEditorShortcut)
+        XCTAssertNotNil(ToolbarItemID.divider2.iconImage(pointSize: 15))
+    }
+}

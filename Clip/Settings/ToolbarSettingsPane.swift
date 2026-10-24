@@ -106,9 +106,11 @@ final class ToolbarSettingsPane: NSView {
         for grid in [primaryGrid, sideGrid, hiddenGrid] {
             grid?.onLayoutChanged = { [weak self] in self?.collectWorkingLayout() }
             grid?.onShortcutEdit = { [weak self] item in
+                guard item.supportsEditorShortcut else { return }
                 self?.beginShortcutRecording(for: .toolbar(item))
             }
             grid?.onShortcutContextMenu = { [weak self] item, view, event in
+                guard item.supportsEditorShortcut else { return }
                 self?.showShortcutContextMenu(for: .toolbar(item), from: view, event: event)
             }
             grid?.gridProvider = { [weak self] in

@@ -555,6 +555,7 @@ enum L10n {
     static var settingsSectionCapture: String { s("settingsSectionCapture") }
     static var settingsSectionSystem: String { s("settingsSectionSystem") }
     static var tipMore: String { s("tipMore") }
+    static var tipDivider: String { s("tipDivider") }
     static var ocrResultBehaviorLabel: String { s("ocrResultBehaviorLabel") }
     static var ocrResultBehaviorCopy: String { s("ocrResultBehaviorCopy") }
     static var ocrResultBehaviorPanel: String { s("ocrResultBehaviorPanel") }

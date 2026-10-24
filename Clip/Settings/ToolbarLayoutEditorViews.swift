@@ -147,7 +147,9 @@ final class ToolbarItemTile: NSView {
 
         let shortcutDisplay = isRecordingShortcut
             ? "…"
-            : itemID.editorShortcutDisplay ?? L10n.toolbarSettingsShortcutUnavailable
+            : itemID.isDivider
+                ? L10n.tipDivider
+                : itemID.editorShortcutDisplay ?? L10n.toolbarSettingsShortcutUnavailable
         if let icon = tintedToolbarIcon(itemID, pointSize: 15, color: iconColor) {
             let size = icon.size
             let centerY = bounds.maxY - 13.5

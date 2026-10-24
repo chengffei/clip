@@ -349,6 +349,7 @@
 "settingsSectionCapture" = "截图与录制";
 "settingsSectionSystem" = "识别与系统";
 "tipMore" = "更多";
+"tipDivider" = "分隔线";
 "ocrResultBehaviorLabel" = "识别后";
 "ocrResultBehaviorCopy" = "直接复制到剪贴板";
 "ocrResultBehaviorPanel" = "打开结果面板";
@@ -362,11 +363,11 @@
 "settingsQuit" = "退出应用";
 
 "toolbarSettingsPrimaryTitle" = "工具栏";
-"toolbarSettingsPrimaryHint" = "贴在选区下沿的一条栏。自动分成关闭、工具、编辑、结果四段，段内顺序随你拖";
+"toolbarSettingsPrimaryHint" = "贴在选区下沿的一条栏。顺序随你拖，把「分隔线」拖进来就分段，点工具设快捷键";
 "toolbarSettingsSideTitle" = "「更多」菜单";
 "toolbarSettingsSideHint" = "放进工具栏末尾的「更多」按钮里，点开即用，不占视线";
 "toolbarSettingsHiddenTitle" = "隐藏的工具";
-"toolbarSettingsHiddenHint" = "拖到这里的工具不会出现在任何工具栏中";
+"toolbarSettingsHiddenHint" = "拖到这里的工具不会出现在任何工具栏中，备用的分隔线也放在这里";
 "toolbarSettingsFootnote" = "矩形、椭圆、箭头、直线放在一起时会合成一个形状按钮，再点一次或长按换形状";
 "toolbarSettingsShortcutHint" = "点击工具录制快捷键，拖动可调整位置，右键可清除或恢复默认";
 "toolbarSettingsShortcutRecording" = "请按下“%@”的新快捷键，按 Esc 取消";

@@ -35,6 +35,17 @@ enum ToolbarItemID: String, Codable, CaseIterable {
     case record
     case close
     case confirm
+    // Dividers: a fixed pool of four, each used at most once. Dragging one
+    // into the bar splits it into zones; spare ones wait in the hidden grid.
+    case divider1
+    case divider2
+    case divider3
+    case divider4
+}
+
+extension ToolbarItemID {
+    static let dividers: [ToolbarItemID] = [.divider1, .divider2, .divider3, .divider4]
+    var isDivider: Bool { Self.dividers.contains(self) }
 }
 
 extension ToolbarItemID {
@@ -49,6 +60,8 @@ extension ToolbarItemID {
         case momentary
         /// Press-and-drag handle (move selection) — not a tappable button.
         case dragHandle
+        /// Zone divider — draws as a gap in the bar, never a button.
+        case divider
     }
 
     var kind: Kind {
@@ -61,6 +74,8 @@ extension ToolbarItemID {
             return .dragHandle
         case .insertImage, .colorPicker, .undo, .redo, .ocr, .save, .pin, .record, .close, .confirm:
             return .momentary
+        case .divider1, .divider2, .divider3, .divider4:
+            return .divider
         }
     }
 
@@ -114,11 +129,27 @@ extension ToolbarItemID {
         case .record:        return "video"
         case .close:         return "xmark"
         case .confirm:       return "checkmark"
+        case .divider1, .divider2, .divider3, .divider4:
+            return "rectangle.portrait"
         }
+    }
+
+    /// A thin vertical bar standing in for a divider wherever a glyph is drawn.
+    private static func dividerImage(pointSize: CGFloat) -> NSImage {
+        let side = (pointSize * 1.15).rounded()
+        let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
+            let w: CGFloat = max(1.5, (pointSize / 9).rounded())
+            NSColor.black.setFill()
+            NSRect(x: (rect.midX - w / 2).rounded(), y: rect.minY + 1, width: w, height: rect.height - 2).fill()
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 
     /// Keep the OCR symbol's Chinese glyph fixed regardless of the system locale.
     func iconImage(pointSize: CGFloat) -> NSImage? {
+        if isDivider { return Self.dividerImage(pointSize: pointSize) }
         guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else {
             return nil
         }
@@ -161,6 +192,8 @@ extension ToolbarItemID {
         case .record:        return L10n.tipRecord
         case .close:         return L10n.tipCancel
         case .confirm:       return L10n.tipConfirm
+        case .divider1, .divider2, .divider3, .divider4:
+            return L10n.tipDivider
         }
     }
 
@@ -190,7 +223,7 @@ extension ToolbarItemID {
         switch kind {
         case .toggleTool, .toggleAction:
             return toolbarAccent
-        case .momentary, .dragHandle:
+        case .momentary, .dragHandle, .divider:
             return normalColor
         }
     }
@@ -222,13 +255,13 @@ struct ToolbarLayout: Equatable {
     static var `default`: ToolbarLayout {
         ToolbarLayout(
             primary: [
-                .close,
-                .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered,
-                .undo, .redo,
+                .close, .divider1,
+                .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered, .divider2,
+                .undo, .redo, .divider3,
                 .ocr, .save, .pin, .confirm,
             ],
             side: [.marker, .eraser, .scrollCapture, .colorPicker, .magnifier, .rotate, .record],
-            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .moveSelection]
+            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .moveSelection, .divider4]
         )
     }
 
@@ -277,7 +310,48 @@ struct ToolbarLayout: Equatable {
             if !placed { p.insert(item, at: 0) }
             seen.insert(item)
         }
+        for divider in ToolbarItemID.dividers where !seen.contains(divider) {
+            h.append(divider)
+            seen.insert(divider)
+        }
         return ToolbarLayout(primary: p, side: s, hidden: h)
+    }
+
+    /// The families the bar used to zone by before dividers became user
+    /// data. Still used to translate a pre-divider layout once.
+    static let shapeFamily: [ToolbarItemID] = [.rectangle, .ellipse, .arrow, .line]
+    static let outcomeFamily: Set<ToolbarItemID> = [.ocr, .save, .pin, .record, .confirm]
+    static let editFamily: Set<ToolbarItemID> = [.undo, .redo]
+
+    /// Whether any bucket already carries a divider, i.e. the layout was
+    /// saved by a build that knows about them.
+    var hasDividers: Bool {
+        (primary + side + hidden).contains { $0.isDivider }
+    }
+
+    /// Rebuilds the old automatic zoning (close | tools | edit | outcomes)
+    /// out of explicit dividers so an upgraded install looks unchanged.
+    func withLegacyZonesAsDividers() -> ToolbarLayout {
+        guard !hasDividers else { return self }
+        var leading: [ToolbarItemID] = [], tools: [ToolbarItemID] = []
+        var edit: [ToolbarItemID] = [], outcomes: [ToolbarItemID] = []
+        for id in primary {
+            if id == .close { leading.append(id) }
+            else if Self.outcomeFamily.contains(id) { outcomes.append(id) }
+            else if Self.editFamily.contains(id) { edit.append(id) }
+            else { tools.append(id) }
+        }
+        var zones = [leading, tools, edit, outcomes].filter { !$0.isEmpty }
+        var p: [ToolbarItemID] = []
+        var pool = ToolbarItemID.dividers
+        if !zones.isEmpty {
+            p = zones.removeFirst()
+            for zone in zones {
+                if !pool.isEmpty { p.append(pool.removeFirst()) }
+                p.append(contentsOf: zone)
+            }
+        }
+        return ToolbarLayout(primary: p, side: side, hidden: hidden + pool)
     }
 }
 
@@ -293,6 +367,7 @@ extension ToolbarLayout {
             side: parse("side"),
             hidden: parse("hidden")
         )
+        self = withLegacyZonesAsDividers()
     }
 
     /// Plain `[String: [String]]` form suitable for `UserDefaults`.

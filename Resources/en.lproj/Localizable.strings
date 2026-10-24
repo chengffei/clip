@@ -349,6 +349,7 @@
 "settingsSectionCapture" = "Capture";
 "settingsSectionSystem" = "Recognition & System";
 "tipMore" = "More";
+"tipDivider" = "Divider";
 "ocrResultBehaviorLabel" = "After recognition";
 "ocrResultBehaviorCopy" = "Copy to clipboard";
 "ocrResultBehaviorPanel" = "Open the result panel";
@@ -362,11 +363,11 @@
 "settingsQuit" = "Quit App";
 
 "toolbarSettingsPrimaryTitle" = "Toolbar";
-"toolbarSettingsPrimaryHint" = "One bar under the selection, split into close, tools, edit and outcome zones. Drag to order within a zone, click to set a shortcut";
+"toolbarSettingsPrimaryHint" = "One bar under the selection. Drag to order; drag a divider in to split the bar into zones; click a tool to set a shortcut";
 "toolbarSettingsSideTitle" = "“More” menu";
 "toolbarSettingsSideHint" = "Tucked behind the ellipsis button at the end of the bar; one click away without crowding the view";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
-"toolbarSettingsHiddenHint" = "Tools dragged here won't appear in any toolbar";
+"toolbarSettingsHiddenHint" = "Tools dragged here won't appear in any toolbar. Spare dividers wait here too";
 "toolbarSettingsFootnote" = "Rectangle, ellipse, arrow and line merge into one shape button when they share the bar; click again or long-press to switch";
 "toolbarSettingsShortcutHint" = "Click a tool to record its shortcut, drag to reposition it, or right-click for more options";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
