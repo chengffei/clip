@@ -27,3 +27,8 @@ SwiftPM must use Xcode's toolchain (`DEVELOPER_DIR` is exported in the scripts).
 - `Clip/UI/` status bar, brand, toasts, HUDs
 - `Clip/Settings/` settings window
 - `design/` SVG sources for the app and menu bar icons; `scripts/generate-icon.sh` renders them
+
+## Versioning
+
+- `CFBundleShortVersionString` changes only when Felix says to release. Working commits never bump it; a dev build is identified by the commit hash that `scripts/inject-build-metadata.sh` embeds.
+- Set the next version once at the start of a release cycle (e.g. `0.6.0`), accumulate features under it, bump again only after that version has shipped.
