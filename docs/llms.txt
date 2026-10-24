@@ -1,0 +1,23 @@
+# Clip
+
+> Clip is a free, open-source macOS menu bar tool for region screenshots with annotations, region screen recording (MP4 or GIF) and on-device OCR to the clipboard. It wakes on a double-tap of the ⌘ key. Requires macOS 14 or later. MIT License.
+
+Clip is a fork of capcap (MIT) rewritten around three jobs. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary. It has no cloud upload, no account and no telemetry.
+
+## Key facts
+
+- Trigger: double-tap ⌘ anywhere; other actions get global shortcuts in Settings › Shortcuts
+- Capture: window snapping, pixel-precise selection, origin and size label, multiple displays, scrolling capture
+- Annotations: rectangle, ellipse, arrow, line, pen, highlighter, mosaic, numbered markers, text; editable with undo and redo
+- Recording: selected region to MP4 or GIF with a pause/stop HUD
+- OCR: Apple Vision on device, Chinese and English by default (five languages optional), copied straight to the clipboard
+- Toolbar: one bar with three zones; nothing selected when the editor opens; layout customizable in Settings › Toolbar
+- Platform: macOS 14 or later; Apple silicon and Intel
+- Price: free; source code under the MIT License
+- First launch: not notarized by Apple; allow once in System Settings › Privacy & Security › Open Anyway, then grant Accessibility and Screen Recording
+
+## Links
+
+- [Website](https://chengffei.github.io/clip/): overview, screenshots, install steps and FAQ
+- [Source code](https://github.com/chengffei/clip): GitHub repository and README
+- [Releases](https://github.com/chengffei/clip/releases): packaged builds when published
