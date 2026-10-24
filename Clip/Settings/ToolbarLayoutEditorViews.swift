@@ -17,6 +17,10 @@ func tintedToolbarIcon(_ id: ToolbarItemID, pointSize: CGFloat, color: NSColor) 
 /// A single draggable tool icon in a `ToolbarSlotGridView`. Pressing it
 /// starts a drag handled by the owning grid.
 final class ToolbarItemTile: NSView {
+    /// The settings window moves by its background; a drag that starts on a
+    /// tile must stay a tile drag.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     let itemID: ToolbarItemID
     weak var grid: ToolbarSlotGridView?
     private var hoverTip: String?
@@ -222,6 +226,10 @@ final class ToolbarItemTile: NSView {
 /// A wrapping grid of tool tiles for one toolbar section, with drag-and-drop
 /// reordering both within the grid and across sibling grids.
 final class ToolbarSlotGridView: NSView {
+    /// The settings window moves by its background; a drag that starts on a
+    /// tile must stay a tile drag.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     static let tileWidth: CGFloat = 34
     static let tileHeight: CGFloat = 44
     static let gap: CGFloat = 8
@@ -538,6 +546,10 @@ final class ToolbarSlotGridView: NSView {
 /// A non-interactive miniature of the editor showing where the current
 /// layout places the primary and side toolbars around a selection.
 final class ToolbarLayoutPreviewView: NSView {
+    /// The settings window moves by its background; a drag that starts on a
+    /// tile must stay a tile drag.
+    override var mouseDownCanMoveWindow: Bool { false }
+
     var layout: ToolbarLayout = .default {
         didSet {
             invalidateIntrinsicContentSize()
