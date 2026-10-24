@@ -164,7 +164,7 @@ final class ScrollCropView: NSView {
     // MARK: - Drawing
 
     override func draw(_ dirtyRect: NSRect) {
-        NSColor(white: 0.08, alpha: 1).setFill()
+        Brand.canvas.setFill()
         bounds.fill()
 
         guard imageFrame.width > 0 else { return }

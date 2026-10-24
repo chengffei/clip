@@ -408,9 +408,9 @@ final class ToolbarSettingsPane: NSView {
         let card = NSView()
         card.wantsLayer = true
         card.layer?.cornerRadius = 12
-        card.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.04).cgColor
+        card.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.028).cgColor
         card.layer?.borderWidth = 1
-        card.layer?.borderColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        card.layer?.borderColor = NSColor.black.withAlphaComponent(0.042).cgColor
         card.translatesAutoresizingMaskIntoConstraints = false
         return card
     }
@@ -418,7 +418,7 @@ final class ToolbarSettingsPane: NSView {
     private static func sectionTitleLabel() -> NSTextField {
         let label = NSTextField(labelWithString: "")
         label.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = NSColor.white.withAlphaComponent(0.92)
+        label.textColor = Brand.text.withAlphaComponent(0.92)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }
@@ -426,7 +426,7 @@ final class ToolbarSettingsPane: NSView {
     private static func hintLabel() -> NSTextField {
         let label = NSTextField(labelWithString: "")
         label.font = NSFont.systemFont(ofSize: 11)
-        label.textColor = NSColor.white.withAlphaComponent(0.45)
+        label.textColor = Brand.text.withAlphaComponent(0.45)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }

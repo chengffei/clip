@@ -39,8 +39,8 @@ if CommandLine.arguments.contains("--diagnose") {
 }
 
 let app = NSApplication.shared
-// Ink chrome everywhere: force dark so semantic colors (labelColor etc.) stay light on it.
-app.appearance = NSAppearance(named: .darkAqua)
+// Light chrome everywhere: lock the appearance so semantic colors (labelColor etc.) stay dark on it.
+app.appearance = NSAppearance(named: .aqua)
 installMinimalEditMenu(on: app)
 let delegate = AppDelegate()
 app.delegate = delegate

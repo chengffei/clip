@@ -10,25 +10,25 @@ enum AdaptiveChrome {
     static let floatingBackground = NSColor(
         name: NSColor.Name("clip.floatingBackground")
     ) { _ in
-        Brand.inkFloating
+        Brand.floating
     }
 
     static let toolbarBackground = NSColor(
         name: NSColor.Name("clip.toolbarBackground")
     ) { _ in
-        Brand.inkFloating
+        Brand.floating
     }
 
     static let panelBackground = NSColor(
         name: NSColor.Name("clip.panelBackground")
     ) { _ in
-        Brand.ink
+        Brand.canvas
     }
 
     static let popoverBackground = NSColor(
         name: NSColor.Name("clip.popoverBackground")
     ) { _ in
-        Brand.inkRaised
+        Brand.surfaceRaised
     }
 
     static let cardBackground = NSColor(
@@ -52,7 +52,7 @@ enum AdaptiveChrome {
     static let selectedFill = NSColor(
         name: NSColor.Name("clip.selectedFill")
     ) { _ in
-        Brand.accentFill
+        Brand.selectedFill
     }
 
     static let separator = NSColor(

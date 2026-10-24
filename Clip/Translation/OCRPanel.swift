@@ -762,7 +762,7 @@ private final class PanelPinButton: NSButton {
     private func updateAppearance() {
         contentTintColor = pinned ? .white : .labelColor
         let background = pinned
-            ? accentGreen.withAlphaComponent(0.96)
+            ? toolbarAccent.withAlphaComponent(0.96)
             : AdaptiveChrome.floatingBackground
         layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(background, for: effectiveAppearance)
         layer?.borderColor = AdaptiveChrome.resolvedCGColor(
@@ -1394,7 +1394,7 @@ func flashButton(_ button: NSButton, to confirm: String, restore: String) {
 
 func flashIconButton(_ button: NSButton, symbolName: String, restoreSymbolName: String) {
     button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: L10n.ocrCopied)
-    button.contentTintColor = NSColor.systemGreen
+    button.contentTintColor = Brand.accent
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak button] in
         button?.image = NSImage(systemSymbolName: restoreSymbolName, accessibilityDescription: L10n.ocrCopy)
         button?.contentTintColor = .secondaryLabelColor

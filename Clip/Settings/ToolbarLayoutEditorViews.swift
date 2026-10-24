@@ -128,16 +128,16 @@ final class ToolbarItemTile: NSView {
     private var iconColor: NSColor {
         switch itemID {
         case .close:   return toolbarDangerRed
-        case .confirm: return accentGreen
-        default:       return NSColor.white.withAlphaComponent(0.85)
+        case .confirm: return toolbarAccent
+        default:       return Brand.text.withAlphaComponent(0.85)
         }
     }
 
     override func draw(_ dirtyRect: NSRect) {
         let body = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 8, yRadius: 8)
-        NSColor.white.withAlphaComponent(0.08).setFill()
+        Brand.surface.setFill()
         body.fill()
-        (isRecordingShortcut ? accentGreen : NSColor.white.withAlphaComponent(0.10)).setStroke()
+        (isRecordingShortcut ? toolbarAccent : Brand.line).setStroke()
         body.lineWidth = isRecordingShortcut ? 2 : 1
         body.stroke()
 
@@ -161,7 +161,7 @@ final class ToolbarItemTile: NSView {
     private func drawShortcutBadge(_ display: String) {
         let badgeRect = NSRect(x: 3, y: 3, width: bounds.width - 6, height: 13)
         let badge = NSBezierPath(roundedRect: badgeRect, xRadius: 4.5, yRadius: 4.5)
-        (isRecordingShortcut ? accentGreen.withAlphaComponent(0.28) : NSColor.black.withAlphaComponent(0.48)).setFill()
+        (isRecordingShortcut ? toolbarAccent.withAlphaComponent(0.18) : Brand.subtleFill).setFill()
         badge.fill()
 
         let paragraph = NSMutableParagraphStyle()
@@ -170,7 +170,7 @@ final class ToolbarItemTile: NSView {
         let font = NSFont.monospacedSystemFont(ofSize: 8, weight: .semibold)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor.white.withAlphaComponent(0.95),
+            .foregroundColor: Brand.text.withAlphaComponent(0.8),
             .paragraphStyle: paragraph,
         ]
         let textRect = badgeRect.insetBy(dx: 2, dy: 0)
@@ -385,7 +385,7 @@ final class ToolbarSlotGridView: NSView {
         // Empty placeholder slots out to the displayed row count.
         let total = displayRows * columns
         if items.count < total {
-            NSColor.white.withAlphaComponent(0.12).setStroke()
+            NSColor.black.withAlphaComponent(0.084).setStroke()
             for index in items.count..<total {
                 let rect = slotFrame(at: index).insetBy(dx: 1, dy: 1)
                 let path = NSBezierPath(roundedRect: rect, xRadius: 7, yRadius: 7)
@@ -404,7 +404,7 @@ final class ToolbarSlotGridView: NSView {
                 width: 3,
                 height: Self.tileHeight
             )
-            accentGreen.setFill()
+            toolbarAccent.setFill()
             NSBezierPath(roundedRect: bar, xRadius: 1.5, yRadius: 1.5).fill()
         }
     }
@@ -627,7 +627,7 @@ final class ToolbarLayoutPreviewView: NSView {
         let dashed = NSBezierPath(rect: selection)
         dashed.lineWidth = 1.5
         dashed.setLineDash([5, 3], count: 2, phase: 0)
-        accentGreen.setStroke()
+        toolbarAccent.setStroke()
         dashed.stroke()
         drawHandles(around: selection)
     }
@@ -695,7 +695,7 @@ final class ToolbarLayoutPreviewView: NSView {
             NSPoint(x: rect.maxX, y: rect.midY), NSPoint(x: rect.minX, y: rect.maxY),
             NSPoint(x: rect.midX, y: rect.maxY), NSPoint(x: rect.maxX, y: rect.maxY),
         ]
-        accentGreen.setFill()
+        toolbarAccent.setFill()
         for point in points {
             let dot = NSRect(x: point.x - 2.5, y: point.y - 2.5, width: 5, height: 5)
             NSBezierPath(ovalIn: dot).fill()
@@ -765,8 +765,11 @@ private final class ToolbarPreviewStripView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         let body = NSBezierPath(roundedRect: bounds, xRadius: 7, yRadius: 7)
-        NSColor(white: 0.12, alpha: 0.95).setFill()
+        Brand.floating.setFill()
         body.fill()
+        Brand.line.setStroke()
+        body.lineWidth = 1
+        body.stroke()
 
         for (index, id) in items.enumerated() {
             let slot: NSRect
@@ -787,7 +790,7 @@ private final class ToolbarPreviewStripView: NSView {
             let color: NSColor
             switch id {
             case .close:   color = toolbarDangerRed
-            case .confirm: color = accentGreen
+            case .confirm: color = toolbarAccent
             default:       color = .white
             }
             if let icon = tintedToolbarIcon(id, pointSize: 9, color: color) {

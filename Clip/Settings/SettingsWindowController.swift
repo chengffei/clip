@@ -33,7 +33,7 @@ class SettingsWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = Brand.ink
+        window.backgroundColor = Brand.sidebar
         window.isMovableByWindowBackground = true
         window.center()
         window.isReleasedWhenClosed = false

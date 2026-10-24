@@ -9,10 +9,10 @@ final class SettingsSnapshotTests: XCTestCase {
     func testSettingsViewRenders() throws {
         _ = NSApplication.shared
         let view = SettingsView(frame: NSRect(x: 0, y: 0, width: 820, height: 600), isStartup: false)
-        view.appearance = NSAppearance(named: .darkAqua)
+        view.appearance = NSAppearance(named: .aqua)
         let window = NSWindow(contentRect: view.frame, styleMask: [.titled, .fullSizeContentView],
                               backing: .buffered, defer: false)
-        window.backgroundColor = Brand.ink
+        window.backgroundColor = Brand.sidebar
         window.contentView = view
         view.setStartupMode(false)
         view.layoutSubtreeIfNeeded()

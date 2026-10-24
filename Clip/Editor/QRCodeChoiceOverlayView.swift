@@ -101,16 +101,16 @@ private final class QRCodeChoiceButton: NSButton {
         NSGraphicsContext.saveGraphicsState()
         let glow = NSShadow()
         glow.shadowBlurRadius = 12
-        glow.shadowColor = NSColor.systemGreen.withAlphaComponent(0.35)
+        glow.shadowColor = Brand.accent.withAlphaComponent(0.35)
         glow.shadowOffset = .zero
         glow.set()
-        NSColor.systemGreen.withAlphaComponent(0.18).setFill()
+        Brand.accent.withAlphaComponent(0.18).setFill()
         NSBezierPath(ovalIn: outerRect).fill()
         NSGraphicsContext.restoreGraphicsState()
 
         let fillColor = isHighlighted
-            ? NSColor(red: 0.02, green: 0.58, blue: 0.22, alpha: 1.0)
-            : NSColor(red: 0.02, green: 0.78, blue: 0.32, alpha: 1.0)
+            ? Brand.accent.withAlphaComponent(0.8)
+            : Brand.accent
         fillColor.setFill()
         NSBezierPath(ovalIn: innerRect).fill()
 

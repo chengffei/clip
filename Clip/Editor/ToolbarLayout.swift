@@ -90,14 +90,14 @@ extension ToolbarItemID {
         case .ellipse:       return "circle"
         case .arrow:         return "arrow.up.right"
         case .line:          return "line.diagonal"
-        case .pen:           return "pencil.tip"
+        case .pen:           return "pencil"
         case .marker:        return "highlighter"
         case .spotlight:     return "rectangle.inset.filled"
-        case .mosaic:        return "square.grid.3x3"
+        case .mosaic:        return "squareshape.split.3x3"
         case .eraser:        return "eraser"
         case .magnifier:     return "plus.magnifyingglass"
         case .numbered:      return "1.circle"
-        case .text:          return "textformat"
+        case .text:          return "character"
         case .qrCode:        return "qrcode.viewfinder"
         case .emoji:         return "face.smiling"
         case .insertImage:   return "photo"
@@ -108,10 +108,10 @@ extension ToolbarItemID {
         case .scrollCapture: return "arrow.up.and.down.text.horizontal"
         case .rotate:        return "rotate.left"
         case .beautify:      return "sparkles"
-        case .ocr:           return "character.bubble"
+        case .ocr:           return "text.viewfinder"
         case .save:          return "square.and.arrow.down"
         case .pin:           return "pin"
-        case .record:        return "record.circle"
+        case .record:        return "video"
         case .close:         return "xmark"
         case .confirm:       return "checkmark"
         }
@@ -180,7 +180,7 @@ extension ToolbarItemID {
         switch self {
         case .close:   return Brand.text.withAlphaComponent(0.55)
         case .confirm: return Brand.accent
-        default:       return .labelColor
+        default:       return Brand.text.withAlphaComponent(0.85)
         }
     }
 
@@ -189,7 +189,7 @@ extension ToolbarItemID {
     var selectedColor: NSColor {
         switch kind {
         case .toggleTool, .toggleAction:
-            return accentGreen
+            return toolbarAccent
         case .momentary, .dragHandle:
             return normalColor
         }

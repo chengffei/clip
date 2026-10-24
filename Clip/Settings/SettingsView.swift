@@ -342,8 +342,8 @@ class SettingsView: NSView {
     private func setupBackground() {
         let gradient = CAGradientLayer()
         gradient.colors = [
-            Brand.ink.cgColor,
-            Brand.ink.cgColor,
+            Brand.sidebar.cgColor,
+            Brand.sidebar.cgColor,
         ]
         gradient.startPoint = CGPoint(x: 0, y: 1)
         gradient.endPoint = CGPoint(x: 1, y: 0)
@@ -752,7 +752,7 @@ class SettingsView: NSView {
 
         windowShadowSizeValueLabel = NSTextField(labelWithString: "\(Int(Defaults.windowShadowSize.rounded()))")
         windowShadowSizeValueLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
-        windowShadowSizeValueLabel.textColor = NSColor.white.withAlphaComponent(0.88)
+        windowShadowSizeValueLabel.textColor = Brand.text.withAlphaComponent(0.88)
         header.addArrangedSubview(windowShadowSizeValueLabel)
 
         inner.addArrangedSubview(header)
@@ -796,8 +796,8 @@ class SettingsView: NSView {
     private func updateWindowShadowControlsEnabled() {
         let on = Defaults.windowShadowEnabled
         windowShadowSlider?.isEnabled = on
-        windowShadowSizeTitleLabel?.textColor = NSColor.white.withAlphaComponent(on ? 0.94 : 0.4)
-        windowShadowSizeValueLabel?.textColor = NSColor.white.withAlphaComponent(on ? 0.88 : 0.4)
+        windowShadowSizeTitleLabel?.textColor = Brand.text.withAlphaComponent(on ? 0.94 : 0.4)
+        windowShadowSizeValueLabel?.textColor = Brand.text.withAlphaComponent(on ? 0.88 : 0.4)
         windowShadowPreview?.isEffectEnabled = on
     }
 
@@ -878,7 +878,7 @@ class SettingsView: NSView {
     private func updateMicrophoneControlsEnabled() {
         let enabled = Defaults.recordingMicrophoneEnabled
         recordingMicrophoneDevicePopup?.isEnabled = enabled
-        recordingMicrophoneDeviceTitleLabel?.textColor = NSColor.white.withAlphaComponent(enabled ? 0.94 : 0.4)
+        recordingMicrophoneDeviceTitleLabel?.textColor = Brand.text.withAlphaComponent(enabled ? 0.94 : 0.4)
     }
 
     @objc private func recordingMicrophoneDeviceChanged(_ sender: NSPopUpButton) {
@@ -1464,11 +1464,11 @@ class SettingsView: NSView {
 
         let nameLabel = NSTextField(labelWithString: "capcap")
         nameLabel.font = NSFont.systemFont(ofSize: 18, weight: .bold)
-        nameLabel.textColor = NSColor.white.withAlphaComponent(0.96)
+        nameLabel.textColor = Brand.text.withAlphaComponent(0.96)
 
         let versionLabel = NSTextField(labelWithString: appVersionString())
         versionLabel.font = NSFont.systemFont(ofSize: 12, weight: .regular)
-        versionLabel.textColor = NSColor.white.withAlphaComponent(0.55)
+        versionLabel.textColor = Brand.text.withAlphaComponent(0.55)
 
         let versionRow = NSStackView(views: [versionLabel, makeBuildConfigurationBadge()])
         versionRow.orientation = .horizontal
@@ -1558,7 +1558,7 @@ class SettingsView: NSView {
 
         let valueLabel = NSTextField(labelWithString: value)
         valueLabel.font = NSFont.systemFont(ofSize: 12, weight: .regular)
-        valueLabel.textColor = NSColor.white.withAlphaComponent(0.55)
+        valueLabel.textColor = Brand.text.withAlphaComponent(0.55)
         valueLabel.translatesAutoresizingMaskIntoConstraints = false
 
         row.addSubview(titleLabel)
@@ -1595,7 +1595,7 @@ class SettingsView: NSView {
 
         let chevron = NSTextField(labelWithString: "\u{203A}")
         chevron.font = NSFont.systemFont(ofSize: 18, weight: .regular)
-        chevron.textColor = NSColor.white.withAlphaComponent(0.32)
+        chevron.textColor = Brand.text.withAlphaComponent(0.32)
         chevron.translatesAutoresizingMaskIntoConstraints = false
         chevron.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -1675,7 +1675,7 @@ class SettingsView: NSView {
     private func rowDivider() -> NSView {
         let v = NSView()
         v.wantsLayer = true
-        v.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        v.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
         v.translatesAutoresizingMaskIntoConstraints = false
         v.heightAnchor.constraint(equalToConstant: 1).isActive = true
         return v
@@ -1754,15 +1754,15 @@ class SettingsView: NSView {
         field.drawsBackground = false
         field.alignment = .center
         field.font = NSFont.systemFont(ofSize: 12, weight: .medium)
-        field.textColor = NSColor.white.withAlphaComponent(0.92)
+        field.textColor = Brand.text.withAlphaComponent(0.92)
         field.translatesAutoresizingMaskIntoConstraints = false
 
         let fieldBackground = NSView()
         fieldBackground.wantsLayer = true
         fieldBackground.layer?.cornerRadius = 5
         fieldBackground.layer?.cornerCurve = .continuous
-        fieldBackground.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.08).cgColor
-        fieldBackground.layer?.borderColor = NSColor.white.withAlphaComponent(0.10).cgColor
+        fieldBackground.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.056).cgColor
+        fieldBackground.layer?.borderColor = NSColor.black.withAlphaComponent(0.07).cgColor
         fieldBackground.layer?.borderWidth = 1
         fieldBackground.translatesAutoresizingMaskIntoConstraints = false
         fieldBackground.addSubview(field)
@@ -1793,7 +1793,7 @@ class SettingsView: NSView {
         restoreButton.bezelStyle = .inline
         restoreButton.isBordered = false
         restoreButton.imagePosition = .imageOnly
-        restoreButton.contentTintColor = NSColor.white.withAlphaComponent(0.62)
+        restoreButton.contentTintColor = Brand.text.withAlphaComponent(0.62)
         restoreButton.toolTip = L10n.shortcutRestore
         restoreButton.translatesAutoresizingMaskIntoConstraints = false
         restoreButton.widthAnchor.constraint(equalToConstant: 22).isActive = true
@@ -1966,7 +1966,7 @@ class SettingsView: NSView {
 
         let chevron = NSTextField(labelWithString: "\u{203A}")
         chevron.font = NSFont.systemFont(ofSize: 18, weight: .regular)
-        chevron.textColor = NSColor.white.withAlphaComponent(0.32)
+        chevron.textColor = Brand.text.withAlphaComponent(0.32)
         chevron.translatesAutoresizingMaskIntoConstraints = false
         chevron.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -3442,7 +3442,7 @@ private final class DetailPanel: NSView {
     }
 
     private func commonInit() {
-        // Content canvas: one step above the window ink, hairline on the left.
+        // Content canvas: one step below the sidebar, hairline on the left.
         wantsLayer = true
         layer?.backgroundColor = Brand.canvas.cgColor
         let edge = CAGradientLayer()
@@ -3467,9 +3467,9 @@ private final class SidebarSeparatorView: NSView {
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
         gradient.colors = [
-            NSColor.white.withAlphaComponent(0).cgColor,
-            NSColor.white.withAlphaComponent(0.18).cgColor,
-            NSColor.white.withAlphaComponent(0).cgColor,
+            NSColor.black.withAlphaComponent(0).cgColor,
+            NSColor.black.withAlphaComponent(0.126).cgColor,
+            NSColor.black.withAlphaComponent(0).cgColor,
         ]
         gradient.locations = [0, 0.5, 1]
         gradient.startPoint = CGPoint(x: 0, y: 0.5)
@@ -3564,15 +3564,15 @@ private final class TabButton: NSControl {
 
     private func applyAppearance() {
         if isSelected {
-            layer?.backgroundColor = Brand.subtleFill.cgColor
-            label.textColor = Brand.accent
-            iconView.contentTintColor = Brand.accent
+            layer?.backgroundColor = Brand.accent.cgColor
+            label.textColor = Brand.onAccent
+            iconView.contentTintColor = Brand.onAccent
         } else {
             layer?.backgroundColor = (
-                isHovered ? NSColor.white.withAlphaComponent(0.05) : NSColor.clear
+                isHovered ? Brand.subtleFill : NSColor.clear
             ).cgColor
-            label.textColor = Brand.text.withAlphaComponent(0.86)
-            iconView.contentTintColor = Brand.text.withAlphaComponent(0.6)
+            label.textColor = Brand.text
+            iconView.contentTintColor = Brand.muted
         }
     }
 
@@ -3644,7 +3644,7 @@ private final class ActionButton: NSControl {
     private let iconView = NSImageView()
     private let label = NSTextField(labelWithString: "")
     private var trackingArea: NSTrackingArea?
-    private var tint: NSColor = .systemGreen
+    private var tint: NSColor = Brand.accent
     private var prominent = false
 
     init(symbolName: String, title: String, tint: NSColor) {
@@ -3731,7 +3731,7 @@ private final class ActionButton: NSControl {
 
     override func mouseEntered(with event: NSEvent) {
         guard isEnabled else { return }
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.05).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.035).cgColor
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -3740,9 +3740,9 @@ private final class ActionButton: NSControl {
 
     override func mouseDown(with event: NSEvent) {
         guard isEnabled else { return }
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.10).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.07).cgColor
         sendAction(action, to: target)
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.05).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.035).cgColor
     }
 
     override var acceptsFirstResponder: Bool { true }
@@ -3846,7 +3846,7 @@ private final class SettingsTickSlider: NSControl {
             xRadius: trackHeight / 2,
             yRadius: trackHeight / 2
         )
-        NSColor.white.withAlphaComponent(0.15 * enabledAlpha).setFill()
+        NSColor.black.withAlphaComponent(0.10 * enabledAlpha).setFill()
         trackPath.fill()
 
         let knobCenterX = travelRect.minX + normalizedFraction * travelRect.width
@@ -3921,7 +3921,7 @@ private final class SettingsTickSlider: NSControl {
                 width: tickDiameter,
                 height: tickDiameter
             )
-            NSColor.white.withAlphaComponent(0.24 * enabledAlpha).setFill()
+            NSColor.black.withAlphaComponent(0.168 * enabledAlpha).setFill()
             NSBezierPath(ovalIn: tickRect).fill()
         }
     }
@@ -3945,11 +3945,11 @@ private final class SettingsTickSlider: NSControl {
         shadow.shadowBlurRadius = 1.5
         shadow.shadowOffset = NSSize(width: 0, height: -0.5)
         shadow.set()
-        NSColor(white: isDragging ? 0.88 : 0.78, alpha: enabledAlpha).setFill()
+        NSColor(white: isDragging ? 0.97 : 1.0, alpha: enabledAlpha).setFill()
         knobPath.fill()
         NSGraphicsContext.restoreGraphicsState()
 
-        NSColor.white.withAlphaComponent(0.18 * enabledAlpha).setStroke()
+        NSColor.black.withAlphaComponent(0.18 * enabledAlpha).setStroke()
         knobPath.lineWidth = 0.5
         knobPath.stroke()
     }
@@ -4082,7 +4082,7 @@ private final class HistoryPanelModePreviewView: NSView {
     }
 
     private let accentBlue = Brand.accent
-    private let surfaceColor = NSColor.black
+    private let surfaceColor = NSColor.white
 
     init(mode: HistoryPanelSettingsMode) {
         self.mode = mode
@@ -4102,7 +4102,7 @@ private final class HistoryPanelModePreviewView: NSView {
         ctx.saveGraphicsState()
         backdrop.addClip()
 
-        NSColor(calibratedRed: 0.14, green: 0.15, blue: 0.18, alpha: 1).setFill()
+        NSColor(calibratedRed: 0.86, green: 0.87, blue: 0.90, alpha: 1).setFill()
         backdrop.fill()
         ctx.cgContext.setAlpha(isEffectEnabled ? 1 : 0.42)
         switch mode {
@@ -4160,21 +4160,21 @@ private final class HistoryPanelModePreviewView: NSView {
             panelShadow.shadowOffset = NSSize(width: 0, height: -6)
             panelShadow.set()
         }
-        surfaceColor.withAlphaComponent(0.92).setFill()
+        surfaceColor.withAlphaComponent(0.96).setFill()
         path.fill()
         ctx.restoreGraphicsState()
 
-        NSColor.white.withAlphaComponent(0.14).setStroke()
+        NSColor.black.withAlphaComponent(0.08).setStroke()
         path.lineWidth = 1
         path.stroke()
     }
 
     private func drawTopAttachedSurface(in rect: NSRect) {
         let path = notchPath(in: rect, flare: 14, bottomRadius: 18)
-        surfaceColor.withAlphaComponent(0.92).setFill()
+        surfaceColor.withAlphaComponent(0.96).setFill()
         path.fill()
 
-        NSColor.white.withAlphaComponent(0.14).setStroke()
+        NSColor.black.withAlphaComponent(0.08).setStroke()
         path.lineWidth = 1
         path.stroke()
     }
@@ -4188,7 +4188,7 @@ private final class HistoryPanelModePreviewView: NSView {
         var x = active.maxX + 10
         for _ in 0..<3 {
             let pill = NSRect(x: x, y: y, width: 34, height: 10)
-            NSColor.white.withAlphaComponent(0.16).setFill()
+            NSColor.black.withAlphaComponent(0.112).setFill()
             NSBezierPath(roundedRect: pill, xRadius: 5, yRadius: 5).fill()
             x += 44
         }
@@ -4210,7 +4210,7 @@ private final class HistoryPanelModePreviewView: NSView {
                 width: tileWidth,
                 height: contentRect.height
             )
-            NSColor.white.withAlphaComponent(0.10).setFill()
+            NSColor.black.withAlphaComponent(0.07).setFill()
             NSBezierPath(roundedRect: tileRect, xRadius: 8, yRadius: 8).fill()
 
             let bar = NSRect(
@@ -4219,7 +4219,7 @@ private final class HistoryPanelModePreviewView: NSView {
                 width: max(18, tileRect.width - 16),
                 height: 8
             )
-            (index == 0 ? accentBlue : NSColor.white.withAlphaComponent(0.24)).setFill()
+            (index == 0 ? accentBlue : NSColor.black.withAlphaComponent(0.168)).setFill()
             NSBezierPath(roundedRect: bar, xRadius: 4, yRadius: 4).fill()
         }
     }
@@ -4402,11 +4402,11 @@ private final class HistoryPanelModeOptionView: NSControl {
         }
 
         layer?.backgroundColor = NSColor.white.withAlphaComponent(backgroundAlpha * enabledAlpha).cgColor
-        layer?.borderColor = (isSelected ? accentBlue : NSColor.white.withAlphaComponent(0.09 * enabledAlpha)).cgColor
+        layer?.borderColor = (isSelected ? accentBlue : NSColor.black.withAlphaComponent(0.063 * enabledAlpha)).cgColor
         layer?.borderWidth = isSelected ? 2 : 1
 
-        title.textColor = NSColor.white.withAlphaComponent(isEnabled ? 0.94 : 0.4)
-        subtitle.textColor = NSColor.white.withAlphaComponent(isEnabled ? 0.58 : 0.35)
+        title.textColor = Brand.text.withAlphaComponent(isEnabled ? 0.94 : 0.4)
+        subtitle.textColor = Brand.text.withAlphaComponent(isEnabled ? 0.58 : 0.35)
         checkView.isHidden = !isSelected
         checkView.contentTintColor = accentBlue.withAlphaComponent(enabledAlpha)
     }
@@ -4426,8 +4426,8 @@ private final class CardView: NSView {
         wantsLayer = true
         layer?.cornerRadius = 10
         layer?.cornerCurve = .continuous
-        layer?.backgroundColor = Brand.inkRaised.cgColor
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        layer?.backgroundColor = Brand.surfaceRaised.cgColor
+        layer?.borderColor = NSColor.black.withAlphaComponent(0.042).cgColor
         layer?.borderWidth = 1
     }
 }
@@ -4543,7 +4543,7 @@ private final class HoverButton: NSButton {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -4551,8 +4551,8 @@ private final class HoverButton: NSButton {
     }
 
     override func mouseDown(with event: NSEvent) {
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.10).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.07).cgColor
         super.mouseDown(with: event)
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
     }
 }

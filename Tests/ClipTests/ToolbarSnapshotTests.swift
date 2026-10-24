@@ -15,7 +15,7 @@ final class ToolbarSnapshotTests: XCTestCase {
         bar.setFrameOrigin(NSPoint(x: 20, y: 20))
         host.addSubview(bar)
         let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-        window.appearance = NSAppearance(named: .darkAqua)
+        window.appearance = NSAppearance(named: .aqua)
         window.contentView = host
         bar.updateSelection(tool: .rectangle)
         host.layoutSubtreeIfNeeded()

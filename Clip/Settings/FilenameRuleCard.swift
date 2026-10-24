@@ -65,8 +65,8 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
         wantsLayer = true
         layer?.cornerRadius = 12
         layer?.cornerCurve = .continuous
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.04).cgColor
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.028).cgColor
+        layer?.borderColor = NSColor.black.withAlphaComponent(0.042).cgColor
         layer?.borderWidth = 1
 
         imageField.stringValue = Defaults.imageFilenameTemplate
@@ -188,7 +188,7 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
 
     private func configurePrimaryLabel(_ label: NSTextField) {
         label.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = NSColor.white.withAlphaComponent(0.94)
+        label.textColor = Brand.text.withAlphaComponent(0.94)
         label.alignment = .left
     }
 
@@ -196,14 +196,14 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
         label.font = monospaced
             ? NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
             : NSFont.systemFont(ofSize: 11)
-        label.textColor = NSColor.white.withAlphaComponent(0.58)
+        label.textColor = Brand.text.withAlphaComponent(0.58)
         label.alignment = .left
     }
 
     private func rowDivider() -> NSView {
         let v = NSView()
         v.wantsLayer = true
-        v.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.06).cgColor
+        v.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
         v.translatesAutoresizingMaskIntoConstraints = false
         v.heightAnchor.constraint(equalToConstant: 1).isActive = true
         return v

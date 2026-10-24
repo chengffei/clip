@@ -3159,15 +3159,15 @@ class EditWindowController {
     private func styleFloatingHUD(_ view: NSView) {
         view.wantsLayer = true
         view.layer?.shadowColor = NSColor.black.cgColor
-        view.layer?.shadowOpacity = 0.25
-        view.layer?.shadowRadius = 10
-        view.layer?.shadowOffset = CGSize(width: 0, height: -2)
+        view.layer?.shadowOpacity = Brand.shadowOpacity
+        view.layer?.shadowRadius = Brand.shadowRadius
+        view.layer?.shadowOffset = Brand.shadowOffset
     }
 }
 
 // MARK: - Main Toolbar View
 
-let accentGreen = Brand.accent
+let toolbarAccent = Brand.accent
 
 private final class ClosureMenuItem: NSMenuItem {
     private let handler: () -> Void
@@ -3458,10 +3458,10 @@ class ToolbarView: NSView {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
         AdaptiveChrome.toolbarBackground.setFill()
         path.fill()
-        Brand.lineStrong.setStroke()
+        Brand.line.setStroke()
         path.lineWidth = Brand.hairline
         path.stroke()
-        Brand.line.setFill()
+        Brand.lineStrong.setFill()
         for x in separatorXs {
             NSRect(x: x - 0.5, y: bounds.midY - 9, width: 1, height: 18).fill()
         }
@@ -3670,7 +3670,7 @@ class ToolButton: NSButton {
     override func draw(_ dirtyRect: NSRect) {
         if isProminent {
             let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 3, dy: 3), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
-            Brand.accentFill.withAlphaComponent(isHighlighted ? 0.4 : 0.22).setFill()
+            Brand.accent.withAlphaComponent(isHighlighted ? 0.26 : 0.14).setFill()
             bgPath.fill()
         } else if isSelected {
             contentTintColor = selectedColor
@@ -4008,7 +4008,7 @@ private final class RotationSubToolbar: NSView {
             let button = ToolButton(
                 frame: NSRect(x: clockwise ? 54 : 10, y: 4, width: 28, height: 28),
                 symbolName: clockwise ? "rotate.right" : "rotate.left",
-                normalColor: .labelColor, selectedColor: accentGreen
+                normalColor: .labelColor, selectedColor: toolbarAccent
             )
             button.hoverTip = clockwise ? L10n.tipRotateRight : L10n.tipRotateLeft
             button.setAccessibilityLabel(button.hoverTip)
@@ -4094,8 +4094,8 @@ private final class ScrollCropControlView: NSView {
         let button = ToolButton(
             frame: bounds.insetBy(dx: 6, dy: 6),
             symbolName: "checkmark",
-            normalColor: accentGreen,
-            selectedColor: accentGreen
+            normalColor: toolbarAccent,
+            selectedColor: toolbarAccent
         )
         button.hoverTip = L10n.tipScrollCropConfirm
         button.target = self
@@ -4456,7 +4456,7 @@ private final class EmojiChoiceView: NSView {
             (isSelected ? AdaptiveChrome.selectedFill : AdaptiveChrome.subtleFill).setFill()
             bg.fill()
             if isSelected {
-                accentGreen.setStroke()
+                toolbarAccent.setStroke()
                 bg.lineWidth = 1.4
                 bg.stroke()
             }
@@ -4543,13 +4543,13 @@ private final class MoreOptionsButton: NSButton {
 
     override func draw(_ dirtyRect: NSRect) {
         let emphasized = isHovering || isHighlighted || isActive
-        contentTintColor = isActive ? accentGreen : (emphasized ? .labelColor : .secondaryLabelColor)
+        contentTintColor = isActive ? toolbarAccent : (emphasized ? .labelColor : .secondaryLabelColor)
         if emphasized {
             let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 7, yRadius: 7)
             (isActive ? AdaptiveChrome.selectedFill : AdaptiveChrome.subtleFill).setFill()
             bg.fill()
             if isActive {
-                accentGreen.setStroke()
+                toolbarAccent.setStroke()
                 bg.lineWidth = 1.2
                 bg.stroke()
             }
@@ -4950,7 +4950,7 @@ private class MosaicSubToolbar: NSView {
                               width: Self.buttonSize, height: Self.buttonSize),
                 symbolName: "square.grid.3x3.fill",
                 normalColor: .secondaryLabelColor,
-                selectedColor: accentGreen,
+                selectedColor: toolbarAccent,
                 iconImage: blurIcon
             )
             button.tag = index
@@ -5413,7 +5413,7 @@ private final class ArrowStyleButtonView: StyleOptionView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func draw(_ dirtyRect: NSRect) {
-        let color = isSelected ? accentGreen : NSColor.secondaryLabelColor
+        let color = isSelected ? toolbarAccent : NSColor.secondaryLabelColor
         color.setFill()
         color.setStroke()
 
@@ -5581,7 +5581,7 @@ private class ColorSwatchView: NSView {
         if isSelected {
             // Draw green selection ring
             let ring = NSBezierPath(ovalIn: bounds)
-            accentGreen.setStroke()
+            toolbarAccent.setStroke()
             ring.lineWidth = 2
             ring.stroke()
         }
@@ -5613,7 +5613,7 @@ private class ColorSwatchView: NSView {
 
         if isSelected {
             let ring = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.75, dy: 0.75))
-            accentGreen.setStroke()
+            toolbarAccent.setStroke()
             ring.lineWidth = 2
             ring.stroke()
         }
@@ -5767,7 +5767,7 @@ final class HUDSlider: NSControl {
                 leftHeight: trackLeftHeight,
                 rightHeight: fillRightHeight
             )
-            accentGreen.withAlphaComponent(0.18 * enabledAlpha).setFill()
+            toolbarAccent.withAlphaComponent(0.18 * enabledAlpha).setFill()
             fillPath.fill()
         }
 
@@ -6028,7 +6028,7 @@ private final class ShapeFillModeSegmentedControl: NSView {
             let segmentRect = NSRect(x: x, y: rect.minY, width: width, height: rect.height)
             if mode == selectedMode {
                 let selected = NSBezierPath(roundedRect: segmentRect.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-                accentGreen.setFill()
+                toolbarAccent.setFill()
                 selected.fill()
             } else if index > 0 {
                 AdaptiveChrome.separator.setStroke()
@@ -6119,11 +6119,11 @@ private final class ShapeStrokeStyleButtonView: StyleOptionView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func draw(_ dirtyRect: NSRect) {
-        let color = isSelected ? accentGreen : NSColor.secondaryLabelColor
+        let color = isSelected ? toolbarAccent : NSColor.secondaryLabelColor
 
         if isSelected {
             let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 7, yRadius: 7)
-            accentGreen.withAlphaComponent(0.12).setFill()
+            toolbarAccent.withAlphaComponent(0.12).setFill()
             bg.fill()
         }
 
@@ -6407,7 +6407,7 @@ private final class HUDCheckboxButton: NSButton {
         let boxPath = NSBezierPath(roundedRect: boxRect, xRadius: 4, yRadius: 4)
 
         if state == .on {
-            accentGreen.withAlphaComponent(enabledAlpha).setFill()
+            toolbarAccent.withAlphaComponent(enabledAlpha).setFill()
         } else {
             AdaptiveChrome.subtleFill
                 .withAlphaComponent((isHighlighted ? 1.0 : 0.72) * enabledAlpha)
@@ -6820,7 +6820,7 @@ private class BeautifySwatchView: NSView {
 
         if isSelected {
             let ring = NSBezierPath(ovalIn: bounds)
-            accentGreen.setStroke()
+            toolbarAccent.setStroke()
             ring.lineWidth = 2
             ring.stroke()
         }
@@ -6841,10 +6841,7 @@ final class SelectionChromeOverlay: NSView {
     private(set) var isActiveAndVisible: Bool = false
 
     private let accentColor = Brand.accent
-    private let handleSize: CGFloat = 8
     private let handleHitSize: CGFloat = 12
-    private let borderWidth: CGFloat = 2.0
-    private let dashPattern: [CGFloat] = [10, 6]
 
     private var dragHandle: SelectionView.HandlePosition?
     private var dragOriginalRect: NSRect = .zero
@@ -6971,23 +6968,8 @@ final class SelectionChromeOverlay: NSView {
         context.saveGState()
         defer { context.restoreGState() }
 
-        context.setStrokeColor(accentColor.cgColor)
-        context.setLineWidth(borderWidth)
-        context.setLineDash(phase: 0, lengths: dashPattern)
-        context.stroke(rect.insetBy(dx: -1, dy: -1))
-        context.setLineDash(phase: 0, lengths: [])
-        SelectionView.drawCornerBrackets(context: context, rect: rect, color: accentColor)
-
-        for pos in SelectionView.handlePositions(for: rect) {
-            let handleRect = NSRect(
-                x: pos.x - handleSize / 2,
-                y: pos.y - handleSize / 2,
-                width: handleSize,
-                height: handleSize
-            )
-            context.setFillColor(accentColor.cgColor)
-            context.fill(handleRect)
-        }
+        SelectionView.drawFrame(context: context, rect: rect, color: accentColor)
+        SelectionView.drawHandles(context: context, rect: rect, color: accentColor)
 
         // The SelectionView draws its own size label underneath, but the
         // editor image/beautify frame covers it. Re-draw it here, above the
@@ -6995,7 +6977,8 @@ final class SelectionChromeOverlay: NSView {
         SelectionView.drawSizeLabel(
             context: context,
             rect: rect,
-            text: selectionView?.selectionSizeLabelOverride
+            text: selectionView?.selectionSizeLabelOverride,
+            origin: NSPoint(x: rect.minX, y: bounds.maxY - rect.maxY)
         )
     }
 }

@@ -1,29 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Clip app icon: ink squircle, acid viewfinder brackets, an off-centre
-       solid frame and a coral record dot. Hard geometry, one accent. -->
-  <rect x="100" y="100" width="824" height="824" rx="184" ry="184" fill="#0E0E11"/>
+  <!-- Clip app icon: Apple-style squircle on a blue gradient, white
+       viewfinder brackets with rounded ends and a white selection frame
+       with round handles. One hue, soft geometry. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4DA3FF"/>
+      <stop offset="1" stop-color="#0A64E6"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="184" ry="184" fill="url(#bg)"/>
 
   <!-- Viewfinder brackets -->
-  <g fill="#CCFF00">
-    <!-- top-left -->
-    <rect x="236" y="236" width="196" height="54"/>
-    <rect x="236" y="236" width="54" height="196"/>
-    <!-- top-right -->
-    <rect x="592" y="236" width="196" height="54"/>
-    <rect x="734" y="236" width="54" height="196"/>
-    <!-- bottom-left -->
-    <rect x="236" y="734" width="196" height="54"/>
-    <rect x="236" y="592" width="54" height="196"/>
-    <!-- bottom-right -->
-    <rect x="592" y="734" width="196" height="54"/>
-    <rect x="734" y="592" width="54" height="196"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" opacity="0.92">
+    <path d="M 260 420 L 260 300 Q 260 260 300 260 L 420 260"/>
+    <path d="M 604 260 L 724 260 Q 764 260 764 300 L 764 420"/>
+    <path d="M 260 604 L 260 724 Q 260 764 300 764 L 420 764"/>
+    <path d="M 604 764 L 724 764 Q 764 764 764 724 L 764 604"/>
   </g>
 
-  <!-- Captured frame, pushed off centre -->
-  <rect x="446" y="446" width="260" height="260" fill="#CCFF00"/>
-  <rect x="500" y="500" width="152" height="152" fill="#0E0E11"/>
-
-  <!-- Record dot -->
-  <circle cx="366" cy="366" r="46" fill="#FF4D2E"/>
+  <!-- Selection frame -->
+  <rect x="392" y="392" width="240" height="240" rx="18" ry="18" fill="none" stroke="#FFFFFF" stroke-width="28"/>
+  <g fill="#FFFFFF">
+    <circle cx="392" cy="392" r="30"/>
+    <circle cx="632" cy="392" r="30"/>
+    <circle cx="392" cy="632" r="30"/>
+    <circle cx="632" cy="632" r="30"/>
+  </g>
 </svg>

@@ -138,11 +138,9 @@ class SelectionView: NSView {
     // MARK: - Constants
 
     private let accentColor = Brand.accent
-    private let handleSize: CGFloat = 8
     private let handleHitSize: CGFloat = 12
     private let borderWidth: CGFloat = 2.0
-    private let dashPattern: [CGFloat] = [10, 6]
-    private let dimmingOverlayAlpha: CGFloat = 0.45
+    private let dimmingOverlayAlpha: CGFloat = 0.40
 
     // MARK: - Public
 
@@ -611,9 +609,7 @@ class SelectionView: NSView {
             context.addPath(path)
             context.fillPath(using: .evenOdd)
             // Solid accent border
-            context.setStrokeColor(accentColor.cgColor)
-            context.setLineWidth(borderWidth + 1)
-            context.stroke(hoverRect.insetBy(dx: -1.5, dy: -1.5))
+            SelectionView.drawFrame(context: context, rect: hoverRect, color: accentColor)
             // Size label
             SelectionView.drawSizeLabel(context: context, rect: hoverRect)
             return
@@ -651,19 +647,12 @@ class SelectionView: NSView {
             context.setLineWidth(strokeWidth)
             context.stroke(rect.insetBy(dx: outerInset, dy: outerInset))
         } else {
-            context.setStrokeColor(accentColor.cgColor)
-            context.setLineWidth(borderWidth)
-            context.setLineDash(phase: 0, lengths: dashPattern)
-            context.stroke(rect.insetBy(dx: -1, dy: -1))
-            context.setLineDash(phase: 0, lengths: [])
-            SelectionView.drawCornerBrackets(context: context, rect: rect, color: accentColor)
+            SelectionView.drawFrame(context: context, rect: rect, color: accentColor)
         }
 
         if state == .selected && selectionInteractionEnabled {
-            // Draw 8 control handles
-            drawHandles(context: context, rect: rect)
-            // Draw size label
-            SelectionView.drawSizeLabel(context: context, rect: rect)
+            SelectionView.drawHandles(context: context, rect: rect, color: accentColor)
+            SelectionView.drawSizeLabel(context: context, rect: rect, origin: topLeftOrigin(of: rect))
         } else if state == .selected, let selectionSizeLabelOverride {
             SelectionView.drawSizeLabel(context: context, rect: rect, text: selectionSizeLabelOverride)
         }
@@ -697,60 +686,62 @@ class SelectionView: NSView {
         onFirstFramePresented = nil
     }
 
-    private func drawHandles(context: CGContext, rect: NSRect) {
-        let positions = SelectionView.handlePositions(for: rect)
-        for pos in positions {
-            let handleRect = NSRect(
-                x: pos.x - handleSize / 2,
-                y: pos.y - handleSize / 2,
-                width: handleSize,
-                height: handleSize
-            )
-            context.setFillColor(accentColor.cgColor)
-            context.fill(handleRect)
+    /// Top-left corner of `rect` measured from the top-left of this view, the
+    /// way a user reads screen coordinates.
+    private func topLeftOrigin(of rect: NSRect) -> NSPoint {
+        NSPoint(x: rect.minX, y: bounds.maxY - rect.maxY)
+    }
+
+    /// Solid frame drawn just outside the captured rect so no stroke pixel
+    /// bleeds into the image.
+    static func drawFrame(context: CGContext, rect: NSRect, color: NSColor) {
+        let w = Brand.selectionStroke
+        context.setStrokeColor(color.cgColor)
+        context.setLineWidth(w)
+        context.stroke(rect.insetBy(dx: -w / 2, dy: -w / 2))
+    }
+
+    /// Eight round handles: white disc with an accent ring, legible on any
+    /// content.
+    static func drawHandles(context: CGContext, rect: NSRect, color: NSColor) {
+        let d = Brand.handleDiameter
+        let ring = Brand.handleRing
+        for pos in handlePositions(for: rect) {
+            let disc = NSRect(x: pos.x - d / 2, y: pos.y - d / 2, width: d, height: d)
+            context.setFillColor(NSColor.white.cgColor)
+            context.fillEllipse(in: disc)
+            context.setStrokeColor(color.cgColor)
+            context.setLineWidth(ring)
+            context.strokeEllipse(in: disc.insetBy(dx: ring / 2, dy: ring / 2))
         }
     }
 
-    static func drawSizeLabel(context: CGContext, rect: NSRect, text: String? = nil) {
-        let text = text ?? "\(Int(rect.width)) x \(Int(rect.height))"
-        let attrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: Brand.accent,
-            .font: Brand.mono(11, weight: .semibold)
-        ]
-        let size = text.size(withAttributes: attrs)
-        // Position above the top-left corner of selection
-        let labelX = rect.origin.x
-        let labelY = rect.origin.y + rect.height + 4  // Above top edge (AppKit coords: y increases upward)
-        let labelRect = NSRect(x: labelX, y: labelY, width: size.width + 8, height: size.height + 4)
-
-        // Draw background
-        context.setFillColor(Brand.ink.withAlphaComponent(0.92).cgColor)
-        let bgPath = CGPath(roundedRect: labelRect, cornerWidth: 2, cornerHeight: 2, transform: nil)
+    static func drawSizeLabel(context: CGContext, rect: NSRect, text: String? = nil, origin: NSPoint? = nil) {
+        let size = text ?? "\(Int(rect.width)) × \(Int(rect.height))"
+        let font = Brand.mono(11, weight: .medium)
+        var parts: [(String, NSColor)] = []
+        if let origin {
+            parts.append(("\(Int(origin.x)), \(Int(origin.y))", Brand.onLabel.withAlphaComponent(0.62)))
+        }
+        parts.append((size, Brand.onLabel))
+        let attributed = NSMutableAttributedString()
+        for (index, part) in parts.enumerated() {
+            if index > 0 { attributed.append(NSAttributedString(string: "  ", attributes: [.font: font])) }
+            attributed.append(NSAttributedString(string: part.0, attributes: [.font: font, .foregroundColor: part.1]))
+        }
+        let textSize = attributed.size()
+        let padX: CGFloat = 8, padY: CGFloat = 3
+        let labelRect = NSRect(
+            x: rect.origin.x,
+            y: rect.maxY + 6,
+            width: ceil(textSize.width) + padX * 2,
+            height: ceil(textSize.height) + padY * 2
+        )
+        context.setFillColor(Brand.labelBackground.cgColor)
+        let bgPath = CGPath(roundedRect: labelRect, cornerWidth: labelRect.height / 2, cornerHeight: labelRect.height / 2, transform: nil)
         context.addPath(bgPath)
         context.fillPath()
-
-        // Draw text
-        let textOrigin = NSPoint(x: labelRect.origin.x + 4, y: labelRect.origin.y + 2)
-        text.draw(at: textOrigin, withAttributes: attrs)
-    }
-
-    /// Viewfinder marks at the four corners of the selection, outside the
-    /// captured rect so they never bleed into the image.
-    static func drawCornerBrackets(context: CGContext, rect: NSRect, color: NSColor) {
-        let arm: CGFloat = min(18, max(8, min(rect.width, rect.height) / 4))
-        let thickness: CGFloat = 3
-        let o = rect.insetBy(dx: -4, dy: -4)
-        context.setFillColor(color.cgColor)
-        let corners: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
-            (o.minX, o.minY, 1, 1), (o.maxX, o.minY, -1, 1),
-            (o.minX, o.maxY, 1, -1), (o.maxX, o.maxY, -1, -1),
-        ]
-        for (x, y, sx, sy) in corners {
-            let h = CGRect(x: sx > 0 ? x : x - arm, y: sy > 0 ? y : y - thickness, width: arm, height: thickness)
-            let v = CGRect(x: sx > 0 ? x : x - thickness, y: sy > 0 ? y : y - arm, width: thickness, height: arm)
-            context.fill(h)
-            context.fill(v)
-        }
+        attributed.draw(at: NSPoint(x: labelRect.origin.x + padX, y: labelRect.origin.y + padY))
     }
 
     // MARK: - Handle Positions

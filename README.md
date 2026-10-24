@@ -16,7 +16,7 @@
 
 ## Why Clip
 
-Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the other way. It lives in the menu bar, wakes on a double-tap of ⌘, and does three things: a region screenshot you can annotate, a region recording, and OCR that drops the text straight into your clipboard. Ink surfaces, one acid accent, no telemetry, no account.
+Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the other way. It lives in the menu bar, wakes on a double-tap of ⌘, and does three things: a region screenshot you can annotate, a region recording, and OCR that drops the text straight into your clipboard. Light, native-looking chrome, one blue accent, no telemetry, no account.
 
 ## Features
 

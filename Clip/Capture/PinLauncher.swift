@@ -2536,7 +2536,7 @@ private class PinToolbarIconButton: NSButton {
         case .standard:
             contentTintColor = isActive ? .white : .labelColor
             layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(
-                isActive ? accentGreen.withAlphaComponent(0.86) : .clear,
+                isActive ? toolbarAccent.withAlphaComponent(0.86) : .clear,
                 for: effectiveAppearance
             )
         case .destructive:

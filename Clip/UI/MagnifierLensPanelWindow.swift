@@ -405,7 +405,7 @@ final class MagnifierLensPanelView: NSView {
         // Thin app-accent crosshair spanning the full magnified area.
         let centerX = rect.midX
         let centerY = rect.midY
-        accentGreen.setStroke()
+        toolbarAccent.setStroke()
         let bigCross = NSBezierPath()
         bigCross.lineWidth = 2
         bigCross.move(to: NSPoint(x: rect.minX, y: centerY))

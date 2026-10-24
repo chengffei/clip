@@ -2794,7 +2794,7 @@ class EditCanvasView: NSView {
                     at: resizeHandlePoint(anchor, for: annotation),
                     size: EditCanvasView.resizeHandleSize,
                     fill: NSColor.white.withAlphaComponent(0.95),
-                    stroke: accentGreen,
+                    stroke: toolbarAccent,
                     in: context
                 )
             }
@@ -2818,7 +2818,7 @@ class EditCanvasView: NSView {
                 at: handleCenter,
                 size: EditCanvasView.rotateHandleSize,
                 fill: NSColor(white: 0.12, alpha: 0.94),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
             drawSymbolGlyph(
@@ -2835,7 +2835,7 @@ class EditCanvasView: NSView {
                 at: cp,
                 size: EditCanvasView.curveHandleSize,
                 fill: NSColor.white.withAlphaComponent(0.95),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
         }
@@ -2846,7 +2846,7 @@ class EditCanvasView: NSView {
                 at: tip,
                 size: EditCanvasView.tipHandleSize,
                 fill: NSColor.white.withAlphaComponent(0.95),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
         }
@@ -2871,7 +2871,7 @@ class EditCanvasView: NSView {
             drawHandleDot(
                 at: tip,
                 size: EditCanvasView.textCalloutHandleSize,
-                fill: isAddHandle ? accentGreen : text.color,
+                fill: isAddHandle ? toolbarAccent : text.color,
                 stroke: NSColor.white.withAlphaComponent(0.95),
                 in: context
             )
@@ -2892,7 +2892,7 @@ class EditCanvasView: NSView {
                 at: source,
                 size: EditCanvasView.magnifierSourceHandleSize,
                 fill: NSColor.white.withAlphaComponent(0.95),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
         }
@@ -2903,7 +2903,7 @@ class EditCanvasView: NSView {
                 at: start,
                 size: EditCanvasView.endpointHandleSize,
                 fill: NSColor.white.withAlphaComponent(0.95),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
         }
@@ -2912,7 +2912,7 @@ class EditCanvasView: NSView {
                 at: end,
                 size: EditCanvasView.endpointHandleSize,
                 fill: NSColor.white.withAlphaComponent(0.95),
-                stroke: accentGreen,
+                stroke: toolbarAccent,
                 in: context
             )
         }
@@ -3047,7 +3047,7 @@ class EditCanvasView: NSView {
             at: NSPoint(x: rect.midX, y: rect.midY),
             size: rect.width,
             fill: NSColor(white: 0.12, alpha: 0.94 * alpha),
-            stroke: accentGreen.withAlphaComponent(alpha),
+            stroke: toolbarAccent.withAlphaComponent(alpha),
             in: context
         )
         drawSymbolGlyph(
