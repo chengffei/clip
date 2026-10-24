@@ -1953,11 +1953,6 @@ struct Defaults {
         set { defaults.set(newValue.rawValue, forKey: "ocr.languageSet") }
     }
 
-    static var lastEditorTool: String? {
-        get { defaults.string(forKey: "lastEditorTool") }
-        set { defaults.set(newValue, forKey: "lastEditorTool") }
-    }
-
     static var lastShapeTool: String? {
         get { defaults.string(forKey: "lastShapeTool") }
         set { defaults.set(newValue, forKey: "lastShapeTool") }

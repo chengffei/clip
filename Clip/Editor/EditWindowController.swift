@@ -463,7 +463,6 @@ class EditWindowController {
         self.selectionChromeOverlay = overlay
 
         showToolbar()
-        restoreLastTool()
         // The first editor frame includes the interactive canvas, border,
         // handles and toolbar, even while its precise silhouette is pending.
         repositionFloatingChrome()
@@ -480,18 +479,6 @@ class EditWindowController {
             }
         }
         bringEditorToFront()
-    }
-
-    /// Reopens with the tool used last time, provided it is still reachable
-    /// from the bar or the overflow menu.
-    private func restoreLastTool() {
-        guard let raw = Defaults.lastEditorTool,
-              let tool = EditTool(rawValueFromDefaults: raw),
-              let toolbarView,
-              let id = ToolbarLayout.canonicalOrder.first(where: { $0.editTool == tool }),
-              toolbarView.contains(id)
-        else { return }
-        selectTool(tool)
     }
 
     private func showToolbar() {
@@ -766,7 +753,6 @@ class EditWindowController {
         }
         activeTool = tool
         canvasView?.activeTool = tool
-        if tool != .none, tool != .scrollCapture { Defaults.lastEditorTool = tool.rawValueForDefaults }
         normalizeShapeStrokeStyle(for: tool)
         pushCurrentStyleToCanvas()
         toolbars.forEach { $0.updateSelection(tool: tool) }
@@ -5750,7 +5736,7 @@ final class HUDSlider: NSControl {
             leftHeight: trackLeftHeight,
             rightHeight: trackRightHeight
         )
-        AdaptiveChrome.subtleFill.withAlphaComponent(enabledAlpha).setFill()
+        NSColor.black.withAlphaComponent(0.06 * enabledAlpha).setFill()
         trackPath.fill()
 
         let knobCenterX = trackRect.minX + normalizedValue * trackRect.width
@@ -5771,8 +5757,8 @@ final class HUDSlider: NSControl {
             fillPath.fill()
         }
 
-        AdaptiveChrome.border.withAlphaComponent(enabledAlpha).setStroke()
-        trackPath.lineWidth = 1.5
+        NSColor.black.withAlphaComponent(0.12 * enabledAlpha).setStroke()
+        trackPath.lineWidth = 1
         trackPath.stroke()
 
         let knobWidth = currentKnobWidth
@@ -5793,11 +5779,11 @@ final class HUDSlider: NSControl {
         shadow.shadowBlurRadius = 2.5
         shadow.shadowOffset = NSSize(width: 0, height: -1)
         shadow.set()
-        NSColor.controlBackgroundColor.withAlphaComponent(enabledAlpha).setFill()
+        NSColor.white.withAlphaComponent(enabledAlpha).setFill()
         knobPath.fill()
         NSGraphicsContext.restoreGraphicsState()
 
-        AdaptiveChrome.border.withAlphaComponent(enabledAlpha).setStroke()
+        NSColor.black.withAlphaComponent(0.12 * enabledAlpha).setStroke()
         knobPath.lineWidth = 0.6
         knobPath.stroke()
 
@@ -6027,8 +6013,8 @@ private final class ShapeFillModeSegmentedControl: NSView {
             let width = widths[index]
             let segmentRect = NSRect(x: x, y: rect.minY, width: width, height: rect.height)
             if mode == selectedMode {
-                let selected = NSBezierPath(roundedRect: segmentRect.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-                toolbarAccent.setFill()
+                let selected = NSBezierPath(roundedRect: segmentRect.insetBy(dx: 1.5, dy: 1.5), xRadius: 6, yRadius: 6)
+                Brand.selectedFill.setFill()
                 selected.fill()
             } else if index > 0 {
                 AdaptiveChrome.separator.setStroke()
@@ -6078,7 +6064,7 @@ private final class ShapeFillModeSegmentedControl: NSView {
         let selected = mode == selectedMode
         let attributes: [NSAttributedString.Key: Any] = [
             .font: Self.font,
-            .foregroundColor: selected ? NSColor.white : NSColor.labelColor,
+            .foregroundColor: selected ? Brand.text : Brand.muted,
         ]
         let title = Self.title(for: mode) as NSString
         let size = title.size(withAttributes: attributes)
@@ -6415,7 +6401,7 @@ private final class HUDCheckboxButton: NSButton {
         }
         boxPath.fill()
 
-        AdaptiveChrome.border.withAlphaComponent(enabledAlpha).setStroke()
+        NSColor.black.withAlphaComponent(0.2 * enabledAlpha).setStroke()
         boxPath.lineWidth = 1
         boxPath.stroke()
 
