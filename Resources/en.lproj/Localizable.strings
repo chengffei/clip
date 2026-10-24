@@ -272,7 +272,7 @@
 "tipPickedInkBottle" = "Use the color picker to fill the ink bottle";
 "tipUndo" = "Undo";
 "tipRedo" = "Redo";
-"tipMoveSelection" = "Move Selection";
+"tipMoveSelection" = "Move selection (when idle, just drag the selection itself)";
 "tipScrollCapture" = "Scroll Capture";
 "tipRotate" = "Rotate";
 "tipRotateLeft" = "Rotate left 90°";
@@ -363,13 +363,13 @@
 "settingsQuit" = "Quit App";
 
 "toolbarSettingsPrimaryTitle" = "Toolbar";
-"toolbarSettingsPrimaryHint" = "One bar under the selection. Drag to order; drag a divider in to split the bar into zones; click a tool to set a shortcut";
+"toolbarSettingsPrimaryHint" = "One bar under the selection. Tile order is bar order; drag a divider in to split it into zones (adjacent ones merge); More always sits at the end";
 "toolbarSettingsSideTitle" = "“More” menu";
-"toolbarSettingsSideHint" = "Tucked behind the ellipsis button at the end of the bar; one click away without crowding the view";
+"toolbarSettingsSideHint" = "Behind the More button at the end of the bar, one click away. A divider here becomes a menu separator";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
-"toolbarSettingsHiddenHint" = "Tools dragged here won't appear in any toolbar. Spare dividers wait here too";
-"toolbarSettingsFootnote" = "Shape tools on the bar (tinted above) merge into one button. Click its icon to use the shape shown; click the small chevron or long-press to pick another";
-"toolbarSettingsShortcutHint" = "Click a tool to record its shortcut, drag to reposition it, or right-click for more options";
+"toolbarSettingsHiddenHint" = "Tools dragged here appear nowhere. Spare dividers wait here until you drag one up";
+"toolbarSettingsFootnote" = "Shape tools on the bar (framed in blue) merge into one button: click the icon to use the shape shown, click the small chevron or long-press to pick another. The four-way arrow is the move handle; with no tool active you can also drag the selection itself";
+"toolbarSettingsShortcutHint" = "Click a tool to record a shortcut, right-click to clear or restore it; dividers and the move handle take none";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
 "toolbarSettingsShortcutRecord" = "Record Shortcut";
 "toolbarSettingsShortcutClear" = "Clear Shortcut";

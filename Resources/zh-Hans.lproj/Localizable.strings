@@ -272,7 +272,7 @@
 "tipPickedInkBottle" = "使用取色器提取颜色到墨水瓶";
 "tipUndo" = "撤销";
 "tipRedo" = "恢复撤销";
-"tipMoveSelection" = "移动选区";
+"tipMoveSelection" = "拖动选区（空闲时也可直接按住选区拖）";
 "tipScrollCapture" = "长截图";
 "tipRotate" = "旋转";
 "tipRotateLeft" = "向左旋转 90°";
@@ -363,13 +363,13 @@
 "settingsQuit" = "退出应用";
 
 "toolbarSettingsPrimaryTitle" = "工具栏";
-"toolbarSettingsPrimaryHint" = "贴在选区下沿的一条栏。顺序随你拖，把「分隔线」拖进来就分段，点工具设快捷键";
+"toolbarSettingsPrimaryHint" = "贴在选区下沿的一条栏。格子顺序就是栏上顺序；拖「分隔线」进来就分段，相邻的会合并；「更多」固定在末尾";
 "toolbarSettingsSideTitle" = "「更多」菜单";
-"toolbarSettingsSideHint" = "放进工具栏末尾的「更多」按钮里，点开即用，不占视线";
+"toolbarSettingsSideHint" = "收进栏末尾的「更多」按钮，点开即用。这里的分隔线会变成菜单分隔线";
 "toolbarSettingsHiddenTitle" = "隐藏的工具";
-"toolbarSettingsHiddenHint" = "拖到这里的工具不会出现在任何工具栏中，备用的分隔线也放在这里";
-"toolbarSettingsFootnote" = "栏上的形状工具（上方带底色的）会合成一个按钮。点图标用当前形状，点右下角小箭头或长按换形状";
-"toolbarSettingsShortcutHint" = "点击工具录制快捷键，拖动可调整位置，右键可清除或恢复默认";
+"toolbarSettingsHiddenHint" = "拖到这里的工具不会出现在任何地方。备用的分隔线也在这里，要用再拖上去";
+"toolbarSettingsFootnote" = "栏上的形状工具（带蓝框的那几个）合成一个按钮：点图标用当前形状，点右下角小箭头或长按换形状。四向箭头是拖动选区的把手；没选工具时也可以直接按住选区拖";
+"toolbarSettingsShortcutHint" = "点工具录快捷键，右键清除或恢复默认；分隔线和拖动把手不设快捷键";
 "toolbarSettingsShortcutRecording" = "请按下“%@”的新快捷键，按 Esc 取消";
 "toolbarSettingsShortcutRecord" = "录制快捷键";
 "toolbarSettingsShortcutClear" = "清除快捷键";
