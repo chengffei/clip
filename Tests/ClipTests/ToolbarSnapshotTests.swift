@@ -25,6 +25,10 @@ final class ToolbarSnapshotTests: XCTestCase {
         window.appearance = NSAppearance(named: .aqua)
         window.contentView = host
         bar.updateSelection(tool: .rectangle)
+        if env["CLIP_SNAPSHOT_DISABLED"] == "1" {
+            bar.setScrollCaptureEnabled(false)
+            bar.setRecordingEnabled(false)
+        }
         host.layoutSubtreeIfNeeded()
 
         XCTAssertEqual(bar.frame.height, ToolbarView.buttonSize + ToolbarView.crossPadding * 2)

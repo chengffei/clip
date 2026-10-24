@@ -3348,8 +3348,10 @@ class ToolbarView: NSView {
 
     func setEnabled(_ enabled: Bool, for id: ToolbarItemID) {
         guard let btn = buttons[id] as? ToolButton else { return }
+        // ToolButton.draw already dims a disabled glyph to 0.5; stacking a
+        // view alpha on top made disabled items all but invisible.
         btn.isEnabled = enabled
-        btn.alphaValue = enabled ? 1.0 : 0.35
+        btn.alphaValue = 1
     }
 
     func contains(_ id: ToolbarItemID) -> Bool { buttons[id] != nil || overflow.contains(id) }
