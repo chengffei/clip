@@ -3466,7 +3466,7 @@ class ToolbarView: NSView {
     /// overflow ("more") button and the shape picker.
     private func showMenu(for ids: [ToolbarItemID], from anchor: NSView) {
         let menu = NSMenu()
-        menu.appearance = NSAppearance(named: .darkAqua)
+        menu.appearance = NSAppearance(named: .aqua)
         for id in ids {
             let item = NSMenuItem(title: id.localizedTitle, action: #selector(menuItemChosen(_:)), keyEquivalent: "")
             item.target = self

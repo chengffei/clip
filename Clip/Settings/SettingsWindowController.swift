@@ -32,7 +32,7 @@ class SettingsWindowController: NSWindowController {
         window.title = L10n.settingsTitle
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.appearance = NSAppearance(named: .darkAqua)
+        window.appearance = NSAppearance(named: .aqua)
         window.backgroundColor = Brand.sidebar
         window.isMovableByWindowBackground = true
         window.center()

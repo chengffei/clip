@@ -127,7 +127,7 @@ final class ToolbarItemTile: NSView {
 
     private var iconColor: NSColor {
         switch itemID {
-        case .close:   return toolbarDangerRed
+        case .close:   return Brand.text.withAlphaComponent(0.55)
         case .confirm: return toolbarAccent
         default:       return Brand.text.withAlphaComponent(0.85)
         }
@@ -624,21 +624,19 @@ final class ToolbarLayoutPreviewView: NSView {
         let selection = selectionRect(in: b)
         guard selection.width > 20, selection.height > 20 else { return }
 
-        let dashed = NSBezierPath(rect: selection)
-        dashed.lineWidth = 1.5
-        dashed.setLineDash([5, 3], count: 2, phase: 0)
-        toolbarAccent.setStroke()
-        dashed.stroke()
-        drawHandles(around: selection)
+        // Same frame and handles as the real overlay, at full size.
+        if let context = NSGraphicsContext.current?.cgContext {
+            SelectionView.drawFrame(context: context, rect: selection, color: toolbarAccent)
+            SelectionView.drawHandles(context: context, rect: selection, color: toolbarAccent)
+        }
     }
 
-    /// Selection rect leaves room below for the primary toolbar and to the
-    /// right for the side toolbar.
+    /// Selection rect leaves room below for the single toolbar.
     private func selectionRect(in bounds: NSRect) -> NSRect {
         NSRect(
             x: bounds.minX + 44,
             y: bounds.minY + bottomInset,
-            width: bounds.width - 44 - 70,
+            width: bounds.width - 88,
             height: bounds.height - bottomInset - topInset
         )
     }
@@ -656,10 +654,12 @@ final class ToolbarLayoutPreviewView: NSView {
         primaryStripView.items = layout.primary
         guard !layout.primary.isEmpty else { return }
 
-        let run = capsuleRun(layout.primary.count)
+        // The real bar appends a "more" button when the menu has items.
+        primaryStripView.trailingMore = !layout.side.isEmpty
+        let run = capsuleRun(layout.primary.count + (layout.side.isEmpty ? 0 : 1))
         let maxWidth = max(capsuleThickness, bounds.width - previewMargin * 2)
         let width = min(run, maxWidth)
-        let proposedX = selection.maxX - width
+        let proposedX = selection.minX
         let x = max(previewMargin, min(bounds.maxX - previewMargin - width, proposedX))
         primaryScrollView.frame = NSRect(
             x: x,
@@ -672,9 +672,11 @@ final class ToolbarLayoutPreviewView: NSView {
     }
 
     private func updateSidePreview(selection: NSRect) {
-        sideScrollView.isHidden = layout.side.isEmpty
-        sideStripView.items = layout.side
-        guard !layout.side.isEmpty else { return }
+        // The vertical side bar is gone since 0.4.0; its items live in the
+        // "more" menu, which the primary preview hints at with an ellipsis.
+        sideScrollView.isHidden = true
+        sideStripView.items = []
+        guard false else { return }
 
         let run = capsuleRun(layout.side.count)
         let height = min(run, max(capsuleThickness, selection.height))
@@ -686,20 +688,6 @@ final class ToolbarLayoutPreviewView: NSView {
         )
         sideStripView.setFrameSize(NSSize(width: capsuleThickness, height: run))
         sideScrollView.clampScrollOffset()
-    }
-
-    private func drawHandles(around rect: NSRect) {
-        let points = [
-            NSPoint(x: rect.minX, y: rect.minY), NSPoint(x: rect.midX, y: rect.minY),
-            NSPoint(x: rect.maxX, y: rect.minY), NSPoint(x: rect.minX, y: rect.midY),
-            NSPoint(x: rect.maxX, y: rect.midY), NSPoint(x: rect.minX, y: rect.maxY),
-            NSPoint(x: rect.midX, y: rect.maxY), NSPoint(x: rect.maxX, y: rect.maxY),
-        ]
-        toolbarAccent.setFill()
-        for point in points {
-            let dot = NSRect(x: point.x - 2.5, y: point.y - 2.5, width: 5, height: 5)
-            NSBezierPath(ovalIn: dot).fill()
-        }
     }
 }
 
@@ -746,6 +734,10 @@ private final class ToolbarPreviewStripView: NSView {
     var items: [ToolbarItemID] = [] {
         didSet { needsDisplay = true }
     }
+    /// Draw an ellipsis after the items, standing in for the "more" button.
+    var trailingMore = false {
+        didSet { needsDisplay = true }
+    }
 
     private let miniButton: CGFloat = 15
     private let miniGap: CGFloat = 3
@@ -789,20 +781,40 @@ private final class ToolbarPreviewStripView: NSView {
             }
             let color: NSColor
             switch id {
-            case .close:   color = toolbarDangerRed
+            case .close:   color = Brand.text.withAlphaComponent(0.55)
             case .confirm: color = toolbarAccent
-            default:       color = .white
+            default:       color = Brand.text.withAlphaComponent(0.85)
             }
             if let icon = tintedToolbarIcon(id, pointSize: 9, color: color) {
-                let size = icon.size
-                icon.draw(in: NSRect(
-                    x: slot.midX - size.width / 2,
-                    y: slot.midY - size.height / 2,
-                    width: size.width,
-                    height: size.height
-                ))
+                drawCentered(icon, in: slot)
             }
         }
+        if trailingMore, orientation.isHorizontal {
+            let slot = NSRect(
+                x: miniPad + CGFloat(items.count) * (miniButton + miniGap),
+                y: miniPad, width: miniButton, height: miniButton
+            )
+            let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .medium)
+            if let base = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                let tinted = NSImage(size: base.size, flipped: false) { rect in
+                    base.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
+                    Brand.text.withAlphaComponent(0.55).set()
+                    rect.fill(using: .sourceAtop)
+                    return true
+                }
+                drawCentered(tinted, in: slot)
+            }
+        }
+    }
+
+    private func drawCentered(_ icon: NSImage, in slot: NSRect) {
+        let size = icon.size
+        icon.draw(in: NSRect(
+            x: slot.midX - size.width / 2,
+            y: slot.midY - size.height / 2,
+            width: size.width,
+            height: size.height
+        ))
     }
 }
 

@@ -4,7 +4,7 @@ import PermissionFlow
 
 // MARK: - Tab model
 
-enum SettingsTab: CaseIterable {
+enum SettingsTab: String, CaseIterable {
     case general
     case shortcuts
     case toolbar
@@ -293,7 +293,7 @@ class SettingsView: NSView {
     init(frame: NSRect, isStartup: Bool = false) {
         self.isStartup = isStartup
         super.init(frame: frame)
-        appearance = NSAppearance(named: .darkAqua)
+        appearance = NSAppearance(named: .aqua)
         wantsLayer = true
         setupBackground()
         setupUI()
@@ -532,7 +532,7 @@ class SettingsView: NSView {
         selectTab(sender.tab)
     }
 
-    private func selectTab(_ tab: SettingsTab) {
+    func selectTab(_ tab: SettingsTab) {
         if selectedTab == .toolbar && tab != .toolbar {
             toolbarPane?.cancelShortcutRecording()
         }
@@ -2051,6 +2051,11 @@ class SettingsView: NSView {
         let index = sender.indexOfSelectedItem
         guard cases.indices.contains(index) else { return }
         Defaults.language = cases[index]
+        // The change notification relabels the whole pane; make sure the
+        // picker itself still shows the choice afterwards.
+        sender.selectItem(at: index)
+        sender.synchronizeTitleAndSelectedItem()
+        sender.needsDisplay = true
     }
 
     @objc private func recordingSaveFormatPreferenceChanged(_ sender: NSPopUpButton) {
@@ -3286,6 +3291,13 @@ class SettingsView: NSView {
         pinAcrossSpacesSubtitleLabel?.stringValue = L10n.pinAcrossSpacesHint
         pinAcrossSpacesSwitch?.state = Defaults.pinAcrossSpaces ? .on : .off
         langTitleLabel?.stringValue = L10n.languageHeader
+        if let langPicker {
+            langPicker.selectItem(at: AppLanguage.allCases.firstIndex(of: Defaults.language) ?? 0)
+            langPicker.synchronizeTitleAndSelectedItem()
+        }
+        for (caption, tab) in zip(sectionCaptions, [SettingsTab.capture, .ocr]) {
+            caption.text = tab == .capture ? L10n.settingsSectionCapture : L10n.settingsSectionSystem
+        }
         filenameRuleCard?.refreshLocalization()
         screenshotQualityTitleLabel?.stringValue = L10n.screenshotQualityTitle
         screenshotQualitySubtitleLabel?.stringValue = L10n.screenshotQualitySubtitle
@@ -4435,6 +4447,10 @@ private final class CardView: NSView {
 /// Small muted caption that groups sidebar entries, like System Settings.
 private final class SidebarSectionCaption: NSView {
     private let label = NSTextField(labelWithString: "")
+    var text: String {
+        get { label.stringValue }
+        set { label.stringValue = newValue }
+    }
 
     init(text: String) {
         super.init(frame: .zero)
