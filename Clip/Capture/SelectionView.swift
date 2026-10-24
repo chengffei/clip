@@ -63,7 +63,12 @@ class SelectionView: NSView {
     private var dragOriginalRect: NSRect = .zero
 
     // Whether annotation tools are active (pass mouse events through to canvas)
-    var annotationToolActive = false
+    var annotationToolActive = false {
+        didSet { if annotationToolActive != oldValue { refreshCursorRects() } }
+    }
+    /// Fired right before a drag inside the selection starts moving it, so
+    /// the editor can commit text and drop its annotation selection first.
+    var onMoveWillBegin: (() -> Void)?
 
     // When true, clicking outside selection won't start a new selection
     var selectionLocked = false {
@@ -218,6 +223,11 @@ class SelectionView: NSView {
         } else if state == .selected,
                   selectionInteractionEnabled,
                   let rect = selectionRect {
+            // Interior first, handles after, so handle cursors win at the edges.
+            if !annotationToolActive {
+                let inside = rect.intersection(bounds)
+                if !inside.isNull { addCursorRect(inside, cursor: .openHand) }
+            }
             let positions = SelectionView.handlePositions(for: rect)
             for (index, handle) in HandlePosition.allCases.enumerated() {
                 let position = positions[index]
@@ -317,10 +327,11 @@ class SelectionView: NSView {
                     // Let canvas handle it
                     return
                 }
+                onMoveWillBegin?()
                 dragAction = .move
                 dragStart = point
                 dragOriginalRect = rect
-                NSCursor.arrow.set()
+                NSCursor.closedHand.set()
                 delegate?.selectionDidStart(reason: .existingSelectionAdjustment)
                 return
             }

@@ -415,6 +415,10 @@ class EditWindowController {
 
         let canvas = EditCanvasView(frame: NSRect(origin: .zero, size: canvasSize))
         canvas.hostSelectionView = hostSelectionView
+        self.hostSelectionView?.onMoveWillBegin = { [weak self] in
+            self?.canvasView?.commitActiveTextEditing()
+            self?.canvasView?.clearAnnotationSelection()
+        }
         canvas.captureRect = captureRect
         canvas.captureScreen = screen
         canvas.preSnapshot = preSnapshot
@@ -2842,6 +2846,7 @@ class EditWindowController {
         selectionChromeOverlay?.removeFromSuperview()
         selectionChromeOverlay = nil
         hostSelectionView?.annotationToolActive = false
+        hostSelectionView?.onMoveWillBegin = nil
         hostSelectionView?.selectionInteractionEnabled = true
         hostSelectionView?.scrollCaptureActive = false
         toolbars.forEach { $0.isHidden = false; $0.removeFromSuperview() }
@@ -3072,17 +3077,17 @@ class EditWindowController {
         let hasPreview = canvasView?.hasPreviewImage == true
         let hasFixedImage = overrideBaseImage != nil
         let isBlocked = isScrollCaptureBusy || isCropping
-        // Once the editor is up, the canvas owns clicks inside the selection
-        // rect for the entire session — drawing tools, adjust-mode handles,
-        // and dragging existing annotations all go through it. The legacy
-        // "click inside the selection moves the whole rect" gesture has
-        // moved to a dedicated toolbar handle so adjust-mode clicks on
-        // empty canvas don't get hijacked.
-        // When beautify is on, handle hits go through `selectionChromeOverlay`
-        // (which sits above the canvas); the SelectionView itself stays
-        // available for any clicks that fall outside the gradient frame so the
-        // user can still adjust the selection.
-        hostSelectionView?.annotationToolActive = !isBlocked
+        // With no tool active the canvas only claims clicks that land on an
+        // annotation (see EditCanvasView.hitTest); everything else falls
+        // through to the SelectionView, which may then move the whole rect.
+        // Any other state (a drawing tool, text being typed, a preview, a
+        // fixed image, beautify, scroll capture, cropping) keeps the old
+        // behaviour where the selection cannot be dragged by its body; the
+        // toolbar's move handle still works everywhere.
+        let idle = activeTool == .none
+            && canvasView?.isEditingText != true
+            && !hasPreview && !hasFixedImage && !isBeautifyActive
+        hostSelectionView?.annotationToolActive = isBlocked || !idle
         hostSelectionView?.selectionInteractionEnabled = !(isBlocked || hasPreview)
         canvasScrollView?.isInteractionEnabled = (activeTool != .none) || hasPreview || hasFixedImage || isBeautifyActive
         updateSelectionChromePresentation()

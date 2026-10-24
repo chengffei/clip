@@ -257,11 +257,11 @@ struct ToolbarLayout: Equatable {
             primary: [
                 .close, .divider1,
                 .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered, .divider2,
-                .undo, .redo, .divider3,
+                .undo, .redo, .moveSelection, .divider3,
                 .ocr, .save, .pin, .confirm,
             ],
             side: [.marker, .eraser, .scrollCapture, .colorPicker, .magnifier, .rotate, .record],
-            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .moveSelection, .divider4]
+            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .divider4]
         )
     }
 
@@ -390,7 +390,28 @@ extension Defaults {
             else {
                 return .default
             }
-            return ToolbarLayout(dictionary: dict).normalized()
+            var layout = ToolbarLayout(dictionary: dict).normalized()
+            // 2026-10-24: the move handle joined the default bar. Promote it
+            // once for layouts saved before that, next to undo/redo.
+            let promotedKey = "editor.toolbarLayout.moveHandlePromoted"
+            if !UserDefaults.standard.bool(forKey: promotedKey) {
+                UserDefaults.standard.set(true, forKey: promotedKey)
+                if let at = layout.hidden.firstIndex(of: .moveSelection) {
+                    var hidden = layout.hidden
+                    hidden.remove(at: at)
+                    var primary = layout.primary
+                    if let i = primary.lastIndex(where: { $0 == .redo || $0 == .undo }) {
+                        primary.insert(.moveSelection, at: i + 1)
+                    } else if let i = primary.firstIndex(of: .confirm) {
+                        primary.insert(.moveSelection, at: i)
+                    } else {
+                        primary.append(.moveSelection)
+                    }
+                    layout = ToolbarLayout(primary: primary, side: layout.side, hidden: hidden)
+                    UserDefaults.standard.set(layout.normalized().dictionary, forKey: "editor.toolbarLayout")
+                }
+            }
+            return layout
         }
         set {
             UserDefaults.standard.set(

@@ -2268,6 +2268,16 @@ class EditCanvasView: NSView {
     /// Force-commit any in-progress text. Called by the controller when
     /// switching tools or activating actions like save/confirm so the
     /// floating editor's contents make it into the composite.
+    /// True while a text annotation is being typed into.
+    var isEditingText: Bool { activeTextField != nil }
+
+    /// Drops the annotation selection, as a click on empty canvas would.
+    func clearAnnotationSelection() {
+        guard selectedIndex != nil || !selectedIndexes.isEmpty else { return }
+        setSelectedIndexes([])
+        needsDisplay = true
+    }
+
     func commitActiveTextEditing() {
         activeTextField?.commit()
     }
