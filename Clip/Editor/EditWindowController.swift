@@ -3565,6 +3565,24 @@ final class ShapeGroupButton: ToolButton {
     override func rightMouseDown(with event: NSEvent) {
         onPickerRequested?()
     }
+
+    /// A small chevron in the corner says "this one holds more shapes",
+    /// the way Pixpin and the Finder toolbar signal a drop-down.
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        let color = (isSelected ? selectedColor : normalColor).withAlphaComponent(0.7)
+        let path = NSBezierPath()
+        // The button draws flipped, so the tip of the chevron is the larger y.
+        let x = bounds.maxX - 8, y = bounds.maxY - 8
+        path.move(to: NSPoint(x: x - 3.5, y: y))
+        path.line(to: NSPoint(x: x - 1.5, y: y + 2))
+        path.line(to: NSPoint(x: x + 0.5, y: y))
+        path.lineWidth = 1.2
+        path.lineCapStyle = .round
+        path.lineJoinStyle = .round
+        color.setStroke()
+        path.stroke()
+    }
 }
 
 // MARK: - Tool Button
@@ -3586,8 +3604,8 @@ class ToolButton: NSButton {
     /// Text shown by the dark hover tooltip. nil = no tip.
     var hoverTip: String?
 
-    private let normalColor: NSColor
-    private let selectedColor: NSColor
+    let normalColor: NSColor
+    let selectedColor: NSColor
     private var hoverTrackingArea: NSTrackingArea?
 
     init(frame: NSRect, symbolName: String, normalColor: NSColor, selectedColor: NSColor, symbolPointSize: CGFloat = 14, iconImage: NSImage? = nil) {
