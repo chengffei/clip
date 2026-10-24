@@ -3702,13 +3702,15 @@ class ToolButton: NSButton {
                     respectFlipped: true, hints: nil)
     }
 
-    private static var inkBoundsCache: [ObjectIdentifier: NSRect] = [:]
+    /// Keyed by identity and holding the image strongly, so a freed image's
+    /// address can never be reused by another glyph and return stale bounds.
+    private static var inkBoundsCache: [ObjectIdentifier: (image: NSImage, rect: NSRect)] = [:]
 
     /// Bounding box of the painted pixels of `image`, in points, measured on
     /// a 4x raster so faint anti-aliased edges count.
     static func inkBounds(of image: NSImage) -> NSRect {
         let key = ObjectIdentifier(image)
-        if let cached = inkBoundsCache[key] { return cached }
+        if let cached = inkBoundsCache[key], cached.image === image { return cached.rect }
         let scale = 4
         let w = max(1, Int(image.size.width.rounded(.up))) * scale
         let h = max(1, Int(image.size.height.rounded(.up))) * scale
@@ -3740,7 +3742,7 @@ class ToolButton: NSButton {
             width: CGFloat(maxX - minX + 1) / CGFloat(scale),
             height: CGFloat(maxY - minY + 1) / CGFloat(scale)
         )
-        inkBoundsCache[key] = rect
+        inkBoundsCache[key] = (image, rect)
         return rect
     }
 }
