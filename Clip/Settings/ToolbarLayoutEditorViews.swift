@@ -369,6 +369,32 @@ final class ToolbarSlotGridView: NSView {
     }
 
     /// Frame of the slot at a flow index (flipped: row 0 sits at the top).
+    /// On the bar, two or more shape tools collapse into one button. Tint
+    /// their tiles and join neighbours so the grid says so before the user
+    /// wonders where the other shapes went.
+    private func drawShapeGroupBackdrop() {
+        guard section == .primary else { return }
+        let shapeTiles = tiles.filter { ToolbarLayout.shapeFamily.contains($0.itemID) }
+        guard shapeTiles.count >= 2 else { return }
+        var runs: [NSRect] = []
+        for tile in shapeTiles {
+            let rect = tile.frame.insetBy(dx: -3, dy: -3)
+            if let last = runs.last, abs(last.midY - rect.midY) < 1, rect.minX - last.maxX < Self.gap + 7 {
+                runs[runs.count - 1] = last.union(rect)
+            } else {
+                runs.append(rect)
+            }
+        }
+        Brand.accentFill.withAlphaComponent(0.10).setFill()
+        Brand.accent.withAlphaComponent(0.35).setStroke()
+        for run in runs {
+            let path = NSBezierPath(roundedRect: run, xRadius: 11, yRadius: 11)
+            path.fill()
+            path.lineWidth = 1
+            path.stroke()
+        }
+    }
+
     func slotFrame(at index: Int) -> NSRect {
         let cols = max(1, columns)
         let col = index % cols
@@ -392,6 +418,7 @@ final class ToolbarSlotGridView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        drawShapeGroupBackdrop()
         // Empty placeholder slots out to the displayed row count.
         let total = displayRows * columns
         if items.count < total {

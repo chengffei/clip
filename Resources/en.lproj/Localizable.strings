@@ -357,7 +357,7 @@
 "ocrLanguageSetChineseEnglish" = "Chinese and English (fast start)";
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
 "ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
-"tipShapePicker" = "click again for other shapes";
+"tipShapePicker" = "chevron or long-press for other shapes";
 "settingsTabTranslation" = "Translation";
 "settingsTabToolbar" = "Toolbar";
 "settingsQuit" = "Quit App";
@@ -368,7 +368,7 @@
 "toolbarSettingsSideHint" = "Tucked behind the ellipsis button at the end of the bar; one click away without crowding the view";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
 "toolbarSettingsHiddenHint" = "Tools dragged here won't appear in any toolbar. Spare dividers wait here too";
-"toolbarSettingsFootnote" = "Rectangle, ellipse, arrow and line merge into one shape button when they share the bar; click again or long-press to switch";
+"toolbarSettingsFootnote" = "Shape tools on the bar (tinted above) merge into one button. Click its icon to use the shape shown; click the small chevron or long-press to pick another";
 "toolbarSettingsShortcutHint" = "Click a tool to record its shortcut, drag to reposition it, or right-click for more options";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
 "toolbarSettingsShortcutRecord" = "Record Shortcut";

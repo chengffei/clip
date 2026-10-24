@@ -3533,8 +3533,18 @@ final class ShapeGroupButton: ToolButton {
         setAccessibilityLabel(current.tooltip)
     }
 
+    /// Right-hand strip under the chevron: a click there opens the picker
+    /// straight away, like a split button.
+    private var chevronZone: NSRect {
+        NSRect(x: bounds.maxX - 12, y: bounds.minY, width: 12, height: bounds.height)
+    }
+
     override func mouseDown(with event: NSEvent) {
         ToolTipWindow.hide()
+        if chevronZone.contains(convert(event.locationInWindow, from: nil)) {
+            onPickerRequested?()
+            return
+        }
         pickerOpenedFromPress = false
         longPressTimer?.invalidate()
         longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
@@ -3555,11 +3565,9 @@ final class ShapeGroupButton: ToolButton {
         longPressTimer?.invalidate()
         longPressTimer = nil
         guard !pickerOpenedFromPress, isInside else { return }
-        if isSelected {
-            onPickerRequested?()
-        } else {
-            onPick?(current)
-        }
+        // The glyph always means "use this shape"; the controller toggles it
+        // off when it is already active, like every other tool button.
+        onPick?(current)
     }
 
     override func rightMouseDown(with event: NSEvent) {
@@ -3570,14 +3578,14 @@ final class ShapeGroupButton: ToolButton {
     /// the way Pixpin and the Finder toolbar signal a drop-down.
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
-        let color = (isSelected ? selectedColor : normalColor).withAlphaComponent(0.7)
+        let color = (isSelected ? selectedColor : normalColor).withAlphaComponent(0.75)
         let path = NSBezierPath()
         // The button draws flipped, so the tip of the chevron is the larger y.
-        let x = bounds.maxX - 8, y = bounds.maxY - 8
-        path.move(to: NSPoint(x: x - 3.5, y: y))
-        path.line(to: NSPoint(x: x - 1.5, y: y + 2))
-        path.line(to: NSPoint(x: x + 0.5, y: y))
-        path.lineWidth = 1.2
+        let x = bounds.maxX - 7, y = bounds.maxY - 9
+        path.move(to: NSPoint(x: x - 4, y: y))
+        path.line(to: NSPoint(x: x - 1.5, y: y + 2.5))
+        path.line(to: NSPoint(x: x + 1, y: y))
+        path.lineWidth = 1.4
         path.lineCapStyle = .round
         path.lineJoinStyle = .round
         color.setStroke()
