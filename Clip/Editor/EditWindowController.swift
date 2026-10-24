@@ -3678,19 +3678,21 @@ class ToolButton: NSButton {
             rect.fill(using: .sourceAtop)
             return true
         }
-        // Centre the symbol's alignment rect, not its bitmap: SF Symbols pad
-        // ascenders and descenders differently, so centring the bitmap makes
-        // glyphs of the same point size sit at different heights.
-        // The shift is clamped so an odd alignment rect can never push a
-        // glyph past the button's edge.
-        let alignment = image.alignmentRect
-        var shiftY = image.size.height / 2 - alignment.midY
-        if alignment.isEmpty || alignment.height > image.size.height { shiftY = 0 }
-        shiftY = max(-2, min(2, shiftY.rounded()))
+        // Centre the symbol's visible ink, not its bitmap or alignment rect:
+        // SF Symbols pad ascenders and descenders differently (a tray with an
+        // arrow sits low, a pin sits high), so only the painted pixels tell
+        // where the glyph really is. The shift is clamped so an odd glyph can
+        // never leave the button.
+        let ink = Self.inkBounds(of: image)
+        var shiftY = image.size.height / 2 - ink.midY
+        var shiftX = image.size.width / 2 - ink.midX
+        if ink.isEmpty { shiftY = 0; shiftX = 0 }
+        shiftY = max(-3, min(3, shiftY.rounded()))
+        shiftX = max(-3, min(3, shiftX.rounded()))
         // Whole-point origin: a fractional origin makes the symbol bitmap
         // resample and lose its faint edge rows at both backing scales.
         let imageRect = NSRect(
-            x: (bounds.midX - image.size.width / 2).rounded(),
+            x: (bounds.midX - image.size.width / 2 + shiftX).rounded(),
             y: (bounds.midY - image.size.height / 2 + shiftY).rounded(),
             width: image.size.width,
             height: image.size.height
@@ -3698,6 +3700,48 @@ class ToolButton: NSButton {
         tinted.draw(in: imageRect, from: .zero, operation: .sourceOver,
                     fraction: !isEnabled ? 0.5 : (isHighlighted ? 0.65 : 1),
                     respectFlipped: true, hints: nil)
+    }
+
+    private static var inkBoundsCache: [ObjectIdentifier: NSRect] = [:]
+
+    /// Bounding box of the painted pixels of `image`, in points, measured on
+    /// a 4x raster so faint anti-aliased edges count.
+    static func inkBounds(of image: NSImage) -> NSRect {
+        let key = ObjectIdentifier(image)
+        if let cached = inkBoundsCache[key] { return cached }
+        let scale = 4
+        let w = max(1, Int(image.size.width.rounded(.up))) * scale
+        let h = max(1, Int(image.size.height.rounded(.up))) * scale
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h, bitsPerSample: 8,
+            samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ), let data = rep.bitmapData else { return .zero }
+        rep.size = image.size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        image.draw(in: NSRect(origin: .zero, size: image.size), from: .zero, operation: .sourceOver, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+        var minX = w, minY = h, maxX = -1, maxY = -1
+        let row = rep.bytesPerRow
+        for y in 0..<h {
+            for x in 0..<w where data[y * row + x * 4 + 3] > 24 {
+                if x < minX { minX = x }
+                if x > maxX { maxX = x }
+                if y < minY { minY = y }
+                if y > maxY { maxY = y }
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return .zero }
+        // Bitmap rows run top-down; convert to the unflipped point space.
+        let rect = NSRect(
+            x: CGFloat(minX) / CGFloat(scale),
+            y: image.size.height - CGFloat(maxY + 1) / CGFloat(scale),
+            width: CGFloat(maxX - minX + 1) / CGFloat(scale),
+            height: CGFloat(maxY - minY + 1) / CGFloat(scale)
+        )
+        inkBoundsCache[key] = rect
+        return rect
     }
 }
 

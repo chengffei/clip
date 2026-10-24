@@ -55,3 +55,41 @@ final class ToolButtonRenderingTests: XCTestCase {
         return Double(last - first + 1)
     }
 }
+
+final class ToolButtonInkAlignmentTests: XCTestCase {
+    /// Every glyph on the default bar must sit on the same optical centre
+    /// line; a tray-with-arrow or a pin must not drift from the rest.
+    func testDefaultBarGlyphsShareOneOpticalCentre() throws {
+        _ = NSApplication.shared
+        var centres: [String: CGFloat] = [:]
+        for id in ToolbarLayout.default.primary where id.kind != .dragHandle {
+            let button = ToolButton(
+                frame: NSRect(x: 0, y: 0, width: 40, height: 40),
+                symbolName: id.symbolName, normalColor: .black, selectedColor: .black,
+                symbolPointSize: ToolbarView.symbolPointSize,
+                iconImage: id.iconImage(pointSize: ToolbarView.symbolPointSize)
+            )
+            let rep = try XCTUnwrap(NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: 80, pixelsHigh: 80, bitsPerSample: 8,
+                samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+            ))
+            rep.size = NSSize(width: 40, height: 40)
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+            button.draw(button.bounds)
+            NSGraphicsContext.restoreGraphicsState()
+            let data = try XCTUnwrap(rep.bitmapData)
+            var minY = 80, maxY = -1
+            for y in 0..<80 {
+                for x in 0..<80 where data[y * rep.bytesPerRow + x * 4 + 3] > 24 {
+                    minY = min(minY, y); maxY = max(maxY, y); break
+                }
+            }
+            XCTAssertGreaterThanOrEqual(maxY, minY, "\(id.rawValue) drew nothing")
+            centres[id.rawValue] = CGFloat(minY + maxY) / 2 / 2
+        }
+        let values = centres.values.sorted()
+        XCTAssertLessThanOrEqual(values.last! - values.first!, 1.5, "optical centres spread: \(centres)")
+    }
+}
