@@ -663,12 +663,12 @@ final class ToolbarLayoutPreviewView: NSView {
 
     private func updatePrimaryPreview(selection: NSRect) {
         primaryScrollView.isHidden = layout.primary.isEmpty
-        primaryStripView.items = layout.primary
         guard !layout.primary.isEmpty else { return }
 
-        // The real bar appends a "more" button when the menu has items.
-        primaryStripView.trailingMore = !layout.side.isEmpty
-        let run = capsuleRun(layout.primary.count + (layout.side.isEmpty ? 0 : 1))
+        // Same zoning as the real bar: close | tools | edit + more | outcomes.
+        let slots = ToolbarView.buildSlots(items: layout.primary, hasOverflow: !layout.side.isEmpty)
+        primaryStripView.slots = slots
+        let run = primaryStripView.runLength(for: slots)
         let maxWidth = max(capsuleThickness, bounds.width - previewMargin * 2)
         let width = min(run, maxWidth)
         let proposedX = selection.minX
@@ -746,9 +746,18 @@ private final class ToolbarPreviewStripView: NSView {
     var items: [ToolbarItemID] = [] {
         didSet { needsDisplay = true }
     }
-    /// Draw an ellipsis after the items, standing in for the "more" button.
-    var trailingMore = false {
+    /// Zoned slots mirroring the real bar; when set, they replace `items`.
+    var slots: [ToolbarView.Slot] = [] {
         didSet { needsDisplay = true }
+    }
+    private let gapWidth: CGFloat = 9
+
+    func runLength(for slots: [ToolbarView.Slot]) -> CGFloat {
+        var run = miniPad * 2 - miniGap
+        for slot in slots {
+            if case .gap = slot { run += gapWidth } else { run += miniButton + miniGap }
+        }
+        return run
     }
 
     private let miniButton: CGFloat = 15
@@ -775,46 +784,61 @@ private final class ToolbarPreviewStripView: NSView {
         body.lineWidth = 1
         body.stroke()
 
+        if !slots.isEmpty {
+            drawSlots()
+            return
+        }
         for (index, id) in items.enumerated() {
-            let slot: NSRect
-            switch orientation {
-            case .horizontal:
-                slot = NSRect(
-                    x: miniPad + CGFloat(index) * (miniButton + miniGap),
-                    y: miniPad,
-                    width: miniButton, height: miniButton
-                )
-            case .vertical:
-                slot = NSRect(
-                    x: miniPad,
-                    y: miniPad + CGFloat(index) * (miniButton + miniGap),
-                    width: miniButton, height: miniButton
-                )
-            }
-            let color: NSColor
-            switch id {
-            case .close:   color = Brand.text.withAlphaComponent(0.55)
-            case .confirm: color = toolbarAccent
-            default:       color = Brand.text.withAlphaComponent(0.85)
-            }
-            if let icon = tintedToolbarIcon(id, pointSize: 9, color: color) {
+            let slot = NSRect(
+                x: miniPad + CGFloat(index) * (miniButton + miniGap),
+                y: miniPad, width: miniButton, height: miniButton
+            )
+            if let icon = tintedToolbarIcon(id, pointSize: 9, color: tint(for: id)) {
                 drawCentered(icon, in: slot)
             }
         }
-        if trailingMore, orientation.isHorizontal {
-            let slot = NSRect(
-                x: miniPad + CGFloat(items.count) * (miniButton + miniGap),
-                y: miniPad, width: miniButton, height: miniButton
-            )
-            let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .medium)
-            if let base = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
-                let tinted = NSImage(size: base.size, flipped: false) { rect in
-                    base.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
-                    Brand.text.withAlphaComponent(0.55).set()
-                    rect.fill(using: .sourceAtop)
-                    return true
+    }
+
+    private func tint(for id: ToolbarItemID) -> NSColor {
+        switch id {
+        case .close:   return Brand.text.withAlphaComponent(0.55)
+        case .confirm: return toolbarAccent
+        default:       return Brand.text.withAlphaComponent(0.85)
+        }
+    }
+
+    private func drawSlots() {
+        var x = miniPad
+        for slot in slots {
+            switch slot {
+            case .gap:
+                Brand.lineStrong.setFill()
+                NSRect(x: x + (gapWidth - 1) / 2 - 1, y: miniPad + 2, width: 1, height: miniButton - 4).fill()
+                x += gapWidth
+            case .item(let id):
+                if let icon = tintedToolbarIcon(id, pointSize: 9, color: tint(for: id)) {
+                    drawCentered(icon, in: NSRect(x: x, y: miniPad, width: miniButton, height: miniButton))
                 }
-                drawCentered(tinted, in: slot)
+                x += miniButton + miniGap
+            case .shapeGroup(let shapes):
+                let remembered = Defaults.lastShapeTool.flatMap(ToolbarItemID.init(rawValue:))
+                let shown = remembered.flatMap { shapes.contains($0) ? $0 : nil } ?? shapes.first ?? .rectangle
+                if let icon = tintedToolbarIcon(shown, pointSize: 9, color: tint(for: shown)) {
+                    drawCentered(icon, in: NSRect(x: x, y: miniPad, width: miniButton, height: miniButton))
+                }
+                x += miniButton + miniGap
+            case .more:
+                let config = NSImage.SymbolConfiguration(pointSize: 9, weight: .medium)
+                if let base = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil)?.withSymbolConfiguration(config) {
+                    let tinted = NSImage(size: base.size, flipped: false) { rect in
+                        base.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
+                        Brand.text.withAlphaComponent(0.55).set()
+                        rect.fill(using: .sourceAtop)
+                        return true
+                    }
+                    drawCentered(tinted, in: NSRect(x: x, y: miniPad, width: miniButton, height: miniButton))
+                }
+                x += miniButton + miniGap
             }
         }
     }

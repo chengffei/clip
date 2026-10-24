@@ -3253,7 +3253,7 @@ class ToolbarView: NSView {
     private let overflow: [ToolbarItemID]
 
     /// One slot per visual position after grouping.
-    private enum Slot {
+    enum Slot {
         case item(ToolbarItemID)
         case shapeGroup([ToolbarItemID])
         case more
@@ -3304,7 +3304,7 @@ class ToolbarView: NSView {
     /// Partitions the user's ordered item list into zones. Order inside a
     /// zone is the user's; zone order is fixed so the bar always reads
     /// close → tools → edit → outcomes.
-    private static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
+    static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
         var leading: [Slot] = []
         var tools: [Slot] = []
         var edit: [Slot] = []

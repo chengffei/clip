@@ -7,7 +7,14 @@ import XCTest
 final class ToolbarSnapshotTests: XCTestCase {
     func testDefaultToolbarRendersAsOneBar() throws {
         _ = NSApplication.shared
-        let layout = ToolbarLayout.default
+        var layout = ToolbarLayout.default
+        let env = ProcessInfo.processInfo.environment
+        if let raw = env["CLIP_SNAPSHOT_PRIMARY"] {
+            // Render an arbitrary saved layout, e.g. one copied from `defaults read`.
+            let primary = raw.split(separator: ",").compactMap { ToolbarItemID(rawValue: String($0)) }
+            let side = (env["CLIP_SNAPSHOT_SIDE"] ?? "").split(separator: ",").compactMap { ToolbarItemID(rawValue: String($0)) }
+            layout = ToolbarLayout(primary: primary, side: side, hidden: []).normalized()
+        }
         let bar = ToolbarView(items: layout.primary, overflow: layout.side)
         let host = NSView(frame: NSRect(origin: .zero, size: NSSize(width: bar.frame.width + 40, height: bar.frame.height + 40)))
         host.wantsLayer = true
