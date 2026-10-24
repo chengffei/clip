@@ -109,7 +109,7 @@ extension ToolbarItemID {
         case .rotate:        return "rotate.left"
         case .beautify:      return "sparkles"
         case .ocr:           return "text.viewfinder"
-        case .save:          return "square.and.arrow.down"
+        case .save:          return "arrow.down.to.line"
         case .pin:           return "pin"
         case .record:        return "video"
         case .close:         return "xmark"
