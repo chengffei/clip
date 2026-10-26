@@ -558,7 +558,7 @@ class EditWindowController {
             close()
         case .confirm:
             confirm()
-        case .moveSelection, .divider1, .divider2, .divider3, .divider4:
+        case .moveSelection, .divider1, .divider2, .divider3, .divider4, .divider5, .more:
             return false
         case .rectangle, .ellipse, .arrow, .line, .pen, .marker, .spotlight,
              .mosaic, .eraser, .magnifier, .numbered, .text, .emoji:
@@ -3306,8 +3306,8 @@ class ToolbarView: NSView {
 
     /// Turns the user's ordered item list into slots. Dividers become gaps
     /// (collapsed when adjacent, dropped at either end); the shape family
-    /// collapses into one button at the first shape's position; "more" is
-    /// appended at the end when the overflow menu has items.
+    /// collapses into one button at the first shape's position; "more" sits
+    /// wherever the user put it, and is dropped when the overflow menu is empty.
     static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
         var out: [Slot] = []
         let shapesPresent = items.filter { shapeFamily.contains($0) }
@@ -3316,6 +3316,10 @@ class ToolbarView: NSView {
             if id.isDivider {
                 if let last = out.last, case .gap = last { continue }
                 if !out.isEmpty { out.append(.gap) }
+                continue
+            }
+            if id == .more {
+                if hasOverflow { out.append(.more) }
                 continue
             }
             if shapeFamily.contains(id), shapesPresent.count >= 2 {
@@ -3328,10 +3332,6 @@ class ToolbarView: NSView {
             out.append(.item(id))
         }
         if let last = out.last, case .gap = last { out.removeLast() }
-        if hasOverflow {
-            if !out.isEmpty { out.append(.gap) }
-            out.append(.more)
-        }
         return out
     }
 

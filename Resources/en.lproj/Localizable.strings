@@ -363,13 +363,13 @@
 "settingsQuit" = "Quit App";
 
 "toolbarSettingsPrimaryTitle" = "Toolbar";
-"toolbarSettingsPrimaryHint" = "One bar under the selection. Tile order is bar order; drag a divider in to split it into zones (adjacent ones merge); More always sits at the end";
+"toolbarSettingsPrimaryHint" = "One bar under the selection. Tile order is bar order; drag a divider in to split it into zones (adjacent ones merge); the More button can sit anywhere on the bar";
 "toolbarSettingsSideTitle" = "“More” menu";
-"toolbarSettingsSideHint" = "Behind the More button at the end of the bar, one click away. A divider here becomes a menu separator";
+"toolbarSettingsSideHint" = "Behind the More button on the bar, one click away. A divider here becomes a menu separator";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
 "toolbarSettingsHiddenHint" = "Tools dragged here appear nowhere. Spare dividers wait here until you drag one up";
 "toolbarSettingsFootnote" = "Shape tools on the bar (framed in blue) merge into one button: click the icon to use the shape shown, click the small chevron or long-press to pick another. The four-way arrow is the move handle; with no tool active you can also drag the selection itself";
-"toolbarSettingsShortcutHint" = "Click a tool to record a shortcut, right-click to clear or restore it; dividers and the move handle take none";
+"toolbarSettingsShortcutHint" = "Click a tool to record a shortcut, right-click to clear or restore it; dividers, More and the move handle take none";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
 "toolbarSettingsShortcutRecord" = "Record Shortcut";
 "toolbarSettingsShortcutClear" = "Clear Shortcut";

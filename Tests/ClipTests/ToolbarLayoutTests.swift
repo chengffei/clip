@@ -3,11 +3,11 @@ import XCTest
 @testable import Clip
 
 final class ToolbarLayoutTests: XCTestCase {
-    /// One bar: close first, confirm last, shapes together, spotlight hidden.
+    /// One bar: close first, confirm then More last, shapes together, spotlight hidden.
     func testDefaultIsOneBarWithCloseFirstAndConfirmLast() {
         let layout = ToolbarLayout.default
         XCTAssertEqual(layout.primary.first, .close)
-        XCTAssertEqual(layout.primary.last, .confirm)
+        XCTAssertEqual(Array(layout.primary.suffix(3)), [.confirm, .divider4, .more])
         XCTAssertTrue(layout.hidden.contains(.spotlight))
         XCTAssertFalse(layout.side.contains(.moveSelection), "drag handle cannot live in a menu")
         XCTAssertTrue(ToolbarView.shapeFamily.allSatisfy { layout.primary.contains($0) })
@@ -42,10 +42,10 @@ final class ToolbarLayoutTests: XCTestCase {
 }
 
 final class ToolbarDividerTests: XCTestCase {
-    func testDefaultLayoutCarriesThreeDividersAndParksTheSpare() {
+    func testDefaultLayoutCarriesFourDividersAndParksTheSpare() {
         let layout = ToolbarLayout.default
-        XCTAssertEqual(layout.primary.filter(\.isDivider).count, 3)
-        XCTAssertTrue(layout.hidden.contains(.divider4))
+        XCTAssertEqual(layout.primary.filter(\.isDivider).count, 4)
+        XCTAssertTrue(layout.hidden.contains(.divider5))
     }
 
     func testLegacyLayoutGainsDividersAlongTheOldZones() {
@@ -61,13 +61,14 @@ final class ToolbarDividerTests: XCTestCase {
             legacy.primary.map(\.rawValue).filter { named.contains($0) },
             ["close", "divider1", "rectangle", "pen", "divider2", "undo", "redo", "divider3", "ocr", "save", "confirm"]
         )
-        XCTAssertTrue(legacy.hidden.contains(.divider4))
-        XCTAssertEqual((legacy.primary + legacy.side + legacy.hidden).filter(\.isDivider).count, 4)
+        XCTAssertEqual(Array(legacy.primary.suffix(2)), [.divider4, .more])
+        XCTAssertEqual((legacy.primary + legacy.side + legacy.hidden).filter(\.isDivider).count, 5)
+        XCTAssertTrue(legacy.hidden.contains(.divider5))
     }
 
-    func testDividersBecomeGapsAndMoreGoesLast() {
+    func testDividersBecomeGapsAndMoreStaysWherePlaced() {
         let slots = ToolbarView.buildSlots(
-            items: [.divider1, .close, .divider2, .divider3, .pen, .text, .divider4],
+            items: [.divider1, .close, .divider2, .more, .divider3, .pen, .text, .divider4],
             hasOverflow: true
         )
         var picture: [String] = []
@@ -79,7 +80,18 @@ final class ToolbarDividerTests: XCTestCase {
             case .shapeGroup: picture.append("shapes")
             }
         }
-        XCTAssertEqual(picture, ["close", "|", "pen", "text", "|", "more"])
+        XCTAssertEqual(picture, ["close", "|", "more", "|", "pen", "text"])
+        XCTAssertEqual(ToolbarView.buildSlots(items: [.close, .divider1, .more], hasOverflow: false).count, 1)
+    }
+
+    func testMoreIsPinnedToPrimaryAndAddedOnceForOldLayouts() {
+        let old = ToolbarLayout(primary: [.close, .divider1, .pen], side: [.ocr], hidden: []).normalized()
+        XCTAssertEqual(Array(old.primary.suffix(2)), [.divider2, .more])
+        let stray = ToolbarLayout(primary: [.close], side: [.more, .ocr], hidden: []).normalized()
+        XCTAssertEqual(stray.primary.filter { $0 == .more }.count, 1)
+        XCTAssertFalse(stray.side.contains(.more))
+        XCTAssertEqual(old.normalized(), old)
+        XCTAssertFalse(ToolbarItemID.more.supportsEditorShortcut)
     }
 
     func testDividersNeverTakeShortcuts() {

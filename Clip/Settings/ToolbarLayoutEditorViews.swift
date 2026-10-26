@@ -147,8 +147,8 @@ final class ToolbarItemTile: NSView {
 
         let shortcutDisplay = isRecordingShortcut
             ? "…"
-            : itemID.isDivider
-                ? L10n.tipDivider
+            : itemID.isDivider || itemID == .more
+                ? itemID.localizedTitle
                 : itemID.editorShortcutDisplay ?? L10n.toolbarSettingsShortcutUnavailable
         if let icon = tintedToolbarIcon(itemID, pointSize: 15, color: iconColor) {
             let size = icon.size
@@ -496,7 +496,9 @@ final class ToolbarSlotGridView: NSView {
             case .leftMouseDragged:
                 if !dragging { startDrag() }
                 positionGhost(event)
-                let hit = Self.dropTarget(windowPoint: event.locationInWindow, grids: grids)
+                var hit = Self.dropTarget(windowPoint: event.locationInWindow, grids: grids)
+                // "More" only moves within the bar; elsewhere it springs back.
+                if draggedID == .more, hit.grid?.section != .primary { hit = (nil, 0) }
                 targetGrid = hit.grid
                 targetIndex = hit.index
                 for grid in grids {

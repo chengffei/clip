@@ -35,16 +35,20 @@ enum ToolbarItemID: String, Codable, CaseIterable {
     case record
     case close
     case confirm
-    // Dividers: a fixed pool of four, each used at most once. Dragging one
+    // Dividers: a fixed pool of five, each used at most once. Dragging one
     // into the bar splits it into zones; spare ones wait in the hidden grid.
     case divider1
     case divider2
     case divider3
     case divider4
+    case divider5
+    // The "More" button that opens the overflow menu. Lives on the primary
+    // bar only; its position there is the user's choice.
+    case more
 }
 
 extension ToolbarItemID {
-    static let dividers: [ToolbarItemID] = [.divider1, .divider2, .divider3, .divider4]
+    static let dividers: [ToolbarItemID] = [.divider1, .divider2, .divider3, .divider4, .divider5]
     var isDivider: Bool { Self.dividers.contains(self) }
 }
 
@@ -62,6 +66,8 @@ extension ToolbarItemID {
         case dragHandle
         /// Zone divider — draws as a gap in the bar, never a button.
         case divider
+        /// Opens the overflow menu; pinned to the primary bar.
+        case overflowMenu
     }
 
     var kind: Kind {
@@ -74,8 +80,10 @@ extension ToolbarItemID {
             return .dragHandle
         case .insertImage, .colorPicker, .undo, .redo, .ocr, .save, .pin, .record, .close, .confirm:
             return .momentary
-        case .divider1, .divider2, .divider3, .divider4:
+        case .divider1, .divider2, .divider3, .divider4, .divider5:
             return .divider
+        case .more:
+            return .overflowMenu
         }
     }
 
@@ -129,8 +137,9 @@ extension ToolbarItemID {
         case .record:        return "video"
         case .close:         return "xmark"
         case .confirm:       return "checkmark"
-        case .divider1, .divider2, .divider3, .divider4:
+        case .divider1, .divider2, .divider3, .divider4, .divider5:
             return "rectangle.portrait"
+        case .more:          return "ellipsis"
         }
     }
 
@@ -192,8 +201,9 @@ extension ToolbarItemID {
         case .record:        return L10n.tipRecord
         case .close:         return L10n.tipCancel
         case .confirm:       return L10n.tipConfirm
-        case .divider1, .divider2, .divider3, .divider4:
+        case .divider1, .divider2, .divider3, .divider4, .divider5:
             return L10n.tipDivider
+        case .more:          return L10n.tipMore
         }
     }
 
@@ -211,7 +221,7 @@ extension ToolbarItemID {
     /// Icon tint in the resting state.
     var normalColor: NSColor {
         switch self {
-        case .close:   return Brand.text.withAlphaComponent(0.55)
+        case .close, .more: return Brand.text.withAlphaComponent(0.55)
         case .confirm: return Brand.accent
         default:       return Brand.text.withAlphaComponent(0.85)
         }
@@ -223,7 +233,7 @@ extension ToolbarItemID {
         switch kind {
         case .toggleTool, .toggleAction:
             return toolbarAccent
-        case .momentary, .dragHandle, .divider:
+        case .momentary, .dragHandle, .divider, .overflowMenu:
             return normalColor
         }
     }
@@ -258,10 +268,10 @@ struct ToolbarLayout: Equatable {
                 .close, .divider1,
                 .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered, .divider2,
                 .undo, .redo, .moveSelection, .divider3,
-                .ocr, .save, .pin, .confirm,
+                .ocr, .save, .pin, .confirm, .divider4, .more,
             ],
             side: [.marker, .eraser, .scrollCapture, .colorPicker, .magnifier, .rotate, .record],
-            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .divider4]
+            hidden: [.spotlight, .beautify, .qrCode, .emoji, .insertImage, .divider5]
         )
     }
 
@@ -309,6 +319,20 @@ struct ToolbarLayout: Equatable {
             }
             if !placed { p.insert(item, at: 0) }
             seen.insert(item)
+        }
+        // "More" belongs on the primary bar. A layout saved before it was
+        // movable gets it at the end behind a spare divider, as it used to look.
+        if let i = s.firstIndex(of: .more) { s.remove(at: i); p.append(.more) }
+        if let i = h.firstIndex(of: .more) { h.remove(at: i); p.append(.more) }
+        if !seen.contains(.more) {
+            if p.last?.isDivider == false,
+               let spare = ToolbarItemID.dividers.first(where: { !seen.contains($0) || h.contains($0) }) {
+                h.removeAll { $0 == spare }
+                p.append(spare)
+                seen.insert(spare)
+            }
+            p.append(.more)
+            seen.insert(.more)
         }
         for divider in ToolbarItemID.dividers where !seen.contains(divider) {
             h.append(divider)

@@ -349,6 +349,6 @@ extension Defaults {
 
 extension ToolbarItemID {
     var supportsEditorShortcut: Bool {
-        self != .moveSelection && !isDivider
+        self != .moveSelection && self != .more && !isDivider
     }
 }
