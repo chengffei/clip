@@ -173,7 +173,7 @@ final class ToolbarItemTile: NSView {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
         paragraph.lineBreakMode = .byClipping
-        let font = NSFont.monospacedSystemFont(ofSize: 8, weight: .semibold)
+        let font = Self.badgeFont
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .foregroundColor: Brand.text.withAlphaComponent(0.8),
@@ -197,7 +197,25 @@ final class ToolbarItemTile: NSView {
         )
     }
 
+    /// Built once: 2026-10-26 a tile redraw mid-drag aborted inside CoreText
+    /// while measuring with a freshly made font (nil font attribute). Reusing
+    /// one font and memoizing the fitted labels keeps drags off that path.
+    private static let badgeFont = NSFont.monospacedSystemFont(ofSize: 8, weight: .semibold)
+    private static var fittedCache: [String: String] = [:]
+
     private static func fittedShortcutDisplay(
+        _ display: String,
+        maximumWidth: CGFloat,
+        font: NSFont
+    ) -> String {
+        let key = "\(maximumWidth)|\(display)"
+        if let hit = fittedCache[key] { return hit }
+        let fitted = measureFitted(display, maximumWidth: maximumWidth, font: font)
+        fittedCache[key] = fitted
+        return fitted
+    }
+
+    private static func measureFitted(
         _ display: String,
         maximumWidth: CGFloat,
         font: NSFont
