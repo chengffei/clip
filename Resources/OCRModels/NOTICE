@@ -1,0 +1,8 @@
+PPOCRv6Det.mlmodelc, PPOCRv6Rec.mlmodelc and ppocrv6_keys.txt are converted
+from PaddlePaddle's PP-OCRv6 small text detector and recognizer (ONNX exports
+as packaged by RapidOCR 3.10.0), licensed under the Apache License 2.0.
+https://github.com/PaddlePaddle/PaddleOCR
+https://github.com/RapidAI/RapidOCR
+
+Conversion: scripts/ocr-models/convert.py (Float16 weights, flexible input
+sizes). No retraining or weight changes.

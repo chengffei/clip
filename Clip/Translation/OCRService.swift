@@ -76,6 +76,7 @@ enum OCRService {
     /// can take from one second to a minute. Running a tiny request at launch
     /// moves that cost away from the user's first capture.
     static func warmUp() {
+        PPOCREngine.shared.warmUp()
         DispatchQueue.global(qos: .utility).async {
             let size = CGSize(width: 64, height: 32)
             guard let ctx = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8,
@@ -105,7 +106,7 @@ enum OCRService {
                                 config: OCRProviderConfig) async throws -> OCRResult {
         try Task.checkCancellation()
         if kind == .apple {
-            let lines = await recognizeLines(image: image)
+            let lines = await recognizeLinesWithFallback(image: image)
             try Task.checkCancellation()
             if !lines.isEmpty { return OCRResult(lines: lines, provider: kind) }
             let analysis = await analyzeText(image: image)
@@ -177,6 +178,93 @@ enum OCRService {
         }
     }
 
+    /// Vision first. The bundled PP-OCR model answers when Vision errors,
+    /// finds nothing, or is still loading its language assets after 1.5 s
+    /// (cold loads took 30 s or more on macOS 27.0.1, 2026-10-26).
+    static func recognizeLinesWithFallback(image: NSImage) async -> [RecognizedTextLine] {
+        let started = Date()
+        let vision = Task { await recognizeLines(image: image) }
+        let early = try? await AsyncDeadline.run(seconds: 1.5) { await vision.value }
+        if let early, !early.isEmpty {
+            FileLog.write(String(format: "OCR chose vision %.2fs", Date().timeIntervalSince(started)))
+            return early
+        }
+        guard PPOCREngine.shared.isAvailable, let cgImage = image.cgImagePreservingBacking() else {
+            return await vision.value
+        }
+        let bundled = Task.detached(priority: .userInitiated) { () -> [RecognizedTextLine] in
+            let start = Date()
+            do {
+                let lines = try PPOCREngine.shared.recognize(cgImage)
+                FileLog.write(String(format: "OCR ppocr %dx%d %.2fs lines=%d", cgImage.width, cgImage.height, Date().timeIntervalSince(start), lines.count))
+                return lines
+            } catch {
+                FileLog.write("OCR ppocr error=\(error)")
+                return []
+            }
+        }
+        let (lines, source) = await withTaskCancellationHandler {
+            // Vision already finished empty: only the bundled model is left.
+            // Otherwise take whichever of the two first returns text.
+            if early != nil { return (await bundled.value, "ppocr") }
+            return await firstNonEmpty(vision, bundled)
+        } onCancel: {
+            vision.cancel()
+        }
+        FileLog.write(String(format: "OCR chose %@ %.2fs lines=%d", source, Date().timeIntervalSince(started), lines.count))
+        if lines.isEmpty { keepFailedInput(cgImage) }
+        return lines
+    }
+
+    private static func firstNonEmpty(
+        _ vision: Task<[RecognizedTextLine], Never>,
+        _ bundled: Task<[RecognizedTextLine], Never>
+    ) async -> ([RecognizedTextLine], String) {
+        final class Race: @unchecked Sendable {
+            private let lock = NSLock()
+            private var pending = 2
+            private var done = false
+            /// True for the one arrival that should resume the caller.
+            func arrive(found: Bool) -> Bool {
+                lock.lock()
+                defer { lock.unlock() }
+                pending -= 1
+                guard !done, found || pending == 0 else { return false }
+                done = true
+                return true
+            }
+        }
+        let race = Race()
+        return await withCheckedContinuation { continuation in
+            for (task, name) in [(vision, "vision"), (bundled, "ppocr")] {
+                Task {
+                    let lines = await task.value
+                    if race.arrive(found: !lines.isEmpty) { continuation.resume(returning: (lines, lines.isEmpty ? "none" : name)) }
+                }
+            }
+        }
+    }
+
+    /// Keeps the last five images neither engine could read, next to the
+    /// log, so a miss can be reproduced. Local only.
+    private static func keepFailedInput(_ image: CGImage) {
+        DispatchQueue.global(qos: .utility).async {
+            let dir = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Logs/Clip/ocr-misses", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let url = dir.appendingPathComponent("\(stamp).png")
+            if let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) {
+                CGImageDestinationAddImage(dest, image, nil)
+                CGImageDestinationFinalize(dest)
+            }
+            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+            for old in files.filter({ $0.pathExtension == "png" }).sorted(by: { $0.lastPathComponent > $1.lastPathComponent }).dropFirst(5) {
+                try? FileManager.default.removeItem(at: old)
+            }
+        }
+    }
+
     /// Recognizes text in `image` and returns ordered text lines with their
     /// source rectangles so result panels can draw per-line copy targets.
     static func recognizeLines(image: NSImage) async -> [RecognizedTextLine] {
@@ -213,7 +301,8 @@ enum OCRService {
             request.recognitionLanguages = OCRService.preferredRecognitionLanguages
             request.automaticallyDetectsLanguage = false
             let started = Date()
-            defer { FileLog.write(String(format: "OCR %dx%d %.2fs", cgImage.width, cgImage.height, Date().timeIntervalSince(started))) }
+            var outcome = "lines=0"
+            defer { FileLog.write(String(format: "OCR vision %dx%d %.2fs %@", cgImage.width, cgImage.height, Date().timeIntervalSince(started), outcome)) }
 
             lock.lock()
             guard !cancelled else { lock.unlock(); return [] }
@@ -222,8 +311,11 @@ enum OCRService {
 
             do {
                 try VNImageRequestHandler(cgImage: cgImage, options: [:]).perform([request])
-                return OCRService.assembleLines(request.results ?? [])
+                let lines = OCRService.assembleLines(request.results ?? [])
+                outcome = "lines=\(lines.count)"
+                return lines
             } catch {
+                outcome = "error=\(error)"
                 return []
             }
         }

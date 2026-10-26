@@ -48,6 +48,8 @@ cp "Clip/App/Info.plist" "$CONTENTS/Info.plist"
 bash scripts/inject-build-metadata.sh "$CONTENTS/Info.plist"
 cp "Resources/AppIcon.icns" "$RESOURCES/AppIcon.icns"
 cp "design/menuBarIcon.svg" "$RESOURCES/MenuBarIcon.svg"
+# Bundled OCR model (PP-OCRv6 small, Core ML) and its character list.
+cp -R "Resources/OCRModels" "$RESOURCES/"
 for lproj in Resources/*.lproj; do
     [ -d "$lproj" ] || continue
     cp -R "$lproj" "$RESOURCES/"
