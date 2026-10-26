@@ -1,11 +1,10 @@
 import Foundation
 
 extension Defaults {
-    /// An explicit selection applies to every image-to-text entry point.
+    /// Cloud providers were hidden from settings on 2026-10-26 (their code
+    /// stays), so recognition is always on-device whatever an older build saved.
     static var ocrProviderKind: OCRProviderKind {
-        get {
-            OCRProviderKind(rawValue: UserDefaults.standard.string(forKey: "ocr.provider") ?? "") ?? .apple
-        }
+        get { .apple }
         set { UserDefaults.standard.set(newValue.rawValue, forKey: "ocr.provider") }
     }
 }
@@ -560,6 +559,11 @@ enum L10n {
     static var ocrResultBehaviorCopy: String { s("ocrResultBehaviorCopy") }
     static var ocrResultBehaviorPanel: String { s("ocrResultBehaviorPanel") }
     static var ocrLanguageSetLabel: String { s("ocrLanguageSetLabel") }
+    static var ocrEngineLabel: String { s("ocrEngineLabel") }
+    static var ocrEngineAuto: String { s("ocrEngineAuto") }
+    static var ocrEngineSystem: String { s("ocrEngineSystem") }
+    static var ocrEngineBundled: String { s("ocrEngineBundled") }
+    static var ocrEngineDescription: String { s("ocrEngineDescription") }
     static var ocrLanguageSetChineseEnglish: String { s("ocrLanguageSetChineseEnglish") }
     static var ocrLanguageSetEastAsian: String { s("ocrLanguageSetEastAsian") }
     static var ocrWarmingUp: String { s("ocrWarmingUp") }
@@ -1936,6 +1940,17 @@ struct Defaults {
     static var ocrResultBehavior: OCRResultBehavior {
         get { OCRResultBehavior(rawValue: defaults.string(forKey: "ocr.resultBehavior") ?? "") ?? .copy }
         set { defaults.set(newValue.rawValue, forKey: "ocr.resultBehavior") }
+    }
+
+    /// Which on-device engine reads the text.
+    enum OCREngine: String, CaseIterable {
+        case auto      // Vision, then the bundled model when Vision misses
+        case system    // Vision only
+        case bundled   // bundled PP-OCR only
+    }
+    static var ocrEngine: OCREngine {
+        get { OCREngine(rawValue: defaults.string(forKey: "ocr.engine") ?? "") ?? .auto }
+        set { defaults.set(newValue.rawValue, forKey: "ocr.engine") }
     }
 
     /// Which Vision language models to load. Fewer models start faster.

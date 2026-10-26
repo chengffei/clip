@@ -1,29 +1,20 @@
 import AppKit
 
-/// A single active provider, with independent saved configurations. Changes
-/// apply to the next recognition request; in-flight work keeps its snapshot.
-final class OCRSettingsPane: NSView, NSTextFieldDelegate {
-    private var kind = Defaults.ocrProviderKind
-    private let providerPopup = NSPopUpButton()
+/// On-device recognition only: cloud providers were hidden on 2026-10-26
+/// (their code and saved configs stay). Changes apply to the next request.
+final class OCRSettingsPane: NSView {
     private let behaviorPopup = NSPopUpButton()
+    private let enginePopup = NSPopUpButton()
     private let languagePopup = NSPopUpButton()
-    private let descriptionLabel = NSTextField(wrappingLabelWithString: "")
-    private let geometryLabel = NSTextField(wrappingLabelWithString: "")
+    private let engineDescription = NSTextField(wrappingLabelWithString: "")
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
-    private let documentationButton = NSButton()
-    private let apiKeyField = OCRSecureField()
-    private let secretKeyField = OCRSecureField()
-    private let endpointField = OCREditableField()
-    private let modelField = OCREditableField()
-    private let regionField = OCREditableField()
     private var labels: [String: NSTextField] = [:]
-    private var rows: [String: NSView] = [:]
+    private var languageRow: NSView?
 
     init() {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         buildUI()
-        loadConfig()
         refreshLocalization()
         NotificationCenter.default.addObserver(self, selector: #selector(languageChanged),
                                                name: .languageDidChange, object: nil)
@@ -43,47 +34,35 @@ final class OCRSettingsPane: NSView, NSTextFieldDelegate {
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 14),
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 22),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -22),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -22)
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -22)
         ])
 
         behaviorPopup.target = self
         behaviorPopup.action = #selector(behaviorChanged)
         stack.addArrangedSubview(makeRow("behavior", field: behaviorPopup))
 
-        languagePopup.target = self
-        languagePopup.action = #selector(languageSetChanged)
-        let languageRow = makeRow("languageSet", field: languagePopup)
-        rows["languageSet"] = languageRow
-        stack.addArrangedSubview(languageRow)
+        enginePopup.target = self
+        enginePopup.action = #selector(engineChanged)
+        let engineRow = makeRow("engine", field: enginePopup)
+        stack.addArrangedSubview(engineRow)
+        stack.setCustomSpacing(6, after: engineRow)
 
-        providerPopup.target = self
-        providerPopup.action = #selector(providerChanged)
-        stack.addArrangedSubview(makeRow("provider", field: providerPopup))
-
-        for label in [descriptionLabel, geometryLabel, statusLabel] {
+        for label in [engineDescription, statusLabel] {
             label.font = .systemFont(ofSize: 12)
             label.textColor = .secondaryLabelColor
             label.maximumNumberOfLines = 0
             label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         }
-        stack.addArrangedSubview(descriptionLabel)
-        for (key, field) in [("apiKey", apiKeyField as NSTextField), ("secretKey", secretKeyField),
-                             ("endpoint", endpointField), ("model", modelField), ("region", regionField)] {
-            field.delegate = self
-            field.font = .systemFont(ofSize: 12)
-            field.lineBreakMode = .byTruncatingMiddle
-            field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            let row = makeRow(key, field: field)
-            rows[key] = row
-            stack.addArrangedSubview(row)
-        }
-        stack.addArrangedSubview(geometryLabel)
+        stack.addArrangedSubview(engineDescription)
+
+        languagePopup.target = self
+        languagePopup.action = #selector(languageSetChanged)
+        let languageRow = makeRow("languageSet", field: languagePopup)
+        self.languageRow = languageRow
+        stack.addArrangedSubview(languageRow)
+
         stack.addArrangedSubview(statusLabel)
-        documentationButton.bezelStyle = .rounded
-        documentationButton.target = self
-        documentationButton.action = #selector(openDocumentation)
-        stack.addArrangedSubview(documentationButton)
-        for view in stack.arrangedSubviews where view !== documentationButton {
+        for view in stack.arrangedSubviews {
             view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         }
     }
@@ -101,36 +80,6 @@ final class OCRSettingsPane: NSView, NSTextFieldDelegate {
         return row
     }
 
-    private var config: OCRProviderConfig {
-        OCRProviderConfig(apiKey: apiKeyField.stringValue, secretKey: secretKeyField.stringValue,
-                          endpoint: endpointField.stringValue, model: modelField.stringValue,
-                          region: regionField.stringValue).normalized()
-    }
-
-    private func loadConfig() {
-        let config = OCRConfigStore.load(kind)
-        apiKeyField.stringValue = config.apiKey
-        secretKeyField.stringValue = config.secretKey
-        endpointField.stringValue = config.endpoint
-        modelField.stringValue = config.model
-        regionField.stringValue = config.region
-    }
-
-    func controlTextDidChange(_ obj: Notification) {
-        OCRConfigStore.save(config, for: kind)
-        refreshStatus()
-    }
-
-    @objc private func providerChanged() {
-        let index = providerPopup.indexOfSelectedItem
-        guard OCRProviderKind.allCases.indices.contains(index) else { return }
-        OCRConfigStore.save(config, for: kind)
-        kind = OCRProviderKind.allCases[index]
-        Defaults.ocrProviderKind = kind
-        loadConfig()
-        refreshLocalization()
-    }
-
     @objc private func languageChanged() { refreshLocalization() }
 
     @objc private func behaviorChanged() {
@@ -139,86 +88,39 @@ final class OCRSettingsPane: NSView, NSTextFieldDelegate {
         Defaults.ocrResultBehavior = cases[behaviorPopup.indexOfSelectedItem]
     }
 
+    @objc private func engineChanged() {
+        let cases = Defaults.OCREngine.allCases
+        guard cases.indices.contains(enginePopup.indexOfSelectedItem) else { return }
+        Defaults.ocrEngine = cases[enginePopup.indexOfSelectedItem]
+        refreshLocalization()
+    }
+
     @objc private func languageSetChanged() {
         let cases = Defaults.OCRLanguageSet.allCases
         guard cases.indices.contains(languagePopup.indexOfSelectedItem) else { return }
         Defaults.ocrLanguageSet = cases[languagePopup.indexOfSelectedItem]
         OCRService.warmUp()
     }
-    @objc private func openDocumentation() { NSWorkspace.shared.open(kind.documentationURL) }
 
     private func refreshLocalization() {
-        providerPopup.removeAllItems()
-        providerPopup.addItems(withTitles: OCRProviderKind.allCases.map(\.displayName))
-        providerPopup.selectItem(at: OCRProviderKind.allCases.firstIndex(of: kind) ?? 0)
         behaviorPopup.removeAllItems()
         behaviorPopup.addItems(withTitles: [L10n.ocrResultBehaviorCopy, L10n.ocrResultBehaviorPanel])
         behaviorPopup.selectItem(at: Defaults.OCRResultBehavior.allCases.firstIndex(of: Defaults.ocrResultBehavior) ?? 0)
         labels["behavior"]?.stringValue = L10n.ocrResultBehaviorLabel
+
+        enginePopup.removeAllItems()
+        enginePopup.addItems(withTitles: [L10n.ocrEngineAuto, L10n.ocrEngineSystem, L10n.ocrEngineBundled])
+        enginePopup.selectItem(at: Defaults.OCREngine.allCases.firstIndex(of: Defaults.ocrEngine) ?? 0)
+        labels["engine"]?.stringValue = L10n.ocrEngineLabel
+        engineDescription.stringValue = L10n.ocrEngineDescription
+
         languagePopup.removeAllItems()
         languagePopup.addItems(withTitles: [L10n.ocrLanguageSetChineseEnglish, L10n.ocrLanguageSetEastAsian])
         languagePopup.selectItem(at: Defaults.OCRLanguageSet.allCases.firstIndex(of: Defaults.ocrLanguageSet) ?? 0)
         labels["languageSet"]?.stringValue = L10n.ocrLanguageSetLabel
-        rows["languageSet"]?.isHidden = kind != .apple
-        labels["provider"]?.stringValue = L10n.ocrProviderLabel
-        labels["apiKey"]?.stringValue = kind == .tencent ? "SecretId" : "API Key"
-        labels["secretKey"]?.stringValue = kind == .tencent ? "SecretKey" : "Secret Key"
-        labels["endpoint"]?.stringValue = L10n.ocrEndpointLabel
-        labels["model"]?.stringValue = L10n.ocrModelLabel
-        labels["region"]?.stringValue = L10n.ocrRegionLabel
-        apiKeyField.placeholderString = kind.needsModel ? L10n.ocrOptionalKey : ""
-        endpointField.placeholderString = kind == .azure
-            ? "https://YOUR-RESOURCE.cognitiveservices.azure.com/computervision/imageanalysis:analyze?api-version=2024-02-01&features=read"
-            : kind.defaultEndpoint
-        modelField.placeholderString = L10n.ocrVisionModelHint
-        regionField.placeholderString = "ap-guangzhou"
-        rows["apiKey"]?.isHidden = kind == .apple
-        rows["secretKey"]?.isHidden = !kind.needsSecret
-        rows["endpoint"]?.isHidden = !kind.needsEndpoint
-        rows["model"]?.isHidden = !kind.needsModel
-        rows["region"]?.isHidden = kind != .tencent
-        descriptionLabel.stringValue = kind == .apple ? L10n.ocrLocalDescription
-            : kind == .ollama ? L10n.ocrOllamaDescription
-            : kind == .openAICompatible ? L10n.ocrCompatibleDescription : L10n.ocrCloudDescription
-        geometryLabel.stringValue = kind.hasGeometry ? "" : L10n.ocrTextOnlyDescription
-        geometryLabel.isHidden = kind.hasGeometry
-        documentationButton.title = L10n.ocrDocumentation
-        refreshStatus()
-    }
+        // The languages only steer Vision; the built-in model has its own set.
+        languageRow?.isHidden = Defaults.ocrEngine == .bundled
 
-    private func refreshStatus() {
-        do {
-            try config.validate(for: kind)
-            statusLabel.stringValue = L10n.ocrSettingsSaved
-            statusLabel.textColor = .secondaryLabelColor
-        } catch {
-            statusLabel.stringValue = error.localizedDescription
-            statusLabel.textColor = .systemOrange
-        }
-    }
-}
-
-private func ocrEditingShortcut(_ event: NSEvent) -> Bool {
-    guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command else { return false }
-    let selector: Selector
-    switch event.charactersIgnoringModifiers {
-    case "a": selector = #selector(NSText.selectAll(_:))
-    case "c": selector = #selector(NSText.copy(_:))
-    case "v": selector = #selector(NSText.paste(_:))
-    case "x": selector = #selector(NSText.cut(_:))
-    default: return false
-    }
-    return NSApp.sendAction(selector, to: nil, from: nil)
-}
-
-private final class OCREditableField: NSTextField {
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        ocrEditingShortcut(event) || super.performKeyEquivalent(with: event)
-    }
-}
-
-private final class OCRSecureField: NSSecureTextField {
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        ocrEditingShortcut(event) || super.performKeyEquivalent(with: event)
+        statusLabel.stringValue = L10n.ocrSettingsSaved
     }
 }

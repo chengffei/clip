@@ -183,6 +183,23 @@ enum OCRService {
     /// (cold loads took 30 s or more on macOS 27.0.1, 2026-10-26).
     static func recognizeLinesWithFallback(image: NSImage) async -> [RecognizedTextLine] {
         let started = Date()
+        switch Defaults.ocrEngine {
+        case .system:
+            return await recognizeLines(image: image)
+        case .bundled:
+            guard let cgImage = image.cgImagePreservingBacking() else { return [] }
+            let lines = await Task.detached(priority: .userInitiated) { () -> [RecognizedTextLine] in
+                do { return try PPOCREngine.shared.recognize(cgImage) } catch {
+                    FileLog.write("OCR ppocr error=\(error)")
+                    return []
+                }
+            }.value
+            FileLog.write(String(format: "OCR ppocr-only %dx%d %.2fs lines=%d", cgImage.width, cgImage.height, Date().timeIntervalSince(started), lines.count))
+            if lines.isEmpty { keepFailedInput(cgImage) }
+            return lines
+        case .auto:
+            break
+        }
         let vision = Task { await recognizeLines(image: image) }
         let early = try? await AsyncDeadline.run(seconds: 1.5) { await vision.value }
         if let early, !early.isEmpty {

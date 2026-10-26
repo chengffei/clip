@@ -353,8 +353,13 @@
 "ocrResultBehaviorLabel" = "识别后";
 "ocrResultBehaviorCopy" = "直接复制到剪贴板";
 "ocrResultBehaviorPanel" = "打开结果面板";
-"ocrLanguageSetLabel" = "识别语言";
-"ocrLanguageSetChineseEnglish" = "中文与英文（启动快）";
+"ocrLanguageSetLabel" = "系统识别语言";
+"ocrEngineLabel" = "识别引擎";
+"ocrEngineAuto" = "自动（推荐）";
+"ocrEngineSystem" = "只用系统识别";
+"ocrEngineBundled" = "只用内置模型";
+"ocrEngineDescription" = "图片不离开这台 Mac；内置模型为 PaddleOCR v6";
+"ocrLanguageSetChineseEnglish" = "中文与英文";
 "ocrLanguageSetEastAsian" = "中、英、日、韩、繁体";
 "ocrWarmingUp" = "首次识别正在加载模型，之后会快";
 "tipShapePicker" = "点右下角箭头或长按换形状";
@@ -741,7 +746,7 @@
 "ocrOllamaDescription" = "连接 Ollama 并填写已安装的视觉模型 · 图片会发送至你配置的 Ollama 服务";
 "ocrTextOnlyDescription" = "此模型只返回文字，不提供坐标 · 贴图和历史预览会打开文字结果面板，无法在图片上选字";
 "ocrDocumentation" = "提供商文档";
-"ocrSettingsSaved" = "设置自动保存 · 下次识别时生效";
+"ocrSettingsSaved" = "设置自动保存，下次识别时生效";
 "ocrConfigurationError" = "请补全所需的密钥、API 地址和模型设置";
 "ocrEndpointError" = "请填写完整 HTTPS API 地址，本机服务可使用 HTTP";
 "ocrImageError" = "无法解码图片";

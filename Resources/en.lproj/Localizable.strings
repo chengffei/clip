@@ -353,8 +353,13 @@
 "ocrResultBehaviorLabel" = "After recognition";
 "ocrResultBehaviorCopy" = "Copy to clipboard";
 "ocrResultBehaviorPanel" = "Open the result panel";
-"ocrLanguageSetLabel" = "Languages";
-"ocrLanguageSetChineseEnglish" = "Chinese and English (fast start)";
+"ocrLanguageSetLabel" = "System recognition languages";
+"ocrEngineLabel" = "Engine";
+"ocrEngineAuto" = "Automatic (recommended)";
+"ocrEngineSystem" = "System recognition only";
+"ocrEngineBundled" = "Built-in model only";
+"ocrEngineDescription" = "Images never leave this Mac. The built-in model is PaddleOCR v6";
+"ocrLanguageSetChineseEnglish" = "Chinese and English";
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
 "ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
 "tipShapePicker" = "chevron or long-press for other shapes";
@@ -741,7 +746,7 @@
 "ocrOllamaDescription" = "Connect to Ollama and enter an installed vision model · Images are sent to your configured Ollama server";
 "ocrTextOnlyDescription" = "This model returns text without coordinates · Pins and history open the text result panel instead of image text selection";
 "ocrDocumentation" = "Provider documentation";
-"ocrSettingsSaved" = "Settings saved automatically · Applies to the next recognition request";
+"ocrSettingsSaved" = "Settings save automatically and apply to the next recognition";
 "ocrConfigurationError" = "Complete the required credentials, endpoint and model settings";
 "ocrEndpointError" = "Use a full HTTPS API URL or HTTP on localhost";
 "ocrImageError" = "Unable to decode the image";
