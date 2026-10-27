@@ -210,6 +210,7 @@ class EditWindowController {
     private var isScrollCapturing = false
     private var isScrollCaptureFinalizing = false
     private var scrollCaptureControlWindow: ScrollCaptureControlWindow?
+    private var scrollPreviewWindow: ScrollPreviewWindow?
     /// Persistent finish hint shown inside the selection during scroll
     /// capture. Excluded from the capture so it never appears in
     /// the stitched long screenshot.
@@ -1834,6 +1835,10 @@ class EditWindowController {
         let hintWindow = ScrollCaptureHintWindow(text: L10n.scrollCaptureManualHint)
         hintWindow.present(in: selectionRect)
         scrollCaptureHintWindow = hintWindow
+        // Created now so its window number joins the exclusion list; it only
+        // appears once the first frame arrives.
+        let previewWindow = ScrollPreviewWindow()
+        scrollPreviewWindow = previewWindow
 
         let capturer = ScrollCapturer(
             rect: captureRect,
@@ -1846,8 +1851,12 @@ class EditWindowController {
             excludingWindowNumbers: Self.scrollCaptureExcludedWindowNumbers(
                 selectionWindow: hostSelectionView?.window,
                 hintWindow: hintWindow
-            )
+            ) + [previewWindow].compactMap { $0.windowNumber > 0 ? CGWindowID($0.windowNumber) : nil }
         )
+        capturer.onPreviewUpdated = { [weak self] image in
+            guard let self, self.isScrollCapturing else { return }
+            self.scrollPreviewWindow?.updatePreview(image, anchorRect: self.selectionRect, screen: self.screen)
+        }
         scrollCapturer = capturer
         installScrollCaptureKeyMonitor()
         showScrollCaptureControl()
@@ -1897,9 +1906,12 @@ class EditWindowController {
         stopManualScrollCapture()
         removeScrollCaptureKeyMonitor()
         let finishingCapturer = scrollCapturer
+        finishingCapturer?.onPreviewUpdated = nil
         scrollCapturer = nil
         scrollCaptureControlWindow?.dismiss()
         scrollCaptureControlWindow = nil
+        scrollPreviewWindow?.dismiss()
+        scrollPreviewWindow = nil
         scrollCaptureHintWindow?.dismiss()
         scrollCaptureHintWindow = nil
         hostSelectionView?.window?.ignoresMouseEvents = false
@@ -2646,6 +2658,8 @@ class EditWindowController {
         scrollCapturer = nil
         scrollCaptureControlWindow?.dismiss()
         scrollCaptureControlWindow = nil
+        scrollPreviewWindow?.dismiss()
+        scrollPreviewWindow = nil
         scrollCaptureHintWindow?.dismiss()
         scrollCaptureHintWindow = nil
         hostSelectionView?.window?.ignoresMouseEvents = false
@@ -3896,6 +3910,78 @@ private final class RotationSubToolbar: NSView {
 
     @objc private func rotateLeft() { onRotate?(false) }
     @objc private func rotateRight() { onRotate?(true) }
+}
+
+// MARK: - Scroll Preview Window
+
+/// Small live thumbnail of the stitched long screenshot beside the selection.
+/// The window is exactly the scaled image, with no padding, so no surface
+/// colour shows around it (the 2026-10-27 "white border").
+private final class ScrollPreviewWindow: NSPanel {
+    private let imageView = NSImageView()
+    private let maxPreviewWidth: CGFloat = 96
+    private let maxPreviewHeight: CGFloat = 320
+    private let gap: CGFloat = 12
+
+    init() {
+        super.init(
+            contentRect: NSRect(x: 0, y: 0, width: 1, height: 1),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        level = .screenSaver + 3
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = true
+        ignoresMouseEvents = true
+        hidesOnDeactivate = false
+        sharingType = .none
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+        imageView.imageScaling = .scaleAxesIndependently
+        imageView.wantsLayer = true
+        imageView.layer?.cornerRadius = Brand.radius
+        imageView.layer?.masksToBounds = true
+        imageView.layer?.borderWidth = Brand.hairline
+        imageView.layer?.borderColor = Brand.line.cgColor
+        imageView.autoresizingMask = [.width, .height]
+        contentView = imageView
+    }
+
+    /// Fits the whole stitched image so far; once it is taller than the cap
+    /// the thumbnail keeps the cap and shows the newest part at the bottom.
+    func updatePreview(_ image: NSImage, anchorRect: NSRect, screen: NSScreen?) {
+        guard image.size.width > 0, image.size.height > 0 else { return }
+        let width = maxPreviewWidth
+        let fullHeight = (width * image.size.height / image.size.width).rounded()
+        let height = min(maxPreviewHeight, fullHeight)
+        if fullHeight > height {
+            // Show the bottom band at the thumbnail's scale.
+            let bandHeight = image.size.height * height / fullHeight
+            let band = NSImage(size: NSSize(width: image.size.width, height: bandHeight), flipped: false) { rect in
+                image.draw(in: rect, from: NSRect(x: 0, y: 0, width: image.size.width, height: bandHeight),
+                           operation: .copy, fraction: 1)
+                return true
+            }
+            imageView.image = band
+        } else {
+            imageView.image = image
+        }
+
+        let visible = (screen ?? NSScreen.main)?.visibleFrame ?? .zero
+        var x = anchorRect.maxX + gap
+        if x + width > visible.maxX { x = anchorRect.minX - width - gap }
+        x = max(visible.minX + gap, x)
+        let y = max(visible.minY + gap, anchorRect.maxY - height)
+        setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
+        if !isVisible { orderFrontRegardless() }
+    }
+
+    func dismiss() {
+        orderOut(nil)
+        imageView.image = nil
+    }
 }
 
 // MARK: - Emoji Sub-toolbar
