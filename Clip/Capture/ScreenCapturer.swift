@@ -9,7 +9,9 @@ struct ScreenCapturer {
         rect: CGRect,
         screen: NSScreen,
         excludingWindowNumbers: [CGWindowID] = [],
-        timeout: TimeInterval? = nil
+        // A capture that never returns used to block its caller forever,
+        // often the main thread. No screenshot legitimately takes this long.
+        timeout: TimeInterval? = 5
     ) -> NSImage? {
         guard rect.width > 0, rect.height > 0 else { return nil }
         let excludedWindowNumbers = effectiveExcludedWindowNumbers(excludingWindowNumbers)

@@ -1927,6 +1927,13 @@ class EditWindowController {
             finishScrollCapture(stitchedImage: nil)
             return
         }
+        // Watchdog: if stitching never reports back, give the editor back
+        // instead of leaving it stuck in the finalizing state.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+            guard let self, self.isScrollCaptureFinalizing else { return }
+            FileLog.write("scroll capture stitch timed out")
+            self.finishScrollCapture(stitchedImage: nil)
+        }
         finishingCapturer.stopAndStitch { [weak self] stitchedImage in
             FileLog.write("scroll capture stop frames=\(finishingCapturer.frameCount) stitched=\(stitchedImage.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "nil")")
             self?.finishScrollCapture(stitchedImage: stitchedImage)

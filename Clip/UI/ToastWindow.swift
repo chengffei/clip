@@ -84,9 +84,10 @@ class ToastWindow: NSPanel {
         if Thread.isMainThread {
             return dismissForCaptureIfNeededOnMain()
         }
-        return DispatchQueue.main.sync {
-            dismissForCaptureIfNeededOnMain()
-        }
+        // Never wait on main from another thread: main may be waiting on us.
+        let visible = !cacheLock.withLock { cachedExcludedNumbers }.isEmpty
+        DispatchQueue.main.async { _ = dismissForCaptureIfNeededOnMain() }
+        return visible
     }
 
     private static func captureExcludedWindowNumbersOnMain() -> [CGWindowID] {
