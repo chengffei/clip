@@ -210,9 +210,6 @@
 /* Toast */
 "copiedToClipboard" = "Copied to clipboard";
 "mergedLongScreenshot" = "Long screenshot merged";
-"autoScrollPermissionNeeded" = "Scroll capture needs Accessibility access — grant Clip in System Settings → Privacy & Security → Accessibility";
-"cropLongScreenshotHint" = "Drag the top/bottom edges to crop — press Enter or tap ✓";
-"scrollCaptureHint" = "Scrolling automatically; click Done or press any key to finish";
 "scrollCaptureFinish" = "Done";
 "scrollCaptureNothingCaptured" = "No new content was captured, so no long screenshot was made";
 "scrollCaptureManualHint" = "Scroll inside the selection, then click Done or press any key";
@@ -334,8 +331,6 @@
 "insertImageFromFile" = "From File";
 "insertImageChooseFile" = "Choose Image";
 "insertImageNoClipboardImage" = "No image in clipboard";
-"scrollCaptureAutoScroll" = "Auto Scroll";
-"scrollCaptureManualScroll" = "Manual Scroll";
 
 /* Language */
 "languageHeader" = "Language";

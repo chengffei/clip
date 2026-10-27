@@ -131,30 +131,20 @@ final class OverlayPresentationTests: XCTestCase {
         XCTAssertTrue(
             EditWindowController.shouldShowSelectionChrome(
                 hasPreviewImage: false,
-                isScrollCaptureBusy: false,
-                isCropping: false
+                isScrollCaptureBusy: false
             )
         )
         XCTAssertFalse(
             EditWindowController.shouldShowSelectionChrome(
                 hasPreviewImage: false,
-                isScrollCaptureBusy: true,
-                isCropping: false
+                isScrollCaptureBusy: true
             ),
             "The green dashed border and handles must not be captured in scroll frames"
         )
         XCTAssertFalse(
             EditWindowController.shouldShowSelectionChrome(
-                hasPreviewImage: false,
-                isScrollCaptureBusy: false,
-                isCropping: true
-            )
-        )
-        XCTAssertFalse(
-            EditWindowController.shouldShowSelectionChrome(
                 hasPreviewImage: true,
-                isScrollCaptureBusy: false,
-                isCropping: false
+                isScrollCaptureBusy: false
             )
         )
     }

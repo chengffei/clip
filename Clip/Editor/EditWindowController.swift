@@ -210,25 +210,17 @@ class EditWindowController {
     private var isScrollCapturing = false
     private var isScrollCaptureFinalizing = false
     private var scrollCaptureControlWindow: ScrollCaptureControlWindow?
-    private var scrollPreviewWindow: ScrollPreviewWindow?
     /// Persistent finish hint shown inside the selection during scroll
     /// capture. Excluded from the capture so it never appears in
     /// the stitched long screenshot.
     private var scrollCaptureHintWindow: ScrollCaptureHintWindow?
-    private var autoScroller: AutoScroller?
     private var manualScrollCaptureTimer: DispatchSourceTimer?
     /// Key monitor while capcap is deactivated for scroll capture, so any key
-    /// stops scrolling and moves on to crop mode.
+    /// stops scrolling and hands the stitched image to the editor.
     private var scrollCaptureKeyMonitor: Any?
 
-    // Crop mode state — shown between scroll capture and the editor so the
-    // user can trim any content auto-scroll over-shot.
-    private var isCropping = false
-    private var scrollCropView: ScrollCropView?
-    private var scrollCropControlWindow: ScrollCropControlWindow?
-
     var blocksHistoryNavigation: Bool {
-        isWaitingForWindowCaptureOutput || isScrollCaptureBusy || isCropping
+        isWaitingForWindowCaptureOutput || isScrollCaptureBusy
     }
 
     private var isScrollCaptureBusy: Bool {
@@ -238,17 +230,15 @@ class EditWindowController {
     private var shouldShowSelectionChrome: Bool {
         Self.shouldShowSelectionChrome(
             hasPreviewImage: canvasView?.hasPreviewImage == true,
-            isScrollCaptureBusy: isScrollCaptureBusy,
-            isCropping: isCropping
+            isScrollCaptureBusy: isScrollCaptureBusy
         )
     }
 
     static func shouldShowSelectionChrome(
         hasPreviewImage: Bool,
-        isScrollCaptureBusy: Bool,
-        isCropping: Bool
+        isScrollCaptureBusy: Bool
     ) -> Bool {
-        !hasPreviewImage && !isScrollCaptureBusy && !isCropping
+        !hasPreviewImage && !isScrollCaptureBusy
     }
 
     private var isLiveScreenCaptureSession: Bool {
@@ -1374,7 +1364,7 @@ class EditWindowController {
     // MARK: - Image Rotation
 
     private func showRotationSubToolbar() {
-        guard !isScrollCaptureBusy, !isCropping,
+        guard !isScrollCaptureBusy,
               let hostSelectionView, let toolbarFrame = subToolbarAnchorFrame else { return }
         if subToolbarView is RotationSubToolbar {
             showSubToolbar(for: activeTool)
@@ -1393,7 +1383,7 @@ class EditWindowController {
     }
 
     private func rotateImage(clockwise: Bool) {
-        guard !isScrollCaptureBusy, !isCropping, let canvasView else { return }
+        guard !isScrollCaptureBusy, let canvasView else { return }
         canvasView.commitActiveTextEditing()
         dismissQRCodeOverlay()
         // A screen selection becomes a fixed image at the first rotation.
@@ -1803,34 +1793,13 @@ class EditWindowController {
         if isScrollCapturing {
             stopScrollCapture()
         } else {
-            showScrollCaptureModeMenu()
+            startScrollCapture()
         }
     }
 
-    private enum ScrollCaptureMode {
-        case automatic
-        case manual
-    }
-    private var scrollCaptureMode: ScrollCaptureMode = .manual
-
-    private func showScrollCaptureModeMenu() {
-        canvasView?.commitActiveTextEditing()
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-        menu.addItem(ClosureMenuItem(title: L10n.scrollCaptureAutoScroll) { [weak self] in
-            DispatchQueue.main.async {
-                self?.startScrollCapture(mode: .automatic)
-            }
-        })
-        menu.addItem(ClosureMenuItem(title: L10n.scrollCaptureManualScroll) { [weak self] in
-            DispatchQueue.main.async {
-                self?.startScrollCapture(mode: .manual)
-            }
-        })
-        popUpToolbarMenu(menu, anchoredTo: .scrollCapture)
-    }
-
-    private func startScrollCapture(mode: ScrollCaptureMode) {
+    /// Long screenshot: the user scrolls the page themselves while the
+    /// selection is sampled; stitching happens silently in the background.
+    private func startScrollCapture() {
         guard isScrollCaptureAllowed else { return }
         guard !isScrollCaptureBusy else { return }
         guard canvasView?.hasPreviewImage != true else { return }
@@ -1839,18 +1808,8 @@ class EditWindowController {
             deactivateBeautify()
         }
 
-        if mode == .automatic {
-            // Automatic scroll posts synthetic events; without Accessibility
-            // access capcap cannot move the target page.
-            guard AutoScroller.isPermitted else {
-                ToastWindow.show(message: L10n.autoScrollPermissionNeeded, on: screen)
-                return
-            }
-        }
-
         isScrollCapturing = true
-        scrollCaptureMode = mode
-        FileLog.write("scroll capture start mode=\(mode) rect=\(Int(captureRect.width))x\(Int(captureRect.height))")
+        FileLog.write("scroll capture start rect=\(Int(captureRect.width))x\(Int(captureRect.height))")
         activeTool = .none
         canvasView?.activeTool = .none
         toolbars.forEach { $0.updateSelection(tool: .none) }
@@ -1872,8 +1831,7 @@ class EditWindowController {
         // Show the persistent hint inside the selection *before* the capturer
         // takes its first (synchronous) frame, then exclude its window from the
         // capture so it never bleeds into the stitched long screenshot.
-        let hintText = mode == .automatic ? L10n.scrollCaptureHint : L10n.scrollCaptureManualHint
-        let hintWindow = ScrollCaptureHintWindow(text: hintText)
+        let hintWindow = ScrollCaptureHintWindow(text: L10n.scrollCaptureManualHint)
         hintWindow.present(in: selectionRect)
         scrollCaptureHintWindow = hintWindow
 
@@ -1890,24 +1848,15 @@ class EditWindowController {
                 hintWindow: hintWindow
             )
         )
-        capturer.onPreviewUpdated = { [weak self] image in
-            self?.updateScrollPreview(image)
-        }
         scrollCapturer = capturer
         installScrollCaptureKeyMonitor()
         showScrollCaptureControl()
         toolbars.forEach { $0.isHidden = true }
         // The overlay stays click-through so scroll input reaches the page
-        // underneath. Automatic mode drops the user's input through
-        // AutoScroller's event tap; manual mode intentionally lets it pass.
+        // underneath.
         hostSelectionView?.window?.ignoresMouseEvents = true
         NSApp.deactivate()
-        switch mode {
-        case .automatic:
-            startAutoScroll(capturer: capturer)
-        case .manual:
-            startManualScrollCapture(capturer: capturer)
-        }
+        startManualScrollCapture(capturer: capturer)
     }
 
     static func scrollCaptureExcludedWindowNumbers(
@@ -1918,44 +1867,6 @@ class EditWindowController {
             guard let window, window.windowNumber > 0 else { return nil }
             return CGWindowID(window.windowNumber)
         }
-    }
-
-    /// Runs constant-speed automatic scrolling over the capture region. The
-    /// cursor is left unconstrained so the user can reach the stop button;
-    /// the synthetic scroll events are aimed at the region by event location.
-    private func startAutoScroll(capturer: ScrollCapturer) {
-        // Scroll ~15% of the capture height per step. Smaller steps give
-        // ~85% inter-frame overlap, which keeps the Vision-based
-        // translational image registration well inside its reliable range
-        // even on pages with repetitive content or imperfectly-detected
-        // sticky elements. Larger steps caused visible content skips in
-        // testing.
-        let stepPoints = max(60, min(180, selectionRect.height * 0.15))
-        let center = CGPoint(x: captureRect.midX, y: captureRect.midY)
-
-        let scroller = AutoScroller(
-            centerPoint: center,
-            blockingRect: captureRect,
-            stepPixels: Int(stepPoints),
-            onKeyPressed: { [weak self] in
-                guard let self, self.isScrollCapturing else { return }
-                self.stopScrollCapture()
-            }
-        )
-        autoScroller = scroller
-        scroller.start(
-            captureStep: {
-                switch capturer.captureSynchronously(expectedShiftPoints: stepPoints) {
-                case .appended: return .progressed
-                case .noNewContent: return .stalled
-                case .atFrameLimit: return .finished
-                }
-            },
-            onFinished: { [weak self] in
-                guard let self, self.isScrollCapturing else { return }
-                self.stopScrollCapture()
-            }
-        )
     }
 
     /// Samples the selected region while the user scrolls manually. Duplicate
@@ -1983,17 +1894,12 @@ class EditWindowController {
         guard isScrollCapturing else { return }
         isScrollCapturing = false
         isScrollCaptureFinalizing = true
-        autoScroller?.stop()
-        autoScroller = nil
         stopManualScrollCapture()
         removeScrollCaptureKeyMonitor()
         let finishingCapturer = scrollCapturer
-        finishingCapturer?.onPreviewUpdated = nil
         scrollCapturer = nil
         scrollCaptureControlWindow?.dismiss()
         scrollCaptureControlWindow = nil
-        scrollPreviewWindow?.dismiss()
-        scrollPreviewWindow = nil
         scrollCaptureHintWindow?.dismiss()
         scrollCaptureHintWindow = nil
         hostSelectionView?.window?.ignoresMouseEvents = false
@@ -2026,62 +1932,11 @@ class EditWindowController {
             return
         }
 
-        // Auto-scroll often over-shoots the end of a page, so its result goes
-        // through crop mode first. A manual scroll stops where the user
-        // stopped, so it goes straight to the editor (Felix, 2026-10-27).
-        guard scrollCaptureMode == .automatic else {
-            finishCropFallback(with: stitchedImage)
-            ToastWindow.show(message: L10n.mergedLongScreenshot, on: screen)
-            return
-        }
-        enterCropMode(with: stitchedImage)
-    }
-
-    // MARK: - Crop Mode
-
-    /// Shows the stitched long screenshot scaled to fit, with a top/bottom
-    /// crop overlay. The editor stays hidden underneath until confirmed.
-    private func enterCropMode(with image: NSImage) {
-        guard let hostSelectionView else {
-            // Defensive: no host view means the editor was already torn down.
-            finishCropFallback(with: image)
-            return
-        }
-
-        isCropping = true
-        activeTool = .none
-        canvasView?.activeTool = .none
-        toolbars.forEach { $0.updateSelection(tool: .none) }
-        toolbars.forEach { $0.isHidden = true }
-        selectionChromeOverlay?.isHidden = true
-
-        let cropView = ScrollCropView(frame: hostSelectionView.bounds, image: image)
-        cropView.autoresizingMask = [.width, .height]
-        hostSelectionView.addSubview(cropView)
-        scrollCropView = cropView
-
-        showCropControl()
-        bringEditorToFront()
-        ToastWindow.show(message: L10n.cropLongScreenshotHint, on: screen)
-    }
-
-    /// Skips crop mode and drops the image straight into the editor: after a
-    /// manual scroll, or when there is no host view for the crop overlay.
-    private func finishCropFallback(with image: NSImage) {
-        loadScrollCaptureImageIntoEditor(image)
+        // The user stopped scrolling where they wanted, so the stitched
+        // image goes straight to the editor; no crop step (2026-10-27).
+        loadScrollCaptureImageIntoEditor(stitchedImage)
         toolbars.forEach { $0.isHidden = false }
         bringEditorToFront()
-    }
-
-    private func confirmCrop() {
-        guard isCropping, let cropView = scrollCropView else {
-            exitCropMode()
-            return
-        }
-
-        let cropped = cropView.croppedImage()
-        exitCropMode()
-        loadScrollCaptureImageIntoEditor(cropped)
         ToastWindow.show(message: L10n.mergedLongScreenshot, on: screen)
     }
 
@@ -2098,26 +1953,6 @@ class EditWindowController {
     private static func sizeLabelText(for size: NSSize) -> String? {
         guard size.width > 0, size.height > 0 else { return nil }
         return "\(Int(size.width.rounded())) x \(Int(size.height.rounded()))"
-    }
-
-    private func exitCropMode() {
-        isCropping = false
-        scrollCropView?.removeFromSuperview()
-        scrollCropView = nil
-        scrollCropControlWindow?.dismiss()
-        scrollCropControlWindow = nil
-        selectionChromeOverlay?.isHidden = false
-        toolbars.forEach { $0.isHidden = false }
-        bringEditorToFront()
-    }
-
-    private func showCropControl() {
-        let controlWindow = ScrollCropControlWindow(
-            onConfirm: { [weak self] in self?.confirmCrop() }
-        )
-        controlWindow.positionAtBottom(of: screen)
-        scrollCropControlWindow = controlWindow
-        controlWindow.orderFrontRegardless()
     }
 
     private func save() {
@@ -2644,17 +2479,13 @@ class EditWindowController {
             stopScrollCapture()
             return
         }
-        if isCropping {
-            confirmCrop()
-            return
-        }
         confirm()
     }
 
     @discardableResult
     func pinFromKeyboard() -> Bool {
         guard !isWaitingForWindowCaptureOutput else { return true }
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         pin()
         return true
     }
@@ -2667,7 +2498,6 @@ class EditWindowController {
         guard let canvasView, let hostSelectionView else { return false }
 
         guard !isScrollCaptureBusy,
-              !isCropping,
               hostSelectionView.selectionLocked,
               hostSelectionView.selectionInteractionEnabled,
               event.window === hostSelectionView.window
@@ -2721,55 +2551,36 @@ class EditWindowController {
             stopScrollCapture()
             return
         }
-        if isCropping {
-            confirmCrop()
-            return
-        }
         save()
     }
 
-    func confirmCropFromKeyboard(for event: NSEvent) -> Bool {
-        guard isCropping else { return false }
-        let blockedModifiers: NSEvent.ModifierFlags = [.command, .control, .option]
-        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        guard modifiers.intersection(blockedModifiers).isEmpty else { return false }
-
-        switch Int(event.keyCode) {
-        case kVK_Return, kVK_ANSI_KeypadEnter:
-            confirmCrop()
-            return true
-        default:
-            return false
-        }
-    }
-
     func undoFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         return canvasView?.undoFromKeyboard(for: event) ?? false
     }
 
     func redoFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         return canvasView?.redoFromKeyboard(for: event) ?? false
     }
 
     func handleAnnotationClipboardShortcutFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         return canvasView?.handleAnnotationClipboardShortcutFromKeyboard(for: event) ?? false
     }
 
     func nudgeSelectedAnnotationFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         return canvasView?.nudgeSelectedAnnotationFromKeyboard(for: event) ?? false
     }
 
     func deleteSelectedAnnotationFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         return canvasView?.deleteSelectedAnnotationFromKeyboard(for: event) ?? false
     }
 
     func handleEditorShortcutFromKeyboard(for event: NSEvent) -> Bool {
-        guard !isScrollCaptureBusy, !isCropping else { return false }
+        guard !isScrollCaptureBusy else { return false }
         guard let shortcut = EditorShortcutRegistry.action(matching: event) else { return false }
 
         switch shortcut {
@@ -2830,20 +2641,11 @@ class EditWindowController {
         cancelActiveColorSampler()
         isScrollCapturing = false
         isScrollCaptureFinalizing = false
-        autoScroller?.stop()
-        autoScroller = nil
         stopManualScrollCapture()
         removeScrollCaptureKeyMonitor()
         scrollCapturer = nil
-        isCropping = false
-        scrollCropView?.removeFromSuperview()
-        scrollCropView = nil
-        scrollCropControlWindow?.dismiss()
-        scrollCropControlWindow = nil
         scrollCaptureControlWindow?.dismiss()
         scrollCaptureControlWindow = nil
-        scrollPreviewWindow?.dismiss()
-        scrollPreviewWindow = nil
         scrollCaptureHintWindow?.dismiss()
         scrollCaptureHintWindow = nil
         hostSelectionView?.window?.ignoresMouseEvents = false
@@ -3025,8 +2827,7 @@ class EditWindowController {
     }
 
     /// While scroll capture runs capcap is deactivated, so a local key monitor
-    /// would not fire. In automatic mode the event tap in `AutoScroller` is
-    /// the primary path; this global monitor also covers manual mode.
+    /// would not fire; this global monitor lets any key finish the capture.
     private func installScrollCaptureKeyMonitor() {
         removeScrollCaptureKeyMonitor()
         scrollCaptureKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] _ in
@@ -3040,14 +2841,6 @@ class EditWindowController {
             NSEvent.removeMonitor(scrollCaptureKeyMonitor)
             self.scrollCaptureKeyMonitor = nil
         }
-    }
-
-    private func updateScrollPreview(_ image: NSImage) {
-        guard isScrollCapturing else { return }
-        if scrollPreviewWindow == nil {
-            scrollPreviewWindow = ScrollPreviewWindow()
-        }
-        scrollPreviewWindow?.updatePreview(image, anchorRect: selectionRect)
     }
 
     private func showScrollCaptureControl() {
@@ -3084,7 +2877,7 @@ class EditWindowController {
     private func updateEditorInteractionState() {
         let hasPreview = canvasView?.hasPreviewImage == true
         let hasFixedImage = overrideBaseImage != nil
-        let isBlocked = isScrollCaptureBusy || isCropping
+        let isBlocked = isScrollCaptureBusy
         // With no tool active the canvas only claims clicks that land on an
         // annotation (see EditCanvasView.hitTest); everything else falls
         // through to the SelectionView, which may then move the whole rect.
@@ -4103,164 +3896,6 @@ private final class RotationSubToolbar: NSView {
 
     @objc private func rotateLeft() { onRotate?(false) }
     @objc private func rotateRight() { onRotate?(true) }
-}
-
-// MARK: - Crop Mode Control Window
-
-/// Floating confirm button shown during crop mode. Stays on screen
-/// regardless of how far the user scrolls the long screenshot.
-private final class ScrollCropControlWindow: NSPanel {
-    private static let windowSize = NSSize(width: 56, height: 44)
-
-    init(onConfirm: @escaping () -> Void) {
-        super.init(
-            contentRect: NSRect(origin: .zero, size: Self.windowSize),
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-
-        level = .screenSaver + 4
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = true
-        ignoresMouseEvents = false
-        hidesOnDeactivate = false
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
-        contentView = ScrollCropControlView(
-            frame: NSRect(origin: .zero, size: Self.windowSize),
-            onConfirm: onConfirm
-        )
-    }
-
-    func positionAtBottom(of screen: NSScreen) {
-        let size = frame.size
-        let visible = screen.visibleFrame
-        setFrameOrigin(NSPoint(
-            x: visible.midX - size.width / 2,
-            y: visible.minY + 36
-        ))
-    }
-
-    func dismiss() {
-        orderOut(nil)
-        contentView = nil
-    }
-}
-
-private final class ScrollCropControlView: NSView {
-    private let onConfirm: () -> Void
-
-    init(frame: NSRect, onConfirm: @escaping () -> Void) {
-        self.onConfirm = onConfirm
-        super.init(frame: frame)
-        setup()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-
-    private func setup() {
-        let button = ToolButton(
-            frame: bounds.insetBy(dx: 6, dy: 6),
-            symbolName: "checkmark",
-            normalColor: toolbarAccent,
-            selectedColor: toolbarAccent
-        )
-        button.hoverTip = L10n.tipScrollCropConfirm
-        button.target = self
-        button.action = #selector(confirmTapped)
-        addSubview(button)
-    }
-
-    @objc private func confirmTapped() {
-        onConfirm()
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
-    }
-}
-
-// MARK: - Scroll Preview Window
-
-private final class ScrollPreviewWindow: NSPanel {
-    private let imageView = NSImageView()
-    private let maxPreviewWidth: CGFloat = 120
-    private let maxPreviewHeight: CGFloat = 400
-    private let contentInset: CGFloat = 4
-
-    init() {
-        let initialRect = NSRect(
-            x: 0,
-            y: 0,
-            width: maxPreviewWidth + contentInset * 2,
-            height: maxPreviewHeight + contentInset * 2
-        )
-        super.init(
-            contentRect: initialRect,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-        level = .screenSaver + 3
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = true
-        ignoresMouseEvents = true
-        hidesOnDeactivate = false
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-
-        let containerRect = NSRect(origin: .zero, size: initialRect.size)
-        let container = AdaptiveChromeSurfaceView(
-            style: .floating,
-            cornerRadius: 8,
-            borderWidth: 0.5
-        )
-        container.frame = containerRect
-        container.autoresizingMask = [.width, .height]
-
-        imageView.imageScaling = .scaleProportionallyUpOrDown
-        imageView.imageAlignment = .alignTop
-        imageView.frame = containerRect.insetBy(dx: contentInset, dy: contentInset)
-        imageView.autoresizingMask = [.width, .height]
-        container.addSubview(imageView)
-
-        contentView = container
-    }
-
-    func updatePreview(_ image: NSImage, anchorRect: NSRect) {
-        imageView.image = image
-        let windowW = maxPreviewWidth + contentInset * 2
-        let windowH = maxPreviewHeight + contentInset * 2
-
-        // Position to the right of selection, or left if no room
-        let screenFrame = NSScreen.main?.visibleFrame ?? .zero
-        var x = anchorRect.maxX + 12
-        if x + windowW > screenFrame.maxX {
-            x = anchorRect.minX - windowW - 12
-        }
-        // Vertically align to top of selection
-        let y = anchorRect.maxY - windowH
-
-        setFrame(NSRect(x: x, y: y, width: windowW, height: windowH), display: true)
-
-        if !isVisible {
-            orderFrontRegardless()
-        }
-    }
-
-    func dismiss() {
-        orderOut(nil)
-        imageView.image = nil
-        contentView = nil
-    }
 }
 
 // MARK: - Emoji Sub-toolbar

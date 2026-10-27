@@ -727,9 +727,6 @@ class OverlayWindowController {
             if self?.handleMagnifierLensPanelCopyShortcut(for: event, allowsPlainC: true) == true {
                 return nil
             }
-            if self?.editController?.confirmCropFromKeyboard(for: event) == true {
-                return nil
-            }
             if self?.editController?.undoFromKeyboard(for: event) == true {
                 return nil
             }
