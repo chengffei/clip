@@ -98,6 +98,8 @@ final class ScrollCapturer {
             frames.append(firstFrame)
             initPreview(from: firstFrame)
         }
+        // Property observers do not run inside init, so seed the count here.
+        storedFrameCount = frames.count
     }
 
     static func pixelAligned(_ rect: CGRect, scale: CGFloat) -> CGRect {
