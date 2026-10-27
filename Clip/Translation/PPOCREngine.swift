@@ -372,12 +372,16 @@ private extension MLMultiArray {
                     let base = rowOffset(row)
                     for i in 0..<last { dst[row * last + i] = src[base + i * step] }
                 }
+            #if arch(arm64)
+            // Float16 does not exist on Intel Macs; there the generic path
+            // below handles it.
             case .float16:
                 let src = dataPointer.bindMemory(to: Float16.self, capacity: 1)
                 for row in 0..<rows {
                     let base = rowOffset(row)
                     for i in 0..<last { dst[row * last + i] = Float(src[base + i * step]) }
                 }
+            #endif
             default:
                 for i in 0..<count { dst[i] = self[i].floatValue }
             }

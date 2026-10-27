@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.1.0.dmg"><b>Download</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.2.0.dmg"><b>Download</b></a> ·
   <a href="https://chengffei.github.io/clip/">Website</a> ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -35,7 +35,7 @@ Screenshot tools keep growing: cloud sync, teams, subscriptions. Clip goes the o
 
 ## Install
 
-1. Download [Clip-0.1.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.1.0.dmg) and drag Clip into Applications.
+1. Download [Clip-0.2.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.2.0.dmg) and drag Clip into Applications.
 2. **First launch**: Clip is signed but not notarized by Apple, so macOS blocks it once. Open it, dismiss the warning, then go to *System Settings › Privacy & Security* and click **Open Anyway**.
 3. Grant two permissions when Clip asks: **Accessibility** (for the ⌘⌘ trigger) and **Screen Recording** (for capture). Clip requests Screen Recording through the system prompt, so it appears in the list by itself.
 
