@@ -110,7 +110,17 @@ class SelectionView: NSView {
     /// off-main-thread pre-capture path.
     func setBackgroundSnapshot(cgImage: CGImage, pointSize: NSSize) {
         backgroundSnapshot = NSImage(cgImage: cgImage, size: pointSize)
+        awaitsBackgroundSnapshot = false
         needsDisplay = true
+    }
+
+    /// True while the desktop snapshot is still being taken. The overlay is
+    /// already on screen by then, so anything drawn now (the hovered window's
+    /// frame, the dimming) would be photographed into the snapshot and stay
+    /// in the background and the exported image (2026-10-27). Draw nothing
+    /// until the snapshot arrives or capture gives up.
+    var awaitsBackgroundSnapshot = false {
+        didSet { if oldValue != awaitsBackgroundSnapshot { needsDisplay = true } }
     }
 
     func cancelFirstFramePresentationTracking() {
@@ -602,6 +612,8 @@ class SelectionView: NSView {
             reportFirstDrawIfNeeded()
             scheduleFirstFramePresentationIfNeeded()
         }
+
+        if awaitsBackgroundSnapshot && backgroundSnapshot == nil { return }
 
         // Draw pre-captured screen snapshot as background so transient
         // menus/popups remain visible even after they dismiss.

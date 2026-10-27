@@ -543,6 +543,7 @@ class OverlayWindowController {
             )
         case .failure(let displayID, _):
             failedSnapshotDisplayIDs.insert(displayID)
+            selectionViewsByDisplayID[displayID]?.awaitsBackgroundSnapshot = false
             if pendingSelection?.displayID == displayID {
                 finishSelectionCaptureFailure()
             }
@@ -554,6 +555,9 @@ class OverlayWindowController {
             snapshotDeadline?.cancel()
             snapshotDeadline = nil
             snapshotCaptureFinished = true
+            for selectionView in selectionViewsByDisplayID.values {
+                selectionView.awaitsBackgroundSnapshot = false
+            }
             if let pendingSelection,
                screenSnapshots[pendingSelection.displayID] == nil {
                 finishSelectionCaptureFailure()
@@ -683,6 +687,8 @@ class OverlayWindowController {
             } else if let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
                let snapshot = screenSnapshots[displayID] {
                 selectionView.setBackgroundSnapshot(cgImage: snapshot, pointSize: screen.frame.size)
+            } else if shouldCaptureSnapshots, !snapshotCaptureFinished {
+                selectionView.awaitsBackgroundSnapshot = true
             }
             window.contentView = selectionView
             window.initialFirstResponder = selectionView
