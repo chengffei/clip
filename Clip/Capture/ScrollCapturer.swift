@@ -26,7 +26,11 @@ final class ScrollCapturer {
     }
 
     var onPreviewUpdated: ((NSImage) -> Void)?
-    var frameCount: Int { captureQueue.sync { frames.count } }
+    /// Readable from any thread without waiting on the capture queue, which
+    /// may itself be waiting on the main thread.
+    var frameCount: Int { countLock.withLock { storedFrameCount } }
+    private let countLock = NSLock()
+    private var storedFrameCount = 0
 
     private let captureRect: CGRect
     private let screen: NSScreen
@@ -38,7 +42,9 @@ final class ScrollCapturer {
     private let initialCaptureTimeout: TimeInterval = 3.0
     private let settledCaptureTimeout: TimeInterval = 1.5
 
-    private var frames: [CapturedFrame] = []
+    private var frames: [CapturedFrame] = [] {
+        didSet { countLock.withLock { storedFrameCount = frames.count } }
+    }
     private var overlaps: [Int] = []
 
     // MARK: - Sticky element exclusion state

@@ -1858,6 +1858,7 @@ class EditWindowController {
             self.scrollPreviewWindow?.updatePreview(image, anchorRect: self.selectionRect, screen: self.screen)
         }
         scrollCapturer = capturer
+        FileLog.write("scroll capture first frame=\(capturer.frameCount)")
         installScrollCaptureKeyMonitor()
         showScrollCaptureControl()
         toolbars.forEach { $0.isHidden = true }
@@ -1901,6 +1902,7 @@ class EditWindowController {
 
     private func stopScrollCapture() {
         guard isScrollCapturing else { return }
+        FileLog.write("scroll capture stop requested frames=\(scrollCapturer?.frameCount ?? -1)")
         isScrollCapturing = false
         isScrollCaptureFinalizing = true
         stopManualScrollCapture()
@@ -2641,6 +2643,9 @@ class EditWindowController {
     }
 
     func tearDown() {
+        if isScrollCaptureBusy {
+            FileLog.write("scroll capture torn down while busy (capturing=\(isScrollCapturing))")
+        }
         finishBeautifyShadowSizeAdjustment(repositionChrome: false)
         detachWindowCapturePreparation()
         pendingWindowCaptureAction = nil

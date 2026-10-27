@@ -3,13 +3,22 @@ import AppKit
 class ToastWindow: NSPanel {
     private static var current: ToastWindow?
 
+    /// Off the main thread this returns the last value the main thread saw.
+    /// It used to `main.sync`, which deadlocked long screenshots: the capture
+    /// queue waited for main while main waited for the capture queue
+    /// (2026-10-27).
     static var captureExcludedWindowNumbers: [CGWindowID] {
         if Thread.isMainThread {
-            return captureExcludedWindowNumbersOnMain()
+            let numbers = captureExcludedWindowNumbersOnMain()
+            cacheLock.withLock { cachedExcludedNumbers = numbers }
+            return numbers
         }
-        return DispatchQueue.main.sync {
-            captureExcludedWindowNumbersOnMain()
-        }
+        return cacheLock.withLock { cachedExcludedNumbers }
+    }
+    private static let cacheLock = NSLock()
+    private static var cachedExcludedNumbers: [CGWindowID] = []
+    private static func refreshExcludedCache() {
+        _ = captureExcludedWindowNumbers
     }
 
     /// Shows a transient toast. When `topAnchor` is set (a point in screen
@@ -46,6 +55,7 @@ class ToastWindow: NSPanel {
 
         toast.alphaValue = 0
         toast.orderFrontRegardless()
+        refreshExcludedCache()
 
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2
@@ -59,6 +69,7 @@ class ToastWindow: NSPanel {
             }, completionHandler: {
                 toast.orderOut(nil)
                 if current === toast { current = nil }
+                refreshExcludedCache()
             })
         }
     }
