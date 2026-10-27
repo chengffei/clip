@@ -61,6 +61,11 @@ final class ScrollCapturer {
     private var scrollbarWidthPx: Int = 0
     private var scrollbarDetected: Bool = false
     private var stickyHeaderPx: Int = 0
+    /// Rows at the bottom that stay put while the content scrolls (an app's
+    /// tab bar or Save button). The smallest band seen across accepted pairs,
+    /// so blank content that happened to match once is not mistaken for it.
+    private var stickyFooterPx: Int?
+    private var previewFooterTrimmed = false
     private var stickyHeaderDetectionDone: Bool = false
     private var stickyHeaderSamplesTaken: Int = 0
 
@@ -102,6 +107,23 @@ final class ScrollCapturer {
         storedFrameCount = frames.count
     }
 
+    /// Test hook: runs the accept and stitch logic over prepared frames
+    /// without touching the screen.
+    static func stitchForTesting(_ images: [NSImage]) -> (accepted: Int, image: NSImage?) {
+        let capturer = ScrollCapturer(replaying: images)
+        return capturer.captureQueue.sync {
+            let image = capturer.frames.count > 1 ? capturer.stitchAcceptedFrames() : capturer.frames.first?.image
+            return (capturer.frames.count, image)
+        }
+    }
+
+    private init(replaying images: [NSImage]) {
+        captureRect = .zero
+        screen = NSScreen.main ?? NSScreen.screens[0]
+        excludedWindowNumbers = []
+        for image in images { _ = consider(image) }
+    }
+
     static func pixelAligned(_ rect: CGRect, scale: CGFloat) -> CGRect {
         let scale = max(scale, 1)
         let minX = (rect.minX * scale).rounded(.down) / scale
@@ -117,6 +139,7 @@ final class ScrollCapturer {
 
             // One last frame so the final scrolled state is never missed.
             self.captureFrame(expectedShiftPoints: 0)
+            FileLog.write("scroll capture polls rejected: noImage=\(self.rejectedNoImage) identical=\(self.rejectedIdentical) smallShift=\(self.rejectedSmallShift) lastOverlap=\(self.lastRejectedOverlap.map { "\($0.overlap)/\($0.height)" } ?? "-")")
 
             guard !self.frames.isEmpty else {
                 result = nil
@@ -219,15 +242,29 @@ final class ScrollCapturer {
         Thread.sleep(forTimeInterval: interval)
     }
 
+    /// Why polls were turned away, summarised in the log when capture stops.
+    private var rejectedNoImage = 0
+    private var rejectedIdentical = 0
+    private var rejectedSmallShift = 0
+    private var lastRejectedOverlap: (overlap: Int, height: Int)?
+
     @discardableResult
     private func captureFrame(expectedShiftPoints _: CGFloat) -> FrameOutcome {
         guard frames.count < maxFrames else {
             return .atFrameLimit
         }
-        guard
-            let image = captureSettledFrame(),
-            let bitmap = bitmapData(from: image)
-        else {
+        guard let image = captureSettledFrame() else {
+            rejectedNoImage += 1
+            return .noNewContent
+        }
+        return consider(image)
+    }
+
+    /// Accepts or rejects one captured frame against the last accepted one.
+    private func consider(_ image: NSImage) -> FrameOutcome {
+        guard frames.count < maxFrames else { return .atFrameLimit }
+        guard let bitmap = bitmapData(from: image) else {
+            rejectedNoImage += 1
             return .noNewContent
         }
 
@@ -235,6 +272,7 @@ final class ScrollCapturer {
 
         if let previousFrame = frames.last,
            imagesAreNearlyIdentical(previousFrame.bitmap, candidateFrame.bitmap) {
+            rejectedIdentical += 1
             return .noNewContent
         }
 
@@ -252,9 +290,25 @@ final class ScrollCapturer {
         let minimumNewRows = max(8, candidateFrame.bitmap.height / 200)
         let newRows = candidateFrame.bitmap.height - overlap
         guard newRows >= minimumNewRows else {
+            rejectedSmallShift += 1
+            lastRejectedOverlap = (overlap, candidateFrame.bitmap.height)
+            // Keep the first few rejected pairs so the miss can be studied
+            // offline. Local only; the folder is overwritten each session.
+            if rejectedSmallShift <= 3 {
+                let dir = FileManager.default.homeDirectoryForCurrentUser
+                    .appendingPathComponent("Library/Logs/Clip/scroll-misses", isDirectory: true)
+                if rejectedSmallShift == 1 { try? FileManager.default.removeItem(at: dir) }
+                try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                for (name, frame) in [("prev", previousFrame), ("cur", candidateFrame)] {
+                    if let data = frame.image.pngDataPreservingBacking() {
+                        try? data.write(to: dir.appendingPathComponent("\(rejectedSmallShift)-\(name).png"))
+                    }
+                }
+            }
             return .noNewContent
         }
 
+        FileLog.write("scroll capture frame \(frames.count + 1) overlap=\(overlap) new=\(newRows) of \(candidateFrame.bitmap.height)px")
         frames.append(candidateFrame)
         overlaps.append(overlap)
         appendToPreview(candidateFrame.bitmap, overlapPixels: overlap)
@@ -291,6 +345,14 @@ final class ScrollCapturer {
 
         let newRows = bitmap.height - overlapPixels
         guard newRows > 0 else { return }
+        // A sticky footer would otherwise repeat between every appended band:
+        // drop it from the first frame once and take new rows from above it.
+        let footer = min(stickyFooterPx ?? 0, max(0, bitmap.height - newRows))
+        if footer > 0, !previewFooterTrimmed {
+            previewHeightPixels = max(0, previewHeightPixels - footer)
+            previewFooterTrimmed = true
+        }
+        let sourceStart = previewFooterTrimmed ? bitmap.height - footer - newRows : overlapPixels
 
         let neededHeight = previewHeightPixels + newRows
         if neededHeight > previewBitmap.height {
@@ -312,7 +374,7 @@ final class ScrollCapturer {
 
         copyRows(
             from: bitmap,
-            sourceStartRow: overlapPixels,
+            sourceStartRow: sourceStart,
             rowCount: newRows,
             to: previewBitmap,
             destinationStartRow: previewHeightPixels
@@ -345,9 +407,12 @@ final class ScrollCapturer {
         let bitmapHeight = firstFrame.bitmap.height
         let scale = CGFloat(bitmapHeight) / max(firstFrame.image.size.height, 1)
 
-        let totalHeightPixels = overlaps.reduce(bitmapHeight) { partialResult, overlap in
-            partialResult + (bitmapHeight - overlap)
-        }
+        // Content above a sticky footer is stitched; the footer itself is
+        // added once, from the last frame, at the very end.
+        let newRowsPerFrame = overlaps.map { bitmapHeight - $0 }
+        let footer = min(stickyFooterPx ?? 0, max(0, bitmapHeight - (newRowsPerFrame.max() ?? 0)))
+        let contentHeight = bitmapHeight - footer
+        let totalHeightPixels = newRowsPerFrame.reduce(bitmapHeight, +)
         let totalHeightPoints = CGFloat(totalHeightPixels) / scale
 
         guard let stitchedBitmap = makeOutputBitmap(
@@ -360,8 +425,8 @@ final class ScrollCapturer {
         var destinationRow = 0
 
         for index in frames.indices {
-            let sourceStartRow = index == 0 ? 0 : overlaps[index - 1]
-            let rowsToCopy = bitmapHeight - sourceStartRow
+            let sourceStartRow = index == 0 ? 0 : contentHeight - newRowsPerFrame[index - 1]
+            let rowsToCopy = index == 0 ? contentHeight : newRowsPerFrame[index - 1]
 
             copyRows(
                 from: frames[index].bitmap,
@@ -372,6 +437,15 @@ final class ScrollCapturer {
             )
 
             destinationRow += rowsToCopy
+        }
+        if footer > 0, let last = frames.last {
+            copyRows(
+                from: last.bitmap,
+                sourceStartRow: contentHeight,
+                rowCount: footer,
+                to: stitchedBitmap,
+                destinationStartRow: destinationRow
+            )
         }
 
         return stitchedBitmap.makeImage(
@@ -423,14 +497,23 @@ final class ScrollCapturer {
         let commonWidth = min(currentCG.width, previousCG.width)
         let commonHeight = min(currentCG.height, previousCG.height)
         let cropWidth = max(0, commonWidth - scrollbarWidthPx)
-        let cropY = stickyHeaderDetectionDone
-            ? min(stickyHeaderPx, commonHeight / 5)
-            : 0
-        let cropHeight = commonHeight - cropY
+        // Rows identical in both frames at the top and bottom are fixed UI
+        // (status bar, navigation bar, tab bar). Left in, they outvote the
+        // scrolled content and Vision reports no movement at all, which made
+        // every iPhone Mirroring frame look unscrolled (2026-10-27).
+        let bands = staticBands(previous: previous, current: current)
+        let learnedHeader = stickyHeaderDetectionDone ? min(stickyHeaderPx, commonHeight / 5) : 0
+        var cropY = max(learnedHeader, bands.top)
+        var cropBottom = bands.bottom
+        if commonHeight - cropY - cropBottom < 50 {
+            cropY = learnedHeader
+            cropBottom = 0
+        }
+        let cropHeight = commonHeight - cropY - cropBottom
 
         let visionPrevious: CGImage
         let visionCurrent: CGImage
-        if cropWidth >= 50 && cropHeight >= 50 && (scrollbarWidthPx > 0 || cropY > 0) {
+        if cropWidth >= 50 && cropHeight >= 50 && (scrollbarWidthPx > 0 || cropY > 0 || cropBottom > 0) {
             let cropRect = CGRect(x: 0, y: cropY, width: cropWidth, height: cropHeight)
             visionPrevious = previousCG.cropping(to: cropRect) ?? previousCG
             visionCurrent = currentCG.cropping(to: cropRect) ?? currentCG
@@ -467,12 +550,55 @@ final class ScrollCapturer {
         }
 
         guard newContentPx > 0 else { return height }
+        // The scrolled content can't have moved further than the area between
+        // the fixed bands; a larger answer is a mismatch, not a scroll.
+        guard newContentPx < height - cropY - cropBottom else { return height }
+        stickyFooterPx = min(stickyFooterPx ?? cropBottom, cropBottom)
 
         let overlap = height - newContentPx
         return max(0, min(height, overlap))
     }
 
     // MARK: - Sticky element detection
+
+    /// Counts rows at the top and bottom that are the same in both frames.
+    /// Each band is capped at 40% of the height so a mostly-blank page can't
+    /// swallow the content area.
+    private func staticBands(previous: BitmapData, current: BitmapData) -> (top: Int, bottom: Int) {
+        let width = min(previous.width, current.width)
+        let height = min(previous.height, current.height)
+        guard width > 40, height > 40 else { return (0, 0) }
+        let inset = width / 20
+        func rowIsStatic(_ y: Int) -> Bool {
+            var diff = 0, samples = 0
+            var x = inset
+            while x < width - inset {
+                let a = previous.pixel(x: x, y: y), b = current.pixel(x: x, y: y)
+                diff += abs(Int(a.r) - Int(b.r)) + abs(Int(a.g) - Int(b.g)) + abs(Int(a.b) - Int(b.b))
+                samples += 1
+                x += 3
+            }
+            // Mirrored and video-backed content is compressed, so fixed rows
+            // still differ by a few levels between frames.
+            return samples > 0 && Double(diff) / Double(samples * 3) <= 6
+        }
+        // Tolerate short changing runs inside a fixed bar (a home indicator,
+        // a translucent edge); a band ends after 12 changed rows in a row.
+        func band(_ rowAt: (Int) -> Int) -> Int {
+            var lastStatic = -1, changedRun = 0
+            for i in 0..<(height * 2 / 5) {
+                if rowIsStatic(rowAt(i)) {
+                    lastStatic = i
+                    changedRun = 0
+                } else {
+                    changedRun += 1
+                    if changedRun > 12 { break }
+                }
+            }
+            return lastStatic + 1
+        }
+        return (band { $0 }, band { height - 1 - $0 })
+    }
 
     /// Scans the right edge of the frame pair looking for columns whose
     /// pixels differ between the two captures. Those columns are where the
