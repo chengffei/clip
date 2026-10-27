@@ -25,7 +25,7 @@ final class ScrollCropView: NSView {
     private var activeEdge: Edge?
 
     private let accent = Brand.accent
-    private let outerMargin: CGFloat = 80
+    private let outerMargin: CGFloat = 24
     private let minimumImageInset: CGFloat = 24
     private let minimumCropHeight: CGFloat = 12
     private let edgeHitInset: CGFloat = 16
@@ -164,7 +164,9 @@ final class ScrollCropView: NSView {
     // MARK: - Drawing
 
     override func draw(_ dirtyRect: NSRect) {
-        Brand.canvas.setFill()
+        // Dark backdrop: on the light canvas colour the space around the
+        // narrow fit-scaled image read as a wide white border.
+        NSColor(white: 0.12, alpha: 1).setFill()
         bounds.fill()
 
         guard imageFrame.width > 0 else { return }

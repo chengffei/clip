@@ -1811,6 +1811,7 @@ class EditWindowController {
         case automatic
         case manual
     }
+    private var scrollCaptureMode: ScrollCaptureMode = .manual
 
     private func showScrollCaptureModeMenu() {
         canvasView?.commitActiveTextEditing()
@@ -1848,6 +1849,7 @@ class EditWindowController {
         }
 
         isScrollCapturing = true
+        scrollCaptureMode = mode
         FileLog.write("scroll capture start mode=\(mode) rect=\(Int(captureRect.width))x\(Int(captureRect.height))")
         activeTool = .none
         canvasView?.activeTool = .none
@@ -2024,8 +2026,14 @@ class EditWindowController {
             return
         }
 
-        // Auto-scroll often over-shoots the end of a page, so route the
-        // stitched result through crop mode before handing it to the editor.
+        // Auto-scroll often over-shoots the end of a page, so its result goes
+        // through crop mode first. A manual scroll stops where the user
+        // stopped, so it goes straight to the editor (Felix, 2026-10-27).
+        guard scrollCaptureMode == .automatic else {
+            finishCropFallback(with: stitchedImage)
+            ToastWindow.show(message: L10n.mergedLongScreenshot, on: screen)
+            return
+        }
         enterCropMode(with: stitchedImage)
     }
 
@@ -2057,8 +2065,8 @@ class EditWindowController {
         ToastWindow.show(message: L10n.cropLongScreenshotHint, on: screen)
     }
 
-    /// Skips crop mode and drops the image straight into the editor — only
-    /// used when there is no host view to host the crop overlay.
+    /// Skips crop mode and drops the image straight into the editor: after a
+    /// manual scroll, or when there is no host view for the crop overlay.
     private func finishCropFallback(with image: NSImage) {
         loadScrollCaptureImageIntoEditor(image)
         toolbars.forEach { $0.isHidden = false }
