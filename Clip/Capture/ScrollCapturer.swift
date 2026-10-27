@@ -69,8 +69,14 @@ final class ScrollCapturer {
         screen: NSScreen,
         excludingWindowNumbers: [CGWindowID] = []
     ) {
+        // Fractional point rects made ScreenCaptureKit resample every frame,
+        // which visibly softened long screenshots next to ordinary ones
+        // (2026-10-27). Snap outward to whole device pixels so frames are
+        // copied 1:1.
+        let rect = Self.pixelAligned(rect, scale: screen.backingScaleFactor)
         self.captureRect = rect
         self.screen = screen
+        FileLog.write(String(format: "scroll capture rect %.2f,%.2f %.2fx%.2f scale=%.0f", rect.minX, rect.minY, rect.width, rect.height, screen.backingScaleFactor))
         self.excludedWindowNumbers = excludingWindowNumbers
 
         if
@@ -86,6 +92,15 @@ final class ScrollCapturer {
             frames.append(firstFrame)
             initPreview(from: firstFrame)
         }
+    }
+
+    static func pixelAligned(_ rect: CGRect, scale: CGFloat) -> CGRect {
+        let scale = max(scale, 1)
+        let minX = (rect.minX * scale).rounded(.down) / scale
+        let minY = (rect.minY * scale).rounded(.down) / scale
+        let maxX = (rect.maxX * scale).rounded(.up) / scale
+        let maxY = (rect.maxY * scale).rounded(.up) / scale
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     func stopAndStitch(completion: @escaping (NSImage?) -> Void) {
