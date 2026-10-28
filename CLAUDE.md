@@ -32,3 +32,4 @@ SwiftPM must use Xcode's toolchain (`DEVELOPER_DIR` is exported in the scripts).
 
 - `CFBundleShortVersionString` changes only when Felix says to release. Working commits never bump it; a dev build is identified by the commit hash that `scripts/inject-build-metadata.sh` embeds.
 - Set the next version once at the start of a release cycle (e.g. `0.6.0`), accumulate features under it, bump again only after that version has shipped.
+- On release, update the version in `Info.plist`, all four READMEs (`README.md`, `README.zh-CN.md`, `README.zh-TW.md`, `README.ja.md`), `docs/index.html` and `docs/llms.txt`. Keep the READMEs in step when features change.
