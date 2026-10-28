@@ -321,9 +321,9 @@
 /* Save paths */
 "savePathTitle" = "Save paths";
 "savePathSubtitle" = "Default locations for screenshots and recordings";
-"askSaveLocationLabel" = "Ask for save location";
+"askSaveLocationLabel" = "Ask where to save screenshots";
 "askSaveLocationHint" = "Show a save dialog when saving screenshots; turn off to save directly to the screenshot path";
-"autoRevealSavedFilesLabel" = "Show in Finder";
+"autoRevealSavedFilesLabel" = "Show in Finder after saving";
 "autoRevealSavedFilesHint" = "Select the saved screenshot or recording in Finder after a successful save";
 "recordingSavePathLabel" = "Recording save path";
 "recordingSaveFormatSettingLabel" = "Recording format";
@@ -345,7 +345,7 @@
 "recordingMicrophoneStartFailed" = "Could not start microphone capture";
 "screenshotSavePathLabel" = "Screenshot save path";
 "savePathChoose" = "Choose";
-"savePathReveal" = "Reveal";
+"savePathReveal" = "Open";
 "chooseRecordingSavePathTitle" = "Choose Recording Save Path";
 "chooseScreenshotSavePathTitle" = "Choose Screenshot Save Path";
 
