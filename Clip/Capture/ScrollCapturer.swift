@@ -46,6 +46,12 @@ final class ScrollCapturer {
         didSet { countLock.withLock { storedFrameCount = frames.count } }
     }
     private var overlaps: [Int] = []
+    /// Live frames while the user scrolls; nil when replaying in tests.
+    private var stream: ScrollFrameStream?
+    /// The newest frame that overlapped the last accepted one but added too
+    /// little to keep. If the next frame no longer overlaps the last accepted
+    /// one, this bridges the gap.
+    private var pendingFrame: (frame: CapturedFrame, overlap: Int, up: Bool)?
     /// Set by the first accepted step. Terminals keep the newest output at the
     /// bottom, so people often scroll up; frames are then stored in capture
     /// order and stitched bottom-up (2026-10-28).
@@ -109,6 +115,7 @@ final class ScrollCapturer {
         }
         // Property observers do not run inside init, so seed the count here.
         storedFrameCount = frames.count
+        stream = ScrollFrameStream(rect: rect, screen: screen, excludingWindowNumbers: excludingWindowNumbers)
     }
 
     /// Test hook: runs the accept and stitch logic over prepared frames
@@ -120,6 +127,8 @@ final class ScrollCapturer {
             return (capturer.frames.count, image)
         }
     }
+
+    deinit { stream?.stop() }
 
     private init(replaying images: [NSImage]) {
         captureRect = .zero
@@ -141,6 +150,8 @@ final class ScrollCapturer {
         captureQueue.async {
             var result: NSImage?
 
+            self.stream?.stop()
+            self.stream = nil
             // One last frame so the final scrolled state is never missed.
             self.captureFrame(expectedShiftPoints: 0)
             FileLog.write("scroll capture polls rejected: noImage=\(self.rejectedNoImage) identical=\(self.rejectedIdentical) smallShift=\(self.rejectedSmallShift) lastOverlap=\(self.lastRejectedOverlap.map { "\($0.overlap)/\($0.height)" } ?? "-")")
@@ -257,10 +268,16 @@ final class ScrollCapturer {
         guard frames.count < maxFrames else {
             return .atFrameLimit
         }
-        let captured = settled
-            ? captureSettledFrame()
-            : ScreenCapturer.capture(rect: captureRect, screen: screen,
-                                     excludingWindowNumbers: excludedWindowNumbers, timeout: 1)
+        let captured: NSImage?
+        if settled {
+            captured = captureSettledFrame()
+        } else if let stream, stream.isRunning {
+            guard let fresh = stream.takeNewFrame() else { return .noNewContent }
+            captured = fresh
+        } else {
+            captured = ScreenCapturer.capture(rect: captureRect, screen: screen,
+                                              excludingWindowNumbers: excludedWindowNumbers, timeout: 1)
+        }
         guard let image = captured else {
             rejectedNoImage += 1
             return .noNewContent
@@ -294,31 +311,30 @@ final class ScrollCapturer {
         }
 
         let minimumNewRows = max(8, Int(Double(candidateFrame.bitmap.height) * minimumNewFraction))
-        var overlap = candidateFrame.bitmap.height
-        var steppedUp = false
-        if scrollsUp != true {
-            overlap = findOverlap(previous: previousFrame.bitmap, current: candidateFrame.bitmap)
+        var step = measureStep(from: previousFrame, to: candidateFrame, minimumNewRows: minimumNewRows)
+        if step.newRows == 0, let pending = pendingFrame {
+            // Lost contact with the last accepted frame: the pending one is
+            // closer, so take it and measure again from there.
+            pendingFrame = nil
+            accept(pending.frame, overlap: pending.overlap, up: pending.up)
+            guard frames.count < maxFrames else { return .atFrameLimit }
+            step = measureStep(from: pending.frame, to: candidateFrame, minimumNewRows: minimumNewRows)
         }
-        if scrollsUp != false, candidateFrame.bitmap.height - overlap < minimumNewRows {
-            // The candidate sits above the last frame.
-            let upward = findOverlap(previous: candidateFrame.bitmap, current: previousFrame.bitmap)
-            if candidateFrame.bitmap.height - upward >= minimumNewRows {
-                overlap = upward
-                steppedUp = true
+        let previousForDiagnostics = frames.last ?? previousFrame
+        guard step.newRows >= minimumNewRows else {
+            if step.newRows > 0 {
+                pendingFrame = (candidateFrame, candidateFrame.bitmap.height - step.newRows, step.up)
             }
-        }
-        let newRows = candidateFrame.bitmap.height - overlap
-        guard newRows >= minimumNewRows else {
             rejectedSmallShift += 1
-            lastRejectedOverlap = (overlap, candidateFrame.bitmap.height)
+            lastRejectedOverlap = (candidateFrame.bitmap.height - step.newRows, candidateFrame.bitmap.height)
             // Keep the first few rejected pairs so the miss can be studied
             // offline. Local only; the folder is overwritten each session.
-            if rejectedSmallShift <= 3, Defaults.keepsCaptureDiagnostics {
+            if step.newRows == 0, rejectedSmallShift <= 3, Defaults.keepsCaptureDiagnostics {
                 let dir = FileManager.default.homeDirectoryForCurrentUser
                     .appendingPathComponent("Library/Logs/Clip/scroll-misses", isDirectory: true)
                 if rejectedSmallShift == 1 { try? FileManager.default.removeItem(at: dir) }
                 try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-                for (name, frame) in [("prev", previousFrame), ("cur", candidateFrame)] {
+                for (name, frame) in [("prev", previousForDiagnostics), ("cur", candidateFrame)] {
                     if let data = frame.image.pngDataPreservingBacking() {
                         try? data.write(to: dir.appendingPathComponent("\(rejectedSmallShift)-\(name).png"))
                     }
@@ -327,19 +343,40 @@ final class ScrollCapturer {
             return .noNewContent
         }
 
-        if scrollsUp == nil { scrollsUp = steppedUp }
-        FileLog.write("scroll capture frame \(frames.count + 1) overlap=\(overlap) new=\(newRows) of \(candidateFrame.bitmap.height)px\(steppedUp ? " up" : "")")
-        frames.append(candidateFrame)
+        pendingFrame = nil
+        accept(candidateFrame, overlap: candidateFrame.bitmap.height - step.newRows, up: step.up)
+        return .appended
+    }
+
+    /// New rows `candidate` adds next to `previous`, and whether it sits above
+    /// it. Zero when they don't overlap or nothing moved.
+    private func measureStep(
+        from previous: CapturedFrame, to candidate: CapturedFrame, minimumNewRows: Int
+    ) -> (newRows: Int, up: Bool) {
+        let height = candidate.bitmap.height
+        var down = 0
+        if scrollsUp != true {
+            down = height - findOverlap(previous: previous.bitmap, current: candidate.bitmap)
+            if down >= minimumNewRows || scrollsUp == false { return (down, false) }
+        }
+        // The candidate may sit above the previous frame.
+        let up = height - findOverlap(previous: candidate.bitmap, current: previous.bitmap)
+        return up > down ? (up, true) : (down, false)
+    }
+
+    private func accept(_ frame: CapturedFrame, overlap: Int, up: Bool) {
+        if scrollsUp == nil { scrollsUp = up }
+        FileLog.write("scroll capture frame \(frames.count + 1) overlap=\(overlap) new=\(frame.bitmap.height - overlap) of \(frame.bitmap.height)px\(up ? " up" : "")")
+        frames.append(frame)
         overlaps.append(overlap)
-        if steppedUp {
+        if up {
             // Growing upward: re-stitch for the thumbnail instead of appending.
             if let image = stitchAcceptedFrames() {
                 DispatchQueue.main.async { [weak self] in self?.onPreviewUpdated?(image) }
             }
         } else {
-            appendToPreview(candidateFrame.bitmap, overlapPixels: overlap)
+            appendToPreview(frame.bitmap, overlapPixels: overlap)
         }
-        return .appended
     }
 
     // MARK: - Incremental Preview

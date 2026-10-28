@@ -8,7 +8,9 @@ APP_NAME="Clip"
 APP_BUNDLE="build/$APP_NAME.app"
 
 echo "==> [1/4] Building $APP_NAME..."
-bash scripts/bundle.sh
+# Release by default: long-screenshot frame matching is several times slower
+# in debug and drops frames on fast scrolls. CONFIG=debug for a debug build.
+CONFIG="${CONFIG:-release}" bash scripts/bundle.sh
 echo "==> Build succeeded."
 
 echo "==> [2/4] Killing running $APP_NAME..."
