@@ -20,4 +20,4 @@ Clip is a fork of capcap (MIT) rewritten around three jobs. It is pure AppKit, b
 
 - [Website](https://chengffei.github.io/clip/): overview, screenshots, install steps and FAQ
 - [Source code](https://github.com/chengffei/clip): GitHub repository and README
-- [Download Clip-0.2.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.2.0.dmg): latest release (also a .zip and a .sha256 on the Releases page)
+- [Download Clip-0.3.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg): latest release (also a .zip and a .sha256 on the Releases page)
