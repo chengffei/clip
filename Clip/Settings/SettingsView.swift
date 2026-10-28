@@ -230,6 +230,7 @@ class SettingsView: NSView {
     private var screenshotSavePathValueLabel: NSTextField!
     private var screenshotSavePathChooseButton: NSButton!
     private var screenshotSavePathRevealButton: NSButton!
+    private var screenshotSavePathGroup: [NSView] = []
 
     private var refreshTimer: Timer?
     private var gradientLayer: CAGradientLayer?
@@ -1096,38 +1097,6 @@ class SettingsView: NSView {
         inner.addArrangedSubview(topDivider)
         topDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
-        let screenshotPath = makeSavePathRow(
-            title: L10n.screenshotSavePathLabel,
-            chooseAction: #selector(chooseScreenshotSavePathClicked),
-            revealAction: #selector(revealScreenshotSavePathClicked)
-        )
-        screenshotSavePathTitleLabel = screenshotPath.title
-        screenshotSavePathValueLabel = screenshotPath.value
-        screenshotSavePathChooseButton = screenshotPath.chooseButton
-        screenshotSavePathRevealButton = screenshotPath.revealButton
-        inner.addArrangedSubview(screenshotPath.row)
-        screenshotPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
-        let pathDivider = rowDivider()
-        inner.addArrangedSubview(pathDivider)
-        pathDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
-        let recordingPath = makeSavePathRow(
-            title: L10n.recordingSavePathLabel,
-            chooseAction: #selector(chooseRecordingSavePathClicked),
-            revealAction: #selector(revealRecordingSavePathClicked)
-        )
-        recordingSavePathTitleLabel = recordingPath.title
-        recordingSavePathValueLabel = recordingPath.value
-        recordingSavePathChooseButton = recordingPath.chooseButton
-        recordingSavePathRevealButton = recordingPath.revealButton
-        inner.addArrangedSubview(recordingPath.row)
-        recordingPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
-        let behaviorDivider = rowDivider()
-        inner.addArrangedSubview(behaviorDivider)
-        behaviorDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
         let askSave = makeToggleRow(
             title: L10n.askSaveLocationLabel,
             subtitle: L10n.askSaveLocationHint,
@@ -1143,9 +1112,45 @@ class SettingsView: NSView {
         inner.addArrangedSubview(askSave.row)
         askSave.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
-        let askSaveDivider = rowDivider()
-        inner.addArrangedSubview(askSaveDivider)
-        askSaveDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+        let screenshotPathDivider = rowDivider()
+        inner.addArrangedSubview(screenshotPathDivider)
+        screenshotPathDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+
+        let screenshotPath = makeSavePathRow(
+            title: L10n.screenshotSavePathLabel,
+            chooseAction: #selector(chooseScreenshotSavePathClicked),
+            revealAction: #selector(revealScreenshotSavePathClicked)
+        )
+        screenshotSavePathTitleLabel = screenshotPath.title
+        screenshotSavePathValueLabel = screenshotPath.value
+        screenshotSavePathChooseButton = screenshotPath.chooseButton
+        screenshotSavePathRevealButton = screenshotPath.revealButton
+        inner.addArrangedSubview(screenshotPath.row)
+        screenshotPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+
+        // The screenshot folder only matters once the save panel is off.
+        screenshotSavePathGroup = [screenshotPathDivider, screenshotPath.row]
+        refreshScreenshotSavePathVisibility()
+
+        let recordingDivider = rowDivider()
+        inner.addArrangedSubview(recordingDivider)
+        recordingDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+
+        let recordingPath = makeSavePathRow(
+            title: L10n.recordingSavePathLabel,
+            chooseAction: #selector(chooseRecordingSavePathClicked),
+            revealAction: #selector(revealRecordingSavePathClicked)
+        )
+        recordingSavePathTitleLabel = recordingPath.title
+        recordingSavePathValueLabel = recordingPath.value
+        recordingSavePathChooseButton = recordingPath.chooseButton
+        recordingSavePathRevealButton = recordingPath.revealButton
+        inner.addArrangedSubview(recordingPath.row)
+        recordingPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+
+        let revealDivider = rowDivider()
+        inner.addArrangedSubview(revealDivider)
+        revealDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
         let autoReveal = makeToggleRow(
             title: L10n.autoRevealSavedFilesLabel,
@@ -1963,6 +1968,11 @@ class SettingsView: NSView {
 
     @objc private func askSaveLocationToggled(_ sender: NSSwitch) {
         Defaults.askSaveLocation = sender.state == .on
+        refreshScreenshotSavePathVisibility()
+    }
+
+    private func refreshScreenshotSavePathVisibility() {
+        screenshotSavePathGroup.forEach { $0.isHidden = Defaults.askSaveLocation }
     }
 
     @objc private func autoRevealSavedFilesToggled(_ sender: NSSwitch) {
@@ -3135,6 +3145,7 @@ class SettingsView: NSView {
         askSaveLocationTitleLabel?.toolTip = L10n.askSaveLocationHint
         askSaveLocationSwitch?.toolTip = L10n.askSaveLocationHint
         askSaveLocationSwitch?.state = Defaults.askSaveLocation ? .on : .off
+        refreshScreenshotSavePathVisibility()
         autoRevealSavedFilesTitleLabel?.stringValue = L10n.autoRevealSavedFilesLabel
         autoRevealSavedFilesHintLabel?.stringValue = L10n.autoRevealSavedFilesHint
         autoRevealSavedFilesTitleLabel?.toolTip = L10n.autoRevealSavedFilesHint
