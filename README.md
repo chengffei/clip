@@ -48,7 +48,11 @@ Screenshot tools keep adding cloud sync, teams and subscriptions. Clip does thre
 ## Install
 
 1. Download [Clip-0.3.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg) and drag Clip into Applications.
-2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*.
+2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*. Or run this once in Terminal and open Clip as usual:
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Clip.app
+   ```
 3. Allow two permissions when asked: **Accessibility** for the ⌘⌘ trigger and **Screen Recording** for capture.
 
 Requires macOS 14 or later.
