@@ -1927,13 +1927,52 @@ class EditWindowController {
         canvasView?.loadPreviewImage(image)
         hostSelectionView?.selectionSizeLabelOverride = Self.sizeLabelText(for: image.size)
         hostSelectionView?.emphasizesSelection = true
+        fitLongScreenshotOnScreen(image.size)
         beautifyContainerView?.canvasSizeDidChange()
         updateCanvasScrollAvailability()
-        canvasScrollView?.scrollToTop()
-        // Hint that the result is taller than the frame.
-        canvasScrollView?.flashScrollers()
+        resetCanvasScrollPosition()
+        updateCanvasFrameForBeautify()
         updateEditorInteractionState()
         updateCaptureActionAvailability()
+        repositionFloatingChrome()
+    }
+
+    /// Test hook: puts a finished long screenshot into the editor.
+    func loadLongScreenshotForTesting(_ image: NSImage) {
+        loadScrollCaptureImageIntoEditor(image)
+    }
+
+    var canvasScrollViewForTesting: NSScrollView? { canvasScrollView }
+
+    /// Shows the whole long screenshot at once instead of a selection-sized
+    /// window onto it (2026-10-28): the frame grows to the image, scaled down
+    /// to fit the screen, top edge kept where the selection was. Annotations
+    /// stay in full-resolution image coordinates; only the display scales.
+    private func fitLongScreenshotOnScreen(_ imageSize: NSSize) {
+        guard let canvasView, let hostSelectionView, let hostWindow = hostSelectionView.window,
+              imageSize.width > 0, imageSize.height > 0 else { return }
+        let visibleRect = NSRect(
+            x: screen.visibleFrame.minX - screen.frame.minX,
+            y: screen.visibleFrame.minY - screen.frame.minY,
+            width: screen.visibleFrame.width, height: screen.visibleFrame.height
+        )
+        // Leave room above or below for the toolbar.
+        let available = NSSize(width: visibleRect.width - 80, height: visibleRect.height - 120)
+        let scale = min(1, available.width / imageSize.width, available.height / imageSize.height)
+        canvasView.setPresentationScale(scale)
+        let viewportSize = NSSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        let origin = NSPoint(
+            x: max(visibleRect.minX, min(selectionViewRect.midX - viewportSize.width / 2, visibleRect.maxX - viewportSize.width)),
+            y: max(visibleRect.minY + 60, min(selectionViewRect.maxY - viewportSize.height, visibleRect.maxY - viewportSize.height))
+        )
+        selectionViewRect = NSRect(origin: origin, size: viewportSize)
+        canvasScrollView?.frame = selectionViewRect
+        selectionRect = hostWindow.convertToScreen(hostSelectionView.convert(selectionViewRect, to: nil))
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
+        captureRect = CGRect(x: selectionRect.minX, y: primaryHeight - selectionRect.maxY,
+                             width: selectionRect.width, height: selectionRect.height)
+        hostSelectionView.updateSelectionRect(selectionViewRect)
+        hostSelectionView.selectionLocked = true
     }
 
     private static func sizeLabelText(for size: NSSize) -> String? {
