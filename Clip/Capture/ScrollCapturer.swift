@@ -541,7 +541,11 @@ final class ScrollCapturer {
         // the height of newly-revealed content at the bottom of `current`.
         // Because both Vision inputs were cropped identically, ty is the same
         // shift we would see in the original frame coordinates — apply directly.
-        let newContentPx = Int(observation.alignmentTransform.ty.rounded())
+        let visionShift = Int(observation.alignmentTransform.ty.rounded())
+        let newContentPx = visionShift > 0
+            ? refinedShift(previous: previous, current: current, estimate: visionShift,
+                           top: cropY, bottom: height - cropBottom, width: cropWidth)
+            : visionShift
 
         // First time we see a real shift, try to learn where the sticky
         // header ends so subsequent frames can crop it out.
@@ -557,6 +561,68 @@ final class ScrollCapturer {
 
         let overlap = height - newContentPx
         return max(0, min(height, overlap))
+    }
+
+    /// Vision's estimate can be off by whole lines on dark, line-structured
+    /// content such as terminals, which duplicated or cut text at the seams
+    /// (2026-10-28). Score every shift by how well the overlapping rows match,
+    /// counting only rows with visible detail so blank areas can't vote, and
+    /// keep Vision's answer unless another shift matches clearly better.
+    /// Compares rows `top..<bottom`.
+    private func refinedShift(
+        previous: BitmapData, current: BitmapData, estimate: Int,
+        top: Int, bottom: Int, width: Int
+    ) -> Int {
+        let rows = bottom - top
+        let columnCount = 96
+        guard rows > 32, width > columnCount else { return estimate }
+        let columns = (0..<columnCount).map { 2 + $0 * (width - 4) / columnCount }
+        func samples(_ bitmap: BitmapData) -> [UInt8] {
+            var out = [UInt8](repeating: 0, count: rows * columnCount)
+            for row in 0..<rows {
+                for (i, x) in columns.enumerated() {
+                    let p = bitmap.pixel(x: x, y: top + row)
+                    out[row * columnCount + i] = UInt8((Int(p.r) + 2 * Int(p.g) + Int(p.b)) / 4)
+                }
+            }
+            return out
+        }
+        let prev = samples(previous), cur = samples(current)
+        let textured: [Bool] = (0..<rows).map { row in
+            let slice = cur[(row * columnCount)..<((row + 1) * columnCount)]
+            return Int(slice.max()!) - Int(slice.min()!) > 24
+        }
+
+        let minimumTexturedRows = 12
+        func score(_ shift: Int, giveUpAbove limit: Double = .infinity) -> Double? {
+            var diff = 0, counted = 0
+            for row in 0..<(rows - shift) where textured[row] {
+                let a = (row + shift) * columnCount, b = row * columnCount
+                for i in 0..<columnCount { diff += abs(Int(prev[a + i]) - Int(cur[b + i])) }
+                counted += 1
+                if counted >= minimumTexturedRows, Double(diff) / Double(counted * columnCount) > limit * 2 + 4 {
+                    return nil
+                }
+            }
+            guard counted >= minimumTexturedRows else { return nil }
+            return Double(diff) / Double(counted * columnCount)
+        }
+
+        let estimateScore = estimate < rows ? score(estimate) : nil
+        // A near-exact match can't be beaten; skip the search.
+        if let estimateScore, estimateScore < 2 { return estimate }
+        var best = estimate, bestScore = estimateScore ?? .infinity
+        for shift in 1..<rows where shift != estimate {
+            if let candidate = score(shift, giveUpAbove: bestScore), candidate < bestScore {
+                best = shift
+                bestScore = candidate
+            }
+        }
+        // Keep Vision unless the match is clearly better; compressed sources
+        // (iPhone Mirroring) never match exactly anywhere.
+        if let estimateScore, estimateScore <= bestScore + 1 { return estimate }
+        FileLog.write("scroll capture refined shift \(estimate) -> \(best) score \(estimateScore.map { String(format: "%.1f", $0) } ?? "-") -> \(String(format: "%.1f", bestScore))")
+        return best
     }
 
     // MARK: - Sticky element detection
