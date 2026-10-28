@@ -23,6 +23,8 @@ final class ScrollCapturer {
         case noNewContent
         /// The frame budget is exhausted; capturing should stop.
         case atFrameLimit
+        /// The frame shares no rows with the last accepted one.
+        case noOverlap
     }
 
     var onPreviewUpdated: ((NSImage) -> Void)?
@@ -56,6 +58,9 @@ final class ScrollCapturer {
     /// bottom, so people often scroll up; frames are then stored in capture
     /// order and stitched bottom-up (2026-10-28).
     private var scrollsUp: Bool?
+    /// Mean pixel difference of the overlap `findOverlap` last settled on;
+    /// lower is a closer match. Infinity when it found none.
+    private var lastMatchScore: Double = .infinity
 
     // MARK: - Sticky element exclusion state
     //
@@ -100,22 +105,26 @@ final class ScrollCapturer {
         FileLog.write(String(format: "scroll capture rect %.2f,%.2f %.2fx%.2f scale=%.0f", rect.minX, rect.minY, rect.width, rect.height, screen.backingScaleFactor))
         self.excludedWindowNumbers = excludingWindowNumbers
 
-        if
-            let image = ScreenCapturer.capture(
-                rect: rect,
-                screen: screen,
-                excludingWindowNumbers: excludingWindowNumbers,
-                timeout: initialCaptureTimeout
-            ),
-            let bitmap = bitmapData(from: image)
-        {
+        // Open with the stream's own first frame, so the user can't scroll
+        // away before tracking starts; fall back to a one-shot capture.
+        let stream = ScrollFrameStream(rect: rect, screen: screen, excludingWindowNumbers: excludingWindowNumbers)
+        self.stream = stream
+        let started = Date()
+        let opening = stream.waitForFirstFrame(timeout: 1.5) ?? ScreenCapturer.capture(
+            rect: rect,
+            screen: screen,
+            excludingWindowNumbers: excludingWindowNumbers,
+            timeout: initialCaptureTimeout
+        )
+        FileLog.write(String(format: "scroll capture opening frame %@ after %.0fms", stream.isRunning ? "from stream" : "one-shot", Date().timeIntervalSince(started) * 1000))
+        if let image = opening, let bitmap = bitmapData(from: image) {
             let firstFrame = CapturedFrame(image: image, bitmap: bitmap)
             frames.append(firstFrame)
             initPreview(from: firstFrame)
+            trackedFrame = firstFrame
         }
         // Property observers do not run inside init, so seed the count here.
         storedFrameCount = frames.count
-        stream = ScrollFrameStream(rect: rect, screen: screen, excludingWindowNumbers: excludingWindowNumbers)
     }
 
     /// Test hook: runs the accept and stitch logic over prepared frames
@@ -150,10 +159,21 @@ final class ScrollCapturer {
         captureQueue.async {
             var result: NSImage?
 
-            self.stream?.stop()
-            self.stream = nil
-            // One last frame so the final scrolled state is never missed.
-            self.captureFrame(expectedShiftPoints: 0)
+            if let stream = self.stream, stream.isRunning {
+                // Let the last scroll land, then take the final state from the
+                // stream too: one-shot captures can differ from stream frames
+                // by a few color levels, enough to misplace a seam by a line.
+                Thread.sleep(forTimeInterval: 0.15)
+                _ = self.considerStreamBatch(stream.takeNewFrames(), finalFrame: true)
+                self.keepTrackedFrameIfAhead()
+                stream.stop()
+                self.stream = nil
+            } else {
+                self.stream?.stop()
+                self.stream = nil
+                // One last frame so the final scrolled state is never missed.
+                self.captureFrame(expectedShiftPoints: 0)
+            }
             FileLog.write("scroll capture polls rejected: noImage=\(self.rejectedNoImage) identical=\(self.rejectedIdentical) smallShift=\(self.rejectedSmallShift) lastOverlap=\(self.lastRejectedOverlap.map { "\($0.overlap)/\($0.height)" } ?? "-")")
 
             guard !self.frames.isEmpty else {
@@ -272,8 +292,7 @@ final class ScrollCapturer {
         if settled {
             captured = captureSettledFrame()
         } else if let stream, stream.isRunning {
-            guard let fresh = stream.takeNewFrame() else { return .noNewContent }
-            captured = fresh
+            return considerStreamBatch(stream.takeNewFrames())
         } else {
             captured = ScreenCapturer.capture(rect: captureRect, screen: screen,
                                               excludingWindowNumbers: excludedWindowNumbers, timeout: 1)
@@ -282,10 +301,207 @@ final class ScrollCapturer {
             rejectedNoImage += 1
             return .noNewContent
         }
+        if settled, trackedFrame != nil || trackingLost, let bitmap = bitmapData(from: image) {
+            return track(CapturedFrame(image: image, bitmap: bitmap), minimumNewRows: 8)
+        }
         // Polls run every 80ms; keep only frames that add a real step so the
         // frame budget covers long pages. The final settled frame takes any
         // remainder.
         return consider(image, minimumNewFraction: settled ? 1.0 / 200 : 1.0 / 4)
+    }
+
+    // MARK: - Stream tracking
+    //
+    // Matching each new frame against the last *kept* one meant searching
+    // shifts of hundreds of pixels, and on repetitive text (terminals, logs)
+    // a shift off by whole blocks of lines matched just as well: lines went
+    // missing or repeated (2026-10-28). Stream frames arrive ~16ms apart, so
+    // instead follow the motion frame to frame, where shifts are small and
+    // predictable, add them up to a position on the page, and keep a frame
+    // whenever it reveals a quarter screen of new content.
+
+    private var trackedFrame: CapturedFrame?
+    /// Page offset of `trackedFrame` relative to the first frame, in pixels;
+    /// positive is further down the page.
+    private var trackedPosition = 0
+    /// Page offset of `frames.last`.
+    private var keptPosition = 0
+    private var lastStep = 0
+    private var trackingLost = false
+
+    private func considerStreamBatch(_ batch: [NSImage], finalFrame: Bool = false) -> FrameOutcome {
+        var outcome: FrameOutcome = .noNewContent
+        for (index, image) in batch.enumerated() {
+            guard frames.count < maxFrames else { return .atFrameLimit }
+            guard let bitmap = bitmapData(from: image) else { continue }
+            let frame = CapturedFrame(image: image, bitmap: bitmap)
+            // The opening frame was a one-shot capture; swap in the stream's
+            // own view of the same screen so every seam compares like with like.
+            if frames.count == 1, trackedFrame == nil,
+               imagesAreNearlyIdentical(frames[0].bitmap, bitmap) {
+                frames[0] = frame
+                initPreview(from: frame)
+                trackedFrame = frame
+                continue
+            }
+            let last = finalFrame && index == batch.count - 1
+            let result = track(frame, minimumNewRows: last ? 8 : max(8, bitmap.height / 4))
+            if result == .appended || outcome != .appended { outcome = result }
+        }
+        return outcome
+    }
+
+    private func track(_ frame: CapturedFrame, minimumNewRows: Int) -> FrameOutcome {
+        guard frames.count < maxFrames else { return .atFrameLimit }
+        guard let kept = frames.last else {
+            frames.append(frame)
+            initPreview(from: frame)
+            trackedFrame = frame
+            return .appended
+        }
+        let reference = trackedFrame ?? kept
+        if imagesAreNearlyIdentical(reference.bitmap, frame.bitmap) {
+            rejectedIdentical += 1
+            return .noNewContent
+        }
+        if !trackingLost,
+           let step = trackShift(previous: reference.bitmap, current: frame.bitmap, predicted: lastStep) {
+            trackedPosition += step
+            lastStep = step
+            if ProcessInfo.processInfo.environment["CLIP_TRACE_TRACKING"] != nil {
+                FileLog.write("scroll track step \(step) position \(trackedPosition)")
+            }
+        } else {
+            // Lost the motion (a jump too big for one frame): find the frame
+            // against the last kept one instead.
+            let step = measureStep(from: kept, to: frame, minimumNewRows: 1)
+            guard step.newRows > 0 else {
+                trackingLost = true
+                rejectedSmallShift += 1
+                return .noOverlap
+            }
+            if trackingLost { FileLog.write("scroll capture tracking regained") }
+            trackingLost = false
+            trackedPosition = keptPosition + (step.up ? -step.newRows : step.newRows)
+            lastStep = 0
+        }
+        trackedFrame = frame
+
+        let height = frame.bitmap.height
+        let advance = trackedPosition - keptPosition
+        let up = scrollsUp ?? (advance < 0)
+        let newRows = up ? -advance : advance
+        guard newRows >= minimumNewRows else {
+            rejectedSmallShift += 1
+            return .noNewContent
+        }
+        guard newRows < height else {
+            FileLog.write("scroll capture tracking lost: step \(lastStep) left no overlap")
+            trackingLost = true
+            return .noOverlap
+        }
+        accept(frame, overlap: height - newRows, up: up)
+        keptPosition = trackedPosition
+        return .appended
+    }
+
+    /// On stop: the newest tracked frame may hold less than a quarter screen
+    /// of new content; keep it so the end of the scroll isn't lost.
+    private func keepTrackedFrameIfAhead() {
+        guard !trackingLost, let frame = trackedFrame, frames.count < maxFrames,
+              frame.image !== frames.last?.image else { return }
+        let advance = trackedPosition - keptPosition
+        let up = scrollsUp ?? (advance < 0)
+        let newRows = up ? -advance : advance
+        guard newRows >= 8, newRows < frame.bitmap.height else { return }
+        accept(frame, overlap: frame.bitmap.height - newRows, up: up)
+        keptPosition = trackedPosition
+    }
+
+    /// Signed shift of `current` against `previous`: positive when the
+    /// content moved up (the page scrolled down). Searches near `predicted`
+    /// first, then everywhere; nil when nothing matches.
+    private func trackShift(previous: BitmapData, current: BitmapData, predicted: Int) -> Int? {
+        let height = min(previous.height, current.height)
+        let width = min(previous.width, current.width) - scrollbarWidthPx
+        let bands = staticBands(previous: previous, current: current)
+        var top = bands.top, bottom = height - bands.bottom
+        if bottom - top < 64 { top = 0; bottom = height }
+        let rows = bottom - top
+        let columnCount = 96
+        guard rows > 48, width > columnCount else { return nil }
+        let columns = (0..<columnCount).map { 2 + $0 * (width - 4) / columnCount }
+        func gray(_ p: (r: UInt8, g: UInt8, b: UInt8)) -> Int { (Int(p.r) + 2 * Int(p.g) + Int(p.b)) / 4 }
+        func samples(_ bitmap: BitmapData) -> [UInt8] {
+            var out = [UInt8](repeating: 0, count: rows * columnCount)
+            for row in 0..<rows {
+                for (i, x) in columns.enumerated() {
+                    out[row * columnCount + i] = UInt8(gray(bitmap.pixel(x: x, y: top + row)))
+                }
+            }
+            return out
+        }
+        let prev = samples(previous), cur = samples(current)
+        let textured: [Bool] = (0..<rows).map { row in
+            let slice = cur[(row * columnCount)..<((row + 1) * columnCount)]
+            return Int(slice.max()!) - Int(slice.min()!) > 24
+        }
+        let minimumRows = 12, maxShift = rows - 24
+
+        func score(_ shift: Int, giveUpAbove limit: Double = .infinity) -> Double? {
+            var diff = 0, counted = 0
+            for row in max(0, -shift)..<min(rows, rows - shift) where textured[row] {
+                let a = (row + shift) * columnCount, b = row * columnCount
+                for i in 0..<columnCount { diff += abs(Int(prev[a + i]) - Int(cur[b + i])) }
+                counted += 1
+                if counted >= minimumRows, Double(diff) / Double(counted * columnCount) > limit * 2 + 4 { return nil }
+            }
+            guard counted >= minimumRows else { return nil }
+            return Double(diff) / Double(counted * columnCount)
+        }
+        func denseScore(_ shift: Int) -> Double {
+            var diff = 0, counted = 0
+            for row in max(0, -shift)..<min(rows, rows - shift) where textured[row] {
+                var x = 0
+                while x < width {
+                    diff += abs(gray(previous.pixel(x: x, y: top + row + shift)) - gray(current.pixel(x: x, y: top + row)))
+                    x += 2
+                }
+                counted += 1
+            }
+            return counted > 0 ? Double(diff) / Double(counted * ((width + 1) / 2)) : .infinity
+        }
+        func pick(_ shifts: [Int]) -> (shift: Int, score: Double)? {
+            var coarse: [(Int, Double)] = []
+            var best = Double.infinity
+            for shift in shifts {
+                if let value = score(shift, giveUpAbove: best) {
+                    coarse.append((shift, value))
+                    best = min(best, value)
+                }
+            }
+            let ties = coarse.filter { $0.1 <= best + 2 }.sorted { $0.1 < $1.1 }.prefix(8)
+            guard let first = ties.first else { return nil }
+            if ties.count == 1 { return first }
+            return ties.min { denseScore($0.0) < denseScore($1.0) }
+        }
+
+        // Near the last step: motion is continuous between stream frames.
+        // Search every shift, nearest the predicted one first so a good match
+        // is found early and the rest are cut short. A window around the
+        // prediction alone took a shift off by one repeat of periodic text
+        // (2026-10-28); the dense check among near-ties tells them apart.
+        let center = max(-maxShift, min(maxShift, predicted))
+        var order = [center]
+        for distance in 1...(2 * maxShift) {
+            if center + distance <= maxShift { order.append(center + distance) }
+            if center - distance >= -maxShift { order.append(center - distance) }
+        }
+        guard let any = pick(order), any.score <= 10 else {
+            FileLog.write("scroll capture track miss: predicted \(predicted)")
+            return nil
+        }
+        return any.shift
     }
 
     /// Accepts or rejects one captured frame against the last accepted one.
@@ -340,7 +556,7 @@ final class ScrollCapturer {
                     }
                 }
             }
-            return .noNewContent
+            return step.newRows == 0 ? .noOverlap : .noNewContent
         }
 
         pendingFrame = nil
@@ -354,14 +570,21 @@ final class ScrollCapturer {
         from previous: CapturedFrame, to candidate: CapturedFrame, minimumNewRows: Int
     ) -> (newRows: Int, up: Bool) {
         let height = candidate.bitmap.height
-        var down = 0
+        var down = 0, downScore = Double.infinity
         if scrollsUp != true {
             down = height - findOverlap(previous: previous.bitmap, current: candidate.bitmap)
-            if down >= minimumNewRows || scrollsUp == false { return (down, false) }
+            downScore = down > 0 ? lastMatchScore : .infinity
+            // Once the direction is known, or a near-exact match settles it.
+            if scrollsUp == false || (down >= minimumNewRows && downScore < 2) { return (down, false) }
         }
-        // The candidate may sit above the previous frame.
+        // The candidate may sit above the previous frame. Before the direction
+        // is known, take whichever side matches better: on repetitive content
+        // a loose downward match once locked an upward scroll the wrong way.
         let up = height - findOverlap(previous: candidate.bitmap, current: previous.bitmap)
-        return up > down ? (up, true) : (down, false)
+        let upScore = up > 0 ? lastMatchScore : .infinity
+        if scrollsUp == true { return (up, true) }
+        if up > 0, upScore < downScore { return (up, true) }
+        return (down, false)
     }
 
     private func accept(_ frame: CapturedFrame, overlap: Int, up: Bool) {
@@ -647,6 +870,7 @@ final class ScrollCapturer {
     ) -> Int? {
         let rows = bottom - top
         let columnCount = 96
+        lastMatchScore = .infinity
         guard rows > 32, width > columnCount else { return estimate }
         let columns = (0..<columnCount).map { 2 + $0 * (width - 4) / columnCount }
         func samples(_ bitmap: BitmapData) -> [UInt8] {
@@ -680,16 +904,44 @@ final class ScrollCapturer {
             return Double(diff) / Double(counted * columnCount)
         }
 
+        // The 96 sampled columns can step over narrow details such as line
+        // numbers, so on repetitive text a shift off by whole blocks of lines
+        // scored as exact and those lines vanished (2026-10-28). Confirm
+        // near-ties against every second column.
+        func denseScore(_ shift: Int) -> Double {
+            var diff = 0, counted = 0
+            for row in 0..<(rows - shift) where textured[row] {
+                var x = 0
+                while x < width {
+                    let a = previous.pixel(x: x, y: top + row + shift), b = current.pixel(x: x, y: top + row)
+                    diff += abs((Int(a.r) + 2 * Int(a.g) + Int(a.b)) / 4 - (Int(b.r) + 2 * Int(b.g) + Int(b.b)) / 4)
+                    x += 2
+                }
+                counted += 1
+            }
+            return counted > 0 ? Double(diff) / Double(counted * ((width + 1) / 2)) : .infinity
+        }
+
         let estimateScore = estimate < rows ? score(estimate) : nil
-        // A near-exact match can't be beaten; skip the search.
-        if let estimateScore, estimateScore < 2 { return estimate }
-        var best = estimate, bestScore = estimateScore ?? .infinity
+        // A near-exact match on both checks can't be beaten; skip the search.
+        if let estimateScore, estimateScore < 2, denseScore(estimate) < 2 {
+            lastMatchScore = estimateScore
+            return estimate
+        }
+        var coarse: [Int: Double] = [:]
+        if let estimateScore { coarse[estimate] = estimateScore }
+        var bestCoarse = estimateScore ?? .infinity
         for shift in 1..<rows where shift != estimate {
-            if let candidate = score(shift, giveUpAbove: bestScore), candidate < bestScore {
-                best = shift
-                bestScore = candidate
+            if let candidate = score(shift, giveUpAbove: bestCoarse) {
+                coarse[shift] = candidate
+                bestCoarse = min(bestCoarse, candidate)
             }
         }
+        let nearTies = coarse.filter { $0.value <= bestCoarse + 2 }.sorted { $0.value < $1.value }.prefix(8)
+        let best = nearTies.count > 1
+            ? nearTies.min { denseScore($0.key) < denseScore($1.key) }?.key ?? estimate
+            : nearTies.first?.key ?? estimate
+        let bestScore = coarse[best] ?? .infinity
         // Take another shift only when it matches near-exactly or much better
         // than Vision; compressed sources (iPhone Mirroring) never match
         // exactly anywhere. When nothing matches, there is no overlap.
@@ -699,9 +951,11 @@ final class ScrollCapturer {
                 FileLog.write("scroll capture no overlap: vision \(estimate) score \(String(format: "%.1f", visionScore)), best \(best) score \(String(format: "%.1f", bestScore))")
                 return nil
             }
+            lastMatchScore = visionScore
             return estimate
         }
         FileLog.write("scroll capture refined shift \(estimate) -> \(best) score \(estimateScore.map { String(format: "%.1f", $0) } ?? "-") -> \(String(format: "%.1f", bestScore))")
+        lastMatchScore = bestScore
         return best
     }
 

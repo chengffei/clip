@@ -7,9 +7,11 @@ import ScreenCaptureKit
 /// The stream keeps the newest frame ready; polls just take it.
 final class ScrollFrameStream: NSObject, SCStreamOutput {
     private let lock = NSLock()
-    private var latest: NSImage?
-    private var latestSerial = 0
-    private var takenSerial = 0
+    /// Frames not handed out yet, oldest first. Kept so a fast scroll can be
+    /// bridged through in-between frames instead of only the newest.
+    private var unread: [NSImage] = []
+    private let unreadLimit = 16
+    private var deliveredCount = 0
     private var takenCount = 0
     private var stream: SCStream?
     private let queue = DispatchQueue(label: "clip.scroll-stream", qos: .userInitiated)
@@ -20,7 +22,7 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
         super.init()
         let scale = max(screen.backingScaleFactor, 1)
         let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
-        Task { [weak self] in
+        Task.detached { [weak self] in
             do {
                 let content = try await SCShareableContent.current
                 guard let self,
@@ -49,20 +51,28 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
         }
     }
 
-    /// The newest frame not handed out yet, or nil when nothing new arrived.
-    func takeNewFrame() -> NSImage? {
+    private let firstFrameArrived = DispatchSemaphore(value: 0)
+    private var signalledFirstFrame = false
+
+    /// Blocks until the stream delivers its first frame, then hands it out.
+    func waitForFirstFrame(timeout: TimeInterval) -> NSImage? {
+        guard firstFrameArrived.wait(timeout: .now() + timeout) == .success else { return nil }
+        return takeNewFrames().last
+    }
+
+    /// Every frame that arrived since the last call, oldest first.
+    func takeNewFrames() -> [NSImage] {
         lock.withLock {
-            guard latestSerial != takenSerial else { return nil }
-            takenSerial = latestSerial
-            takenCount += 1
-            return latest
+            defer { unread.removeAll(keepingCapacity: true) }
+            takenCount += unread.count
+            return unread
         }
     }
 
     var isRunning: Bool { lock.withLock { stream != nil } }
 
     func stop() {
-        lock.withLock { FileLog.write("scroll stream frames=\(latestSerial) taken=\(takenCount)") }
+        lock.withLock { FileLog.write("scroll stream frames=\(deliveredCount) taken=\(takenCount)") }
         let stream = lock.withLock { () -> SCStream? in
             defer { self.stream = nil }
             return self.stream
@@ -101,8 +111,13 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
         guard let cgImage = Self.copyImage(from: pixelBuffer) else { return }
         let image = NSImage(cgImage: cgImage, size: pointSize)
         lock.withLock {
-            latest = image
-            latestSerial += 1
+            unread.append(image)
+            if unread.count > unreadLimit { unread.removeFirst(unread.count - unreadLimit) }
+            deliveredCount += 1
+            if !signalledFirstFrame {
+                signalledFirstFrame = true
+                firstFrameArrived.signal()
+            }
         }
     }
 }
