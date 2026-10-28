@@ -235,7 +235,7 @@
 "toolbarSettingsSideTitle" = "“More” menu";
 "toolbarSettingsSideHint" = "Behind the More button on the bar, one click away. A divider here becomes a menu separator";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
-"toolbarSettingsHiddenHint" = "Tools dragged here appear nowhere. Spare dividers wait here until you drag one up";
+"toolbarSettingsHiddenHint" = "Tools dragged here appear nowhere. Drag a divider out to add a zone; drag it back to remove it";
 "toolbarSettingsFootnote" = "Shape tools on the bar (framed in blue) merge into one button: click the icon to use the shape shown, click the small chevron or long-press to pick another. The four-way arrow is the move handle; with no tool active you can also drag the selection itself";
 "toolbarSettingsShortcutHint" = "Click a tool to record a shortcut, right-click to clear or restore it; dividers, More and the move handle take none";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";

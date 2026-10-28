@@ -35,20 +35,44 @@ enum ToolbarItemID: String, Codable, CaseIterable {
     case record
     case close
     case confirm
-    // Dividers: a fixed pool of five, each used at most once. Dragging one
-    // into the bar splits it into zones; spare ones wait in the hidden grid.
+    // Dividers: a pool of sixteen, each used at most once. Settings shows one
+    // spare at a time, so dragging it out reads as adding a new divider.
     case divider1
     case divider2
     case divider3
     case divider4
     case divider5
+    case divider6
+    case divider7
+    case divider8
+    case divider9
+    case divider10
+    case divider11
+    case divider12
+    case divider13
+    case divider14
+    case divider15
+    case divider16
     // The "More" button that opens the overflow menu. Lives on the primary
     // bar only; its position there is the user's choice.
     case more
 }
 
+extension ToolbarLayout {
+    /// The hidden grid shows only the first spare divider; the rest wait
+    /// behind it and appear one by one as dividers are dragged out.
+    static func displayedHidden(_ hidden: [ToolbarItemID]) -> [ToolbarItemID] {
+        var shownSpare = false
+        return hidden.filter { id in
+            guard id.isDivider else { return true }
+            defer { shownSpare = true }
+            return !shownSpare
+        }
+    }
+}
+
 extension ToolbarItemID {
-    static let dividers: [ToolbarItemID] = [.divider1, .divider2, .divider3, .divider4, .divider5]
+    static let dividers: [ToolbarItemID] = [.divider1, .divider2, .divider3, .divider4, .divider5, .divider6, .divider7, .divider8, .divider9, .divider10, .divider11, .divider12, .divider13, .divider14, .divider15, .divider16]
     var isDivider: Bool { Self.dividers.contains(self) }
 }
 
@@ -80,7 +104,7 @@ extension ToolbarItemID {
             return .dragHandle
         case .insertImage, .colorPicker, .undo, .redo, .ocr, .save, .pin, .record, .close, .confirm:
             return .momentary
-        case .divider1, .divider2, .divider3, .divider4, .divider5:
+        case .divider1, .divider2, .divider3, .divider4, .divider5, .divider6, .divider7, .divider8, .divider9, .divider10, .divider11, .divider12, .divider13, .divider14, .divider15, .divider16:
             return .divider
         case .more:
             return .overflowMenu
@@ -137,7 +161,7 @@ extension ToolbarItemID {
         case .record:        return "video"
         case .close:         return "xmark"
         case .confirm:       return "checkmark"
-        case .divider1, .divider2, .divider3, .divider4, .divider5:
+        case .divider1, .divider2, .divider3, .divider4, .divider5, .divider6, .divider7, .divider8, .divider9, .divider10, .divider11, .divider12, .divider13, .divider14, .divider15, .divider16:
             return "rectangle.portrait"
         case .more:          return "ellipsis"
         }
@@ -201,7 +225,7 @@ extension ToolbarItemID {
         case .record:        return L10n.tipRecord
         case .close:         return L10n.tipCancel
         case .confirm:       return L10n.tipConfirm
-        case .divider1, .divider2, .divider3, .divider4, .divider5:
+        case .divider1, .divider2, .divider3, .divider4, .divider5, .divider6, .divider7, .divider8, .divider9, .divider10, .divider11, .divider12, .divider13, .divider14, .divider15, .divider16:
             return L10n.tipDivider
         case .more:          return L10n.tipMore
         }

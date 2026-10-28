@@ -511,7 +511,7 @@ class EditWindowController {
             close()
         case .confirm:
             confirm()
-        case .moveSelection, .divider1, .divider2, .divider3, .divider4, .divider5, .more:
+        case .moveSelection, .divider1, .divider2, .divider3, .divider4, .divider5, .divider6, .divider7, .divider8, .divider9, .divider10, .divider11, .divider12, .divider13, .divider14, .divider15, .divider16, .more:
             return false
         case .rectangle, .ellipse, .arrow, .line, .pen, .marker, .spotlight,
              .mosaic, .eraser, .magnifier, .numbered, .text, .emoji:

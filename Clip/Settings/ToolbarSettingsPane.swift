@@ -232,7 +232,7 @@ final class ToolbarSettingsPane: NSView {
     private func syncFromWorkingLayout() {
         primaryGrid.setItems(workingLayout.primary)
         sideGrid.setItems(workingLayout.side)
-        hiddenGrid.setItems(workingLayout.hidden)
+        hiddenGrid.setItems(ToolbarLayout.displayedHidden(workingLayout.hidden))
         preview.layout = workingLayout
         updatePreviewHeight()
     }
@@ -245,6 +245,9 @@ final class ToolbarSettingsPane: NSView {
             side: sideGrid.items,
             hidden: hiddenGrid.items
         ).normalized()
+        // Dragging the spare divider out brings the next one forward.
+        let shownHidden = ToolbarLayout.displayedHidden(workingLayout.hidden)
+        if shownHidden != hiddenGrid.items { hiddenGrid.setItems(shownHidden, animated: true) }
         preview.layout = workingLayout
         updatePreviewHeight()
         Defaults.toolbarLayout = workingLayout

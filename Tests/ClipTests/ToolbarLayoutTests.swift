@@ -62,7 +62,7 @@ final class ToolbarDividerTests: XCTestCase {
             ["close", "divider1", "rectangle", "pen", "divider2", "undo", "redo", "divider3", "ocr", "save", "confirm"]
         )
         XCTAssertEqual(Array(legacy.primary.suffix(2)), [.divider4, .more])
-        XCTAssertEqual((legacy.primary + legacy.side + legacy.hidden).filter(\.isDivider).count, 5)
+        XCTAssertEqual((legacy.primary + legacy.side + legacy.hidden).filter(\.isDivider).count, ToolbarItemID.dividers.count)
         XCTAssertTrue(legacy.hidden.contains(.divider5))
     }
 
@@ -97,5 +97,14 @@ final class ToolbarDividerTests: XCTestCase {
     func testDividersNeverTakeShortcuts() {
         XCTAssertFalse(ToolbarItemID.divider1.supportsEditorShortcut)
         XCTAssertNotNil(ToolbarItemID.divider2.iconImage(pointSize: 15))
+    }
+
+    func testHiddenGridShowsOneSpareDividerAndOldLayoutsGainSpares() {
+        let old = ToolbarLayout(primary: [.close, .divider1, .pen, .divider2, .confirm, .divider3, .divider4, .more],
+                                side: [.marker], hidden: [.divider5]).normalized()
+        XCTAssertEqual(old.hidden.filter(\.isDivider).count, ToolbarItemID.dividers.count - 4)
+        let shown = ToolbarLayout.displayedHidden(old.hidden)
+        XCTAssertEqual(shown.filter(\.isDivider), [.divider5])
+        XCTAssertEqual(shown.filter { !$0.isDivider }, old.hidden.filter { !$0.isDivider })
     }
 }
