@@ -95,57 +95,19 @@ enum OCRService {
         }
     }
 
+    /// On-device only: Vision with the bundled model as fallback, then
+    /// Live Text as a last resort.
     @MainActor
     static func recognizeResult(image: NSImage) async throws -> OCRResult {
-        let kind = Defaults.ocrProviderKind
-        let config = OCRConfigStore.load(kind)
-        return try await recognizeResult(image: image, kind: kind, config: config)
-    }
-
-    static func recognizeResult(image: NSImage, kind: OCRProviderKind,
-                                config: OCRProviderConfig) async throws -> OCRResult {
         try Task.checkCancellation()
-        if kind == .apple {
-            let lines = await recognizeLinesWithFallback(image: image)
-            try Task.checkCancellation()
-            if !lines.isEmpty { return OCRResult(lines: lines, provider: kind) }
-            let analysis = await analyzeText(image: image)
-            try Task.checkCancellation()
-            return OCRResult(text: analysis?.transcript ?? "", provider: kind)
-        }
-        do {
-            return try await AsyncDeadline.run(seconds: 65) {
-                try await NetworkOCRProvider.recognize(image: image, kind: kind, config: config)
-            }
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch is AsyncDeadline.TimedOut {
-            throw OCRProviderError.timeout
-        } catch let error as URLError {
-            if error.code == .cancelled { throw CancellationError() }
-            if error.code == .timedOut { throw OCRProviderError.timeout }
-            throw OCRProviderError.service(String(error.errorCode))
-        } catch let error as OCRProviderError {
-            throw error
-        } catch {
-            throw OCRProviderError.response
-        }
+        let lines = await recognizeLinesWithFallback(image: image)
+        try Task.checkCancellation()
+        if !lines.isEmpty { return OCRResult(lines: lines) }
+        let analysis = await analyzeText(image: image)
+        try Task.checkCancellation()
+        return OCRResult(text: analysis?.transcript ?? "")
     }
 
-    /// Recognizes text in `image` and returns it as newline-joined lines,
-    /// ordered top-to-bottom then left-to-right. Returns an empty string when
-    /// nothing is found or the image cannot be decoded.
-    static func recognize(image: NSImage) async -> String {
-        let lines = await recognizeLines(image: image)
-        guard !Task.isCancelled else { return "" }
-        if !lines.isEmpty {
-            return lines.map(\.text).joined(separator: "\n")
-        }
-        if let analysis = await analyzeText(image: image) {
-            return analysis.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return ""
-    }
 
     /// Runs the same system Live Text analyzer used by Preview. The returned
     /// analysis can be attached to `ImageAnalysisOverlayView` for native text
@@ -195,7 +157,7 @@ enum OCRService {
                 }
             }.value
             FileLog.write(String(format: "OCR ppocr-only %dx%d %.2fs lines=%d", cgImage.width, cgImage.height, Date().timeIntervalSince(started), lines.count))
-            if lines.isEmpty { keepFailedInput(cgImage) }
+            if lines.isEmpty, Defaults.keepsCaptureDiagnostics { keepFailedInput(cgImage) }
             return lines
         case .auto:
             break
@@ -229,7 +191,7 @@ enum OCRService {
             vision.cancel()
         }
         FileLog.write(String(format: "OCR chose %@ %.2fs lines=%d", source, Date().timeIntervalSince(started), lines.count))
-        if lines.isEmpty { keepFailedInput(cgImage) }
+        if lines.isEmpty, Defaults.keepsCaptureDiagnostics { keepFailedInput(cgImage) }
         return lines
     }
 

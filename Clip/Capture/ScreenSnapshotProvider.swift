@@ -17,7 +17,6 @@ enum ScreenSnapshotEvent: @unchecked Sendable {
 typealias ScreenSnapshotCancellation = () -> Void
 
 protocol ScreenSnapshotProviding {
-    func prewarm()
 
     @discardableResult
     func capture(

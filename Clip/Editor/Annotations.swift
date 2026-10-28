@@ -37,7 +37,6 @@ protocol Annotation {
     func withColor(_ color: NSColor) -> Annotation
     func withLineWidth(_ lineWidth: CGFloat) -> Annotation
     func withFontSize(_ fontSize: CGFloat) -> Annotation
-    func withFill(_ filled: Bool) -> Annotation
     func withShapeFillMode(_ fillMode: ShapeFillMode) -> Annotation
     func withShapeStrokeStyle(_ strokeStyle: ShapeStrokeStyle) -> Annotation
 }
@@ -49,7 +48,6 @@ extension Annotation {
     func withColor(_ color: NSColor) -> Annotation { self }
     func withLineWidth(_ lineWidth: CGFloat) -> Annotation { self }
     func withFontSize(_ fontSize: CGFloat) -> Annotation { self }
-    func withFill(_ filled: Bool) -> Annotation { self }
     func withShapeFillMode(_ fillMode: ShapeFillMode) -> Annotation { self }
     func withShapeStrokeStyle(_ strokeStyle: ShapeStrokeStyle) -> Annotation { self }
 
@@ -638,7 +636,6 @@ enum ArrowStyle: String, CaseIterable {
 private enum NumberArrowShape {
     static let shaftWidth: CGFloat = 3
     static let headStrokeWidth: CGFloat = 1.5
-    static let dotTailRadius: CGFloat = 5
 
     static var headLength: CGFloat { max(10, shaftWidth * 4) }
     static var headWidth: CGFloat { max(7, shaftWidth * 3) }
@@ -1278,9 +1275,6 @@ struct RectAnnotation: Annotation {
         RectAnnotation(rect: rect, color: color, lineWidth: lineWidth, fillMode: fillMode, strokeStyle: strokeStyle, roughStyle: roughStyle.tuned(for: rect, lineWidth: lineWidth), rotation: rotation)
     }
 
-    func withFill(_ filled: Bool) -> Annotation {
-        RectAnnotation(rect: rect, color: color, lineWidth: lineWidth, filled: filled, strokeStyle: strokeStyle, roughStyle: roughStyle, rotation: rotation)
-    }
 
     func withShapeFillMode(_ fillMode: ShapeFillMode) -> Annotation {
         RectAnnotation(rect: rect, color: color, lineWidth: lineWidth, fillMode: fillMode, strokeStyle: strokeStyle, roughStyle: roughStyle, rotation: rotation)
@@ -1365,9 +1359,6 @@ struct EllipseAnnotation: Annotation {
         EllipseAnnotation(rect: rect, color: color, lineWidth: lineWidth, fillMode: fillMode, strokeStyle: strokeStyle, roughStyle: roughStyle.tuned(for: rect, lineWidth: lineWidth), rotation: rotation)
     }
 
-    func withFill(_ filled: Bool) -> Annotation {
-        EllipseAnnotation(rect: rect, color: color, lineWidth: lineWidth, filled: filled, strokeStyle: strokeStyle, roughStyle: roughStyle, rotation: rotation)
-    }
 
     func withShapeFillMode(_ fillMode: ShapeFillMode) -> Annotation {
         EllipseAnnotation(rect: rect, color: color, lineWidth: lineWidth, fillMode: fillMode, strokeStyle: strokeStyle, roughStyle: roughStyle, rotation: rotation)

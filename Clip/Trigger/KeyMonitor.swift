@@ -62,13 +62,6 @@ class KeyMonitor {
         stopMonitoring()
     }
 
-    /// Re-evaluates permissions and restarts whichever path is now available.
-    /// Called after the user grants Accessibility in the startup dialog.
-    func restart() {
-        stopMonitoring()
-        resetSequence()
-        startMonitoring()
-    }
 
     private func startMonitoring() {
         let axTrusted = AXIsProcessTrusted()

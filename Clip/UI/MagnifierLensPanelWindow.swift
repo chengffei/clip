@@ -126,7 +126,6 @@ final class MagnifierLensPanelWindow: NSPanel {
     /// Returns the current sample and pixel location the lens is displaying.
     /// Used by the overlay controller to perform the actual copy on ⌘+C.
     var currentSample: Sample? { lensView.currentSample }
-    var currentPixelPoint: CGPoint { lensView.currentPixelPoint }
 
     // MARK: - Position tracking
 

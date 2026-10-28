@@ -93,13 +93,6 @@ class SettingsWindowController: NSWindowController {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    func dismissStartupDialogForExternalOpen() {
-        guard isStartup else { return }
-        isStartup = false
-        settingsView.setStartupMode(false)
-        resizeWindow(height: 600)
-        window?.close()
-    }
 
     private func resetInitialFocus() {
         window?.initialFirstResponder = settingsView

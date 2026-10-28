@@ -294,7 +294,7 @@ final class ScrollCapturer {
             lastRejectedOverlap = (overlap, candidateFrame.bitmap.height)
             // Keep the first few rejected pairs so the miss can be studied
             // offline. Local only; the folder is overwritten each session.
-            if rejectedSmallShift <= 3 {
+            if rejectedSmallShift <= 3, Defaults.keepsCaptureDiagnostics {
                 let dir = FileManager.default.homeDirectoryForCurrentUser
                     .appendingPathComponent("Library/Logs/Clip/scroll-misses", isDirectory: true)
                 if rejectedSmallShift == 1 { try? FileManager.default.removeItem(at: dir) }

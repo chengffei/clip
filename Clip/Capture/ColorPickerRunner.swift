@@ -36,10 +36,7 @@ final class ColorPickerRunner {
             let result = Self.pickResult(from: picked)
             ClipboardManager.copyColorToClipboard(hex: result.hex)
 
-            if Defaults.historyCacheEnabled {
-                HistoryManager.shared.addColor(hex: result.hex)
-                Defaults.lastPickedColorHex = result.hex
-            }
+            Defaults.lastPickedColorHex = result.hex
 
             onPicked?(result.color, result.hex)
             ToastWindow.show(message: L10n.colorCopied(result.hex), on: screen ?? Self.currentScreen())

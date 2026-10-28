@@ -43,26 +43,8 @@ enum SettingsTab: String, CaseIterable {
         }
     }
 
-    var iconTint: NSColor {
-        switch self {
-        case .general: return Brand.accent
-        case .shortcuts, .capture, .toolbar:
-            return Brand.accent
-        case .recording:
-            return Brand.accent
-        case .files, .ocr:
-            return Brand.accent
-        case .permissions: return Brand.accent
-        case .about:
-            return Brand.accent
-        }
-    }
 }
 
-private enum HistoryPanelSettingsMode {
-    case dialog
-    case notch
-}
 
 class SettingsView: NSView {
 
@@ -77,22 +59,7 @@ class SettingsView: NSView {
 
     // Picker & slider
     private var langPicker: NSPopUpButton!
-    private var historyCacheSwitch: NSSwitch!
-    private var clipboardTextCacheSwitch: NSSwitch!
 
-    private var historyCacheSlider: SettingsTickSlider!
-    private var historyCacheValueLabel: NSTextField!
-    private var clipboardTextHistoryLimitSlider: SettingsTickSlider!
-    private var clipboardTextHistoryLimitValueLabel: NSTextField!
-    private var historyPanelModePreview: HistoryPanelModePreviewView!
-    private var historyPanelDialogOption: HistoryPanelModeOptionView!
-    private var historyPanelNotchOption: HistoryPanelModeOptionView!
-    private var historyNotchTriggerLabel: NSTextField?
-    private var historyNotchTriggerPopup: NSPopUpButton?
-    private var countdownSlider: SettingsTickSlider!
-    private var countdownValueLabel: NSTextField!
-    private var countdownTitleLabel: NSTextField!
-    private var countdownHintLabel: NSTextField!
 
     // Window-capture shadow card
     private var windowShadowSwitch: NSSwitch!
@@ -203,19 +170,6 @@ class SettingsView: NSView {
     private var pinAcrossSpacesTitleLabel: NSTextField!
     private var pinAcrossSpacesSubtitleLabel: NSTextField!
     private var langTitleLabel: NSTextField!
-    private var historyCacheToggleTitleLabel: NSTextField!
-    private var historyCacheToggleHintLabel: NSTextField?
-    private var clipboardTextCacheToggleTitleLabel: NSTextField!
-    private var clipboardTextCacheToggleHintLabel: NSTextField?
-    private var clipboardTextHistoryLimitTitleLabel: NSTextField!
-    private var historyCacheTitleLabel: NSTextField!
-    private var historyPanelDisplayModeTitleLabel: NSTextField!
-    private var historyPanelDisplayModeHintLabel: NSTextField!
-    private var historyPanelDialogModeTitleLabel: NSTextField!
-    private var historyPanelDialogModeHintLabel: NSTextField?
-    private var historyPanelNotchModeTitleLabel: NSTextField!
-    private var historyPanelNotchModeHintLabel: NSTextField?
-    private var permHeaderSubtitleLabel: NSTextField?
     private var accessibilityNameLabel: NSTextField!
     private var accessibilityDescLabel: NSTextField!
     private var screenRecordingNameLabel: NSTextField!
@@ -236,7 +190,6 @@ class SettingsView: NSView {
     private var tabButtons: [TabButton] = []
     private var detailTitleLabel: NSTextField!
     private var detailScrollView: NSScrollView!
-    private var historyNotchTriggerRow: NSView?
 
     private var paneContainer: NSView!
     private var paneViews: [SettingsTab: NSView] = [:]
@@ -798,9 +751,6 @@ class SettingsView: NSView {
         windowShadowPreview?.isEffectEnabled = on
     }
 
-    private func selectedHistoryPanelMode() -> HistoryPanelSettingsMode {
-        Defaults.historyPanelNotchEnabled ? .notch : .dialog
-    }
 
     private func refreshSavePathControls() {
         recordingSavePathValueLabel?.stringValue = SaveDestination.displayPath(Defaults.recordingSaveDirectory)
@@ -1846,59 +1796,7 @@ class SettingsView: NSView {
         return ToggleRowBuild(row: row, title: titleLabel, subtitle: subtitleLabel, toggle: sw)
     }
 
-    private struct RadioRowBuild {
-        let row: NSView
-        let title: NSTextField
-        let subtitle: NSTextField?
-        let button: NSButton
-    }
 
-    private func makeRadioRow(
-        title: String,
-        subtitle: String?,
-        isOn: Bool,
-        action: Selector
-    ) -> RadioRowBuild {
-        let row = NSView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-
-        let titleLabel = primaryLabel(title)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        let textStack = NSStackView()
-        textStack.orientation = .vertical
-        textStack.alignment = .leading
-        textStack.spacing = 2
-        textStack.translatesAutoresizingMaskIntoConstraints = false
-        textStack.addArrangedSubview(titleLabel)
-
-        var subtitleLabel: NSTextField? = nil
-        if let subtitle {
-            let sub = secondaryLabel(subtitle, wrapping: true)
-            textStack.addArrangedSubview(sub)
-            subtitleLabel = sub
-        }
-
-        let button = NSButton(radioButtonWithTitle: "", target: self, action: action)
-        button.state = isOn ? .on : .off
-        button.controlSize = .small
-        button.translatesAutoresizingMaskIntoConstraints = false
-
-        row.addSubview(textStack)
-        row.addSubview(button)
-
-        NSLayoutConstraint.activate([
-            textStack.leadingAnchor.constraint(equalTo: row.leadingAnchor),
-            textStack.topAnchor.constraint(equalTo: row.topAnchor, constant: 10),
-            textStack.bottomAnchor.constraint(equalTo: row.bottomAnchor, constant: -10),
-            textStack.trailingAnchor.constraint(lessThanOrEqualTo: button.leadingAnchor, constant: -12),
-
-            button.trailingAnchor.constraint(equalTo: row.trailingAnchor),
-            button.centerYAnchor.constraint(equalTo: textStack.centerYAnchor),
-        ])
-
-        return RadioRowBuild(row: row, title: titleLabel, subtitle: subtitleLabel, button: button)
-    }
 
     private struct PermissionRowBuild {
         let row: NSView
@@ -2141,64 +2039,15 @@ class SettingsView: NSView {
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
-    @objc private func historyCacheSliderChanged(_ sender: SettingsTickSlider) {
-        guard Defaults.historyCacheEnabled else {
-            sender.doubleValue = Double(Defaults.historyCacheLimit)
-            return
-        }
-        let value = Int(sender.doubleValue.rounded())
-        Defaults.historyCacheLimit = value
-        let normalizedValue = Defaults.historyCacheLimit
-        sender.doubleValue = Double(normalizedValue)
-        historyCacheValueLabel?.stringValue = "\(normalizedValue)"
-    }
 
-    @objc private func clipboardTextHistoryLimitSliderChanged(_ sender: SettingsTickSlider) {
-        guard Defaults.clipboardTextCacheEnabled else {
-            sender.doubleValue = Double(Defaults.clipboardTextHistoryLimit)
-            return
-        }
-        Defaults.clipboardTextHistoryLimit = Int(sender.doubleValue.rounded())
-        let normalizedValue = Defaults.clipboardTextHistoryLimit
-        sender.doubleValue = Double(normalizedValue)
-        clipboardTextHistoryLimitValueLabel?.stringValue = "\(normalizedValue)"
-    }
 
-    @objc private func historyCacheToggled(_ sender: NSSwitch) {
-        Defaults.historyCacheEnabled = sender.state == .on
-    }
 
-    @objc private func clipboardTextCacheToggled(_ sender: NSSwitch) {
-        Defaults.clipboardTextCacheEnabled = sender.state == .on
-    }
 
-    @objc private func historyNotchTriggerChanged(_ sender: NSPopUpButton) {
-        let modes = Defaults.HistoryNotchTriggerMode.allCases
-        guard modes.indices.contains(sender.indexOfSelectedItem) else { return }
-        Defaults.historyNotchTriggerMode = modes[sender.indexOfSelectedItem]
-    }
 
-    @objc private func historyPanelModeOptionClicked(_ sender: HistoryPanelModeOptionView) {
-        guard Defaults.isHistoryCacheAvailable else { return }
-        switch sender.mode {
-        case .dialog:
-            Defaults.historyPanelDialogEnabled = true
-        case .notch:
-            guard Defaults.historyPanelNotchAvailable else {
-                return
-            }
-            Defaults.historyPanelNotchEnabled = true
-        }
-    }
 
     @objc private func screenParametersChanged() {
     }
 
-    @objc private func countdownSliderChanged(_ sender: SettingsTickSlider) {
-        let value = Int(sender.doubleValue.rounded())
-        Defaults.countdownSeconds = value
-        countdownValueLabel?.stringValue = "\(Defaults.countdownSeconds)\(L10n.countdownSecondsSuffix)"
-    }
 
     @objc private func windowShadowToggled(_ sender: NSSwitch) {
         Defaults.windowShadowEnabled = sender.state == .on
@@ -3313,30 +3162,10 @@ class SettingsView: NSView {
         screenRecordingDescLabel?.stringValue = L10n.screenRecordingDescription
         microphoneNameLabel?.stringValue = L10n.microphonePermission
         microphoneDescLabel?.stringValue = L10n.microphoneDescription
-        historyCacheToggleTitleLabel?.stringValue = L10n.historyCacheToggleLabel
-        historyCacheToggleHintLabel?.stringValue = L10n.historyCacheToggleHint
-        clipboardTextCacheToggleTitleLabel?.stringValue = L10n.clipboardTextCacheToggleLabel
-        clipboardTextCacheToggleHintLabel?.stringValue = L10n.clipboardTextCacheToggleHint
-        clipboardTextHistoryLimitTitleLabel?.stringValue = L10n.clipboardTextHistoryLimitLabel
-        historyCacheTitleLabel?.stringValue = L10n.historyCacheLabel
-        historyPanelDisplayModeTitleLabel?.stringValue = L10n.historyPanelDisplayModeLabel
-        historyPanelDisplayModeHintLabel?.stringValue = L10n.historyPanelDisplayModeHint
-        historyPanelDialogModeTitleLabel?.stringValue = L10n.historyPanelDialogMode
-        historyPanelDialogModeHintLabel?.stringValue = L10n.historyPanelDialogModeHint
-        historyPanelNotchModeTitleLabel?.stringValue = L10n.historyPanelNotchMode
-        historyPanelNotchModeHintLabel?.stringValue = L10n.historyPanelNotchModeHint
-        historyNotchTriggerLabel?.stringValue = L10n.historyNotchTriggerLabel
-        historyNotchTriggerPopup?.setAccessibilityLabel(L10n.historyNotchTriggerLabel)
-        for (index, mode) in Defaults.HistoryNotchTriggerMode.allCases.enumerated() {
-            historyNotchTriggerPopup?.item(at: index)?.title = mode.localizedTitle
-        }
         windowShadowTitleLabel?.stringValue = L10n.windowShadowToggleLabel
         windowShadowSubtitleLabel?.stringValue = L10n.windowShadowToggleHint
         windowShadowSizeTitleLabel?.stringValue = L10n.shadowSizeLabel
         windowShadowSizeHintLabel?.stringValue = L10n.windowShadowSizeHint
-        countdownTitleLabel?.stringValue = L10n.countdownLabel
-        countdownHintLabel?.stringValue = L10n.countdownHint
-        countdownValueLabel?.stringValue = "\(Defaults.countdownSeconds)\(L10n.countdownSecondsSuffix)"
         shortcutTitleLabel?.stringValue = L10n.shortcutHeader
         shortcutRestoreButton?.toolTip = L10n.shortcutRestore
         fullScreenScreenshotShortcutTitleLabel?.stringValue = L10n.fullScreenScreenshotShortcutHeader
@@ -3442,41 +3271,6 @@ private final class DetailPanel: NSView {
 
 }
 
-/// A hairline that fades to transparent at both edges of the sidebar.
-private final class SidebarSeparatorView: NSView {
-    private let gradient = CAGradientLayer()
-
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        translatesAutoresizingMaskIntoConstraints = false
-        wantsLayer = true
-        gradient.colors = [
-            NSColor.black.withAlphaComponent(0).cgColor,
-            NSColor.black.withAlphaComponent(0.126).cgColor,
-            NSColor.black.withAlphaComponent(0).cgColor,
-        ]
-        gradient.locations = [0, 0.5, 1]
-        gradient.startPoint = CGPoint(x: 0, y: 0.5)
-        gradient.endPoint = CGPoint(x: 1, y: 0.5)
-        layer?.addSublayer(gradient)
-        setAccessibilityElement(false)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layout() {
-        super.layout()
-        let scale = window?.backingScaleFactor ?? 2
-        let thickness = 1 / scale
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        gradient.frame = CGRect(x: 0, y: (bounds.midY * scale).rounded() / scale,
-                                width: bounds.width, height: thickness)
-        CATransaction.commit()
-    }
-}
 
 // MARK: - Sidebar tab button
 
@@ -3742,239 +3536,6 @@ private final class ActionButton: NSControl {
 
 // MARK: - Settings tick slider
 
-private final class SettingsTickSlider: NSControl {
-    var minValue: Double
-    var maxValue: Double
-    var stepValue: Double
-    var numberOfTickMarks: Int
-
-    override var doubleValue: Double {
-        get { value }
-        set { setValue(newValue, notify: false) }
-    }
-
-    override var isEnabled: Bool {
-        didSet {
-            if !isEnabled {
-                isDragging = false
-            }
-            needsDisplay = true
-        }
-    }
-
-    private var value: Double
-    private var isDragging = false {
-        didSet { needsDisplay = true }
-    }
-
-    private let knobSize = NSSize(width: 9, height: 18)
-    private let trackHeight: CGFloat = 3.5
-    private let tickDiameter: CGFloat = 2.5
-    private let tickGap: CGFloat = 5
-    private let accentColor = Brand.accent
-
-    init(
-        frame: NSRect = .zero,
-        value: Double,
-        minValue: Double,
-        maxValue: Double,
-        stepValue: Double,
-        numberOfTickMarks: Int,
-        target: AnyObject?,
-        action: Selector?
-    ) {
-        self.minValue = minValue
-        self.maxValue = maxValue
-        self.stepValue = stepValue
-        self.numberOfTickMarks = max(0, numberOfTickMarks)
-        self.value = Self.normalizedValue(
-            value,
-            minValue: minValue,
-            maxValue: maxValue,
-            stepValue: stepValue
-        )
-        super.init(frame: frame)
-        self.target = target
-        self.action = action
-        wantsLayer = true
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override var intrinsicContentSize: NSSize {
-        NSSize(width: NSView.noIntrinsicMetric, height: 22)
-    }
-
-    override var acceptsFirstResponder: Bool { isEnabled }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { isEnabled }
-
-    override func draw(_ dirtyRect: NSRect) {
-        let enabledAlpha: CGFloat = isEnabled ? 1 : 0.35
-        let trackRect = NSRect(
-            x: 0,
-            y: floor(bounds.midY - trackHeight / 2),
-            width: bounds.width,
-            height: trackHeight
-        )
-        let travelRect = NSRect(
-            x: knobSize.width / 2,
-            y: trackRect.minY,
-            width: max(1, bounds.width - knobSize.width),
-            height: trackRect.height
-        )
-
-        let trackPath = NSBezierPath(
-            roundedRect: trackRect,
-            xRadius: trackHeight / 2,
-            yRadius: trackHeight / 2
-        )
-        NSColor.black.withAlphaComponent(0.10 * enabledAlpha).setFill()
-        trackPath.fill()
-
-        let knobCenterX = travelRect.minX + normalizedFraction * travelRect.width
-        let fillRect = NSRect(
-            x: trackRect.minX,
-            y: trackRect.minY,
-            width: max(0, knobCenterX - trackRect.minX),
-            height: trackRect.height
-        )
-        if fillRect.width > 0 {
-            let fillPath = NSBezierPath(
-                roundedRect: fillRect,
-                xRadius: trackHeight / 2,
-                yRadius: trackHeight / 2
-            )
-            accentColor.withAlphaComponent(enabledAlpha).setFill()
-            fillPath.fill()
-        }
-
-        drawKnob(centerX: knobCenterX, enabledAlpha: enabledAlpha)
-        drawTickMarks(in: travelRect, enabledAlpha: enabledAlpha)
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        guard isEnabled else { return }
-        window?.makeFirstResponder(self)
-        isDragging = true
-        updateValue(with: event, notify: true)
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        guard isEnabled else { return }
-        updateValue(with: event, notify: true)
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        guard isEnabled else {
-            isDragging = false
-            return
-        }
-        updateValue(with: event, notify: true)
-        isDragging = false
-    }
-
-    override func keyDown(with event: NSEvent) {
-        guard isEnabled else { return }
-        let step = stepValue > 0 ? stepValue : (maxValue - minValue) / 10
-        switch Int(event.keyCode) {
-        case kVK_LeftArrow, kVK_DownArrow:
-            setValue(value - step, notify: true)
-        case kVK_RightArrow, kVK_UpArrow:
-            setValue(value + step, notify: true)
-        default:
-            super.keyDown(with: event)
-        }
-    }
-
-    private var normalizedFraction: CGFloat {
-        guard maxValue > minValue else { return 0 }
-        return CGFloat((value - minValue) / (maxValue - minValue))
-    }
-
-    private func drawTickMarks(in trackRect: NSRect, enabledAlpha: CGFloat) {
-        guard numberOfTickMarks > 1 else { return }
-        let dotY = trackRect.minY - tickGap - tickDiameter
-        for index in 0..<numberOfTickMarks {
-            let fraction = CGFloat(index) / CGFloat(numberOfTickMarks - 1)
-            let x = trackRect.minX + fraction * trackRect.width
-            let tickRect = NSRect(
-                x: x - tickDiameter / 2,
-                y: dotY,
-                width: tickDiameter,
-                height: tickDiameter
-            )
-            NSColor.black.withAlphaComponent(0.168 * enabledAlpha).setFill()
-            NSBezierPath(ovalIn: tickRect).fill()
-        }
-    }
-
-    private func drawKnob(centerX: CGFloat, enabledAlpha: CGFloat) {
-        let knobRect = NSRect(
-            x: centerX - knobSize.width / 2,
-            y: bounds.midY - knobSize.height / 2,
-            width: knobSize.width,
-            height: knobSize.height
-        )
-        let knobPath = NSBezierPath(
-            roundedRect: knobRect,
-            xRadius: knobSize.width / 2,
-            yRadius: knobSize.width / 2
-        )
-
-        NSGraphicsContext.saveGraphicsState()
-        let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.18 * enabledAlpha)
-        shadow.shadowBlurRadius = 1.5
-        shadow.shadowOffset = NSSize(width: 0, height: -0.5)
-        shadow.set()
-        NSColor(white: isDragging ? 0.97 : 1.0, alpha: enabledAlpha).setFill()
-        knobPath.fill()
-        NSGraphicsContext.restoreGraphicsState()
-
-        NSColor.black.withAlphaComponent(0.18 * enabledAlpha).setStroke()
-        knobPath.lineWidth = 0.5
-        knobPath.stroke()
-    }
-
-    private func updateValue(with event: NSEvent, notify: Bool) {
-        guard bounds.width > knobSize.width else { return }
-        let location = convert(event.locationInWindow, from: nil)
-        let trackMinX = knobSize.width / 2
-        let trackWidth = max(1, bounds.width - knobSize.width)
-        let fraction = min(max((location.x - trackMinX) / trackWidth, 0), 1)
-        let newValue = minValue + Double(fraction) * (maxValue - minValue)
-        setValue(newValue, notify: notify)
-    }
-
-    private func setValue(_ newValue: Double, notify: Bool) {
-        let normalized = Self.normalizedValue(
-            newValue,
-            minValue: minValue,
-            maxValue: maxValue,
-            stepValue: stepValue
-        )
-        value = normalized
-        needsDisplay = true
-        if notify {
-            sendAction(action, to: target)
-        }
-    }
-
-    private static func normalizedValue(
-        _ rawValue: Double,
-        minValue: Double,
-        maxValue: Double,
-        stepValue: Double
-    ) -> Double {
-        let clamped = min(max(rawValue, minValue), maxValue)
-        guard stepValue > 0 else { return clamped }
-        let steps = ((clamped - minValue) / stepValue).rounded()
-        let snapped = minValue + steps * stepValue
-        return min(max(snapped, minValue), maxValue)
-    }
-}
 
 // MARK: - Card view
 
@@ -4056,345 +3617,7 @@ private final class ShadowPreviewView: NSView {
     }
 }
 
-private final class HistoryPanelModePreviewView: NSView {
-    var mode: HistoryPanelSettingsMode {
-        didSet { needsDisplay = true }
-    }
 
-    var isEffectEnabled: Bool = true {
-        didSet { needsDisplay = true }
-    }
-
-    private let accentBlue = Brand.accent
-    private let surfaceColor = NSColor.white
-
-    init(mode: HistoryPanelSettingsMode) {
-        self.mode = mode
-        super.init(frame: .zero)
-        wantsLayer = true
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current else { return }
-
-        let rect = bounds
-        let backdrop = NSBezierPath(roundedRect: rect, xRadius: 16, yRadius: 16)
-        ctx.saveGraphicsState()
-        backdrop.addClip()
-
-        NSColor(calibratedRed: 0.86, green: 0.87, blue: 0.90, alpha: 1).setFill()
-        backdrop.fill()
-        ctx.cgContext.setAlpha(isEffectEnabled ? 1 : 0.42)
-        switch mode {
-        case .dialog:
-            drawDialogPreview(in: rect.insetBy(dx: 24, dy: 18))
-        case .notch:
-            drawNotchPreview(in: rect.insetBy(dx: 24, dy: 0))
-        }
-        ctx.restoreGraphicsState()
-
-        NSColor.white.withAlphaComponent(isEffectEnabled ? 0.08 : 0.04).setStroke()
-        backdrop.lineWidth = 1
-        backdrop.stroke()
-    }
-
-    private func drawDialogPreview(in rect: NSRect) {
-        let panelWidth = min(rect.width * 0.82, 560)
-        let panelHeight = min(rect.height - 14, 86)
-        let panelRect = NSRect(
-            x: rect.midX - panelWidth / 2,
-            y: rect.midY - panelHeight / 2 - 6,
-            width: panelWidth,
-            height: panelHeight
-        )
-        drawFloatingSurface(in: panelRect, radius: 18, shadow: true)
-        drawToolbarLine(in: panelRect)
-        drawTileRow(in: panelRect.insetBy(dx: 18, dy: 16), count: 4)
-    }
-
-    private func drawNotchPreview(in rect: NSRect) {
-        let panelWidth = min(rect.width * 0.88, 620)
-        let panelHeight = min(rect.height * 0.78, 106)
-        let panelRect = NSRect(
-            x: rect.midX - panelWidth / 2,
-            y: rect.maxY - panelHeight,
-            width: panelWidth,
-            height: panelHeight
-        )
-
-        drawTopAttachedSurface(in: panelRect)
-
-        drawToolbarLine(in: panelRect, leadingInset: 36)
-        drawTileRow(in: panelRect.insetBy(dx: 34, dy: 16), count: 5)
-    }
-
-    private func drawFloatingSurface(in rect: NSRect, radius: CGFloat, shadow: Bool) {
-        let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
-
-        guard let ctx = NSGraphicsContext.current else { return }
-        ctx.saveGraphicsState()
-        if shadow {
-            let panelShadow = NSShadow()
-            panelShadow.shadowColor = NSColor.black.withAlphaComponent(0.34)
-            panelShadow.shadowBlurRadius = 18
-            panelShadow.shadowOffset = NSSize(width: 0, height: -6)
-            panelShadow.set()
-        }
-        surfaceColor.withAlphaComponent(0.96).setFill()
-        path.fill()
-        ctx.restoreGraphicsState()
-
-        NSColor.black.withAlphaComponent(0.08).setStroke()
-        path.lineWidth = 1
-        path.stroke()
-    }
-
-    private func drawTopAttachedSurface(in rect: NSRect) {
-        let path = notchPath(in: rect, flare: 14, bottomRadius: 18)
-        surfaceColor.withAlphaComponent(0.96).setFill()
-        path.fill()
-
-        NSColor.black.withAlphaComponent(0.08).setStroke()
-        path.lineWidth = 1
-        path.stroke()
-    }
-
-    private func drawToolbarLine(in panelRect: NSRect, leadingInset: CGFloat = 18) {
-        let y = panelRect.maxY - 22
-        let active = NSRect(x: panelRect.minX + leadingInset, y: y, width: 46, height: 10)
-        accentBlue.setFill()
-        NSBezierPath(roundedRect: active, xRadius: 5, yRadius: 5).fill()
-
-        var x = active.maxX + 10
-        for _ in 0..<3 {
-            let pill = NSRect(x: x, y: y, width: 34, height: 10)
-            NSColor.black.withAlphaComponent(0.112).setFill()
-            NSBezierPath(roundedRect: pill, xRadius: 5, yRadius: 5).fill()
-            x += 44
-        }
-    }
-
-    private func drawTileRow(in rect: NSRect, count: Int) {
-        let contentRect = NSRect(
-            x: rect.minX,
-            y: rect.minY,
-            width: rect.width,
-            height: max(28, rect.height - 28)
-        )
-        let gap: CGFloat = 10
-        let tileWidth = max(34, (contentRect.width - gap * CGFloat(count - 1)) / CGFloat(count))
-        for index in 0..<count {
-            let tileRect = NSRect(
-                x: contentRect.minX + CGFloat(index) * (tileWidth + gap),
-                y: contentRect.minY,
-                width: tileWidth,
-                height: contentRect.height
-            )
-            NSColor.black.withAlphaComponent(0.07).setFill()
-            NSBezierPath(roundedRect: tileRect, xRadius: 8, yRadius: 8).fill()
-
-            let bar = NSRect(
-                x: tileRect.minX + 8,
-                y: tileRect.midY - 4,
-                width: max(18, tileRect.width - 16),
-                height: 8
-            )
-            (index == 0 ? accentBlue : NSColor.black.withAlphaComponent(0.168)).setFill()
-            NSBezierPath(roundedRect: bar, xRadius: 4, yRadius: 4).fill()
-        }
-    }
-
-    private func notchPath(in rect: NSRect, flare: CGFloat, bottomRadius: CGFloat) -> NSBezierPath {
-        let flare = max(0, min(flare, rect.width * 0.25, rect.height))
-        let bodyLeft = rect.minX + flare
-        let bodyRight = rect.maxX - flare
-        let bottom = max(0, min(bottomRadius, (bodyRight - bodyLeft) * 0.5, rect.height))
-        let path = NSBezierPath()
-        path.move(to: NSPoint(x: rect.minX, y: rect.maxY))
-        path.line(to: NSPoint(x: rect.maxX, y: rect.maxY))
-        path.curve(
-            to: NSPoint(x: bodyRight, y: rect.maxY - flare),
-            controlPoint1: NSPoint(x: rect.maxX - flare * 0.5, y: rect.maxY),
-            controlPoint2: NSPoint(x: bodyRight, y: rect.maxY - flare * 0.5)
-        )
-        path.line(to: NSPoint(x: bodyRight, y: rect.minY + bottom))
-        path.curve(
-            to: NSPoint(x: bodyRight - bottom, y: rect.minY),
-            controlPoint1: NSPoint(x: bodyRight, y: rect.minY + bottom * 0.45),
-            controlPoint2: NSPoint(x: bodyRight - bottom * 0.45, y: rect.minY)
-        )
-        path.line(to: NSPoint(x: bodyLeft + bottom, y: rect.minY))
-        path.curve(
-            to: NSPoint(x: bodyLeft, y: rect.minY + bottom),
-            controlPoint1: NSPoint(x: bodyLeft + bottom * 0.45, y: rect.minY),
-            controlPoint2: NSPoint(x: bodyLeft, y: rect.minY + bottom * 0.45)
-        )
-        path.line(to: NSPoint(x: bodyLeft, y: rect.maxY - flare))
-        path.curve(
-            to: NSPoint(x: rect.minX, y: rect.maxY),
-            controlPoint1: NSPoint(x: bodyLeft, y: rect.maxY - flare * 0.5),
-            controlPoint2: NSPoint(x: rect.minX + flare * 0.5, y: rect.maxY)
-        )
-        path.close()
-        return path
-    }
-
-}
-
-private final class HistoryPanelModeOptionView: NSControl {
-    let mode: HistoryPanelSettingsMode
-    let title: NSTextField
-    let subtitle: NSTextField
-
-    var isSelected: Bool = false {
-        didSet { applyAppearance() }
-    }
-
-    override var isEnabled: Bool {
-        didSet { applyAppearance() }
-    }
-
-    private let checkView = NSImageView()
-    private var trackingArea: NSTrackingArea?
-    private var isHovered = false {
-        didSet { applyAppearance() }
-    }
-
-    private let accentBlue = Brand.accent
-
-    init(mode: HistoryPanelSettingsMode, title: String, subtitle: String) {
-        self.mode = mode
-        self.title = NSTextField(labelWithString: title)
-        self.subtitle = NSTextField(wrappingLabelWithString: subtitle)
-        super.init(frame: .zero)
-        commonInit()
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    private func commonInit() {
-        translatesAutoresizingMaskIntoConstraints = false
-        wantsLayer = true
-        layer?.cornerRadius = 13
-        layer?.cornerCurve = .continuous
-
-        title.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        title.isEditable = false
-        title.isSelectable = false
-        title.refusesFirstResponder = true
-        title.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(title)
-
-        subtitle.font = NSFont.systemFont(ofSize: 11, weight: .medium)
-        subtitle.isEditable = false
-        subtitle.isSelectable = false
-        subtitle.refusesFirstResponder = true
-        subtitle.lineBreakMode = .byWordWrapping
-        subtitle.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(subtitle)
-
-        checkView.translatesAutoresizingMaskIntoConstraints = false
-        checkView.image = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)
-        checkView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-        checkView.imageScaling = .scaleProportionallyUpOrDown
-        addSubview(checkView)
-
-        NSLayoutConstraint.activate([
-            heightAnchor.constraint(greaterThanOrEqualToConstant: 92),
-
-            checkView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            checkView.topAnchor.constraint(equalTo: topAnchor, constant: 18),
-            checkView.widthAnchor.constraint(equalToConstant: 18),
-            checkView.heightAnchor.constraint(equalToConstant: 18),
-
-            title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            title.topAnchor.constraint(equalTo: topAnchor, constant: 18),
-            title.trailingAnchor.constraint(lessThanOrEqualTo: checkView.leadingAnchor, constant: -8),
-
-            subtitle.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            subtitle.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 4),
-            subtitle.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            subtitle.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -14),
-        ])
-
-        setContentCompressionResistancePriority(.required, for: .vertical)
-        applyAppearance()
-    }
-
-    override func hitTest(_ point: NSPoint) -> NSView? {
-        let result = super.hitTest(point)
-        guard let result else { return nil }
-        return result === self ? result : self
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let trackingArea {
-            removeTrackingArea(trackingArea)
-        }
-        let area = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        trackingArea = area
-        addTrackingArea(area)
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        guard isEnabled else { return }
-        isHovered = true
-    }
-
-    override func mouseExited(with event: NSEvent) {
-        isHovered = false
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        guard isEnabled else { return }
-        sendAction(action, to: target)
-    }
-
-    override var acceptsFirstResponder: Bool { isEnabled }
-
-    override func keyDown(with event: NSEvent) {
-        guard isEnabled else { return }
-        let keyCode = Int(event.keyCode)
-        if keyCode == kVK_Space || keyCode == kVK_Return {
-            sendAction(action, to: target)
-        } else {
-            super.keyDown(with: event)
-        }
-    }
-
-    private func applyAppearance() {
-        let enabledAlpha: CGFloat = isEnabled ? 1 : 0.42
-        let backgroundAlpha: CGFloat
-        if isSelected {
-            backgroundAlpha = 0.052
-        } else if isHovered {
-            backgroundAlpha = 0.044
-        } else {
-            backgroundAlpha = 0.018
-        }
-
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(backgroundAlpha * enabledAlpha).cgColor
-        layer?.borderColor = (isSelected ? accentBlue : NSColor.black.withAlphaComponent(0.063 * enabledAlpha)).cgColor
-        layer?.borderWidth = isSelected ? 2 : 1
-
-        title.textColor = Brand.text.withAlphaComponent(isEnabled ? 0.94 : 0.4)
-        subtitle.textColor = Brand.text.withAlphaComponent(isEnabled ? 0.58 : 0.35)
-        checkView.isHidden = !isSelected
-        checkView.contentTintColor = accentBlue.withAlphaComponent(enabledAlpha)
-    }
-}
 
 private final class CardView: NSView {
     override init(frame frameRect: NSRect) {
@@ -4442,7 +3665,6 @@ private final class SidebarSectionCaption: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func setText(_ text: String) { label.stringValue = text }
 }
 
 // MARK: - Status badge

@@ -129,9 +129,6 @@ final class OCRPreviewView: NSView, ImageAnalysisOverlayViewDelegate {
         liveTextOverlay?.setContentsRectNeedsUpdate()
     }
 
-    var hasActiveLiveTextSelection: Bool {
-        liveTextOverlay?.hasActiveTextSelection == true
-    }
 
     func copySelectedLiveTextToClipboard() -> Bool {
         guard let selectedText = liveTextOverlay?.selectedText,
@@ -813,9 +810,6 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
 
     // MARK: Presentation
 
-    static func present(image: NSImage, anchorRect: NSRect, screen: NSScreen) {
-        presentTextRecognition(image: image, anchorRect: anchorRect, screen: screen)
-    }
 
     static func presentTextRecognition(image: NSImage, anchorRect: NSRect, screen: NSScreen,
                                        initialResult: OCRResult? = nil) {
@@ -1014,7 +1008,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
             self.ocrReady = true
             self.finishTextRecognition()
             self.refreshHeight()
-            if result.provider == .apple, !result.text.isEmpty {
+            if !result.text.isEmpty {
                 self.startLiveTextAnalysis()
             }
         }
@@ -1307,21 +1301,6 @@ func makeSmallButton(_ title: String, action: Selector) -> NSButton {
     return b
 }
 
-func configureIconButton(_ button: NSButton, symbolName: String, label: String) {
-    button.title = ""
-    button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: label)
-    button.imagePosition = .imageOnly
-    button.imageScaling = .scaleProportionallyDown
-    button.isBordered = false
-    button.bezelStyle = .regularSquare
-    button.controlSize = .small
-    button.contentTintColor = .secondaryLabelColor
-    button.toolTip = label
-    button.setAccessibilityLabel(label)
-    button.translatesAutoresizingMaskIntoConstraints = false
-    button.widthAnchor.constraint(equalToConstant: 24).isActive = true
-    button.heightAnchor.constraint(equalToConstant: 24).isActive = true
-}
 
 func pin(_ child: NSView, to parent: NSView, inset: CGFloat) {
     NSLayoutConstraint.activate([
@@ -1332,21 +1311,6 @@ func pin(_ child: NSView, to parent: NSView, inset: CGFloat) {
     ])
 }
 
-func configureExpandingTextView(_ textView: PanelTextView) {
-    textView.translatesAutoresizingMaskIntoConstraints = false
-    textView.isEditable = false
-    textView.isSelectable = true
-    textView.isRichText = false
-    textView.drawsBackground = false
-    textView.font = NSFont.systemFont(ofSize: 12)
-    textView.textColor = .labelColor
-    textView.textContainerInset = NSSize(width: 6, height: 6)
-    textView.isVerticallyResizable = false
-    textView.isHorizontallyResizable = false
-    textView.textContainer?.widthTracksTextView = true
-    textView.textContainer?.heightTracksTextView = false
-    textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
-}
 
 /// A bordered scroll view wrapping a `PanelTextView` of fixed height.
 func makeTextScroll(editable: Bool, height: CGFloat) -> (NSScrollView, PanelTextView) {
@@ -1392,14 +1356,6 @@ func flashButton(_ button: NSButton, to confirm: String, restore: String) {
     }
 }
 
-func flashIconButton(_ button: NSButton, symbolName: String, restoreSymbolName: String) {
-    button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: L10n.ocrCopied)
-    button.contentTintColor = Brand.accent
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak button] in
-        button?.image = NSImage(systemSymbolName: restoreSymbolName, accessibilityDescription: L10n.ocrCopy)
-        button?.contentTintColor = .secondaryLabelColor
-    }
-}
 
 private final class AdaptiveTextScrollView: NSScrollView {
     override func tile() {

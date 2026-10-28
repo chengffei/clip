@@ -38,20 +38,6 @@ enum BeautifyRenderer {
         qos: .userInitiated
     )
 
-    /// Loads the desktop wallpaper image for the given screen.
-    ///
-    /// The desktop image returned by `desktopImageURL` can be a dynamic HEIC
-    /// containing many full-resolution frames. Decoding that synchronously —
-    /// and re-decoding it on every swatch/preview redraw, since nothing was
-    /// cached — froze the editor for several seconds on machines using the
-    /// default macOS dynamic wallpaper. We instead decode a single downscaled
-    /// thumbnail once (ImageIO never expands the full-size image) and cache it.
-    static func wallpaperImage(for screen: NSScreen) -> NSImage? {
-        guard let url = NSWorkspace.shared.desktopImageURL(for: screen) else {
-            return nil
-        }
-        return cachedOrLoadWallpaper(url: url)
-    }
 
     /// Asynchronously loads the desktop wallpaper image for the given screen.
     /// Completion is always delivered on the main queue.
@@ -99,15 +85,6 @@ enum BeautifyRenderer {
         }
     }
 
-    private static func cachedOrLoadWallpaper(url: URL) -> NSImage? {
-        if let cached = cachedWallpaper(url: url) {
-            return cached
-        }
-
-        guard let image = downscaledWallpaper(url: url) else { return nil }
-        storeWallpaper(image, url: url)
-        return image
-    }
 
     private static func cachedWallpaper(url: URL) -> NSImage? {
         let key = url.path

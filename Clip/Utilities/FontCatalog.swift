@@ -58,10 +58,4 @@ enum FontCatalog {
         return attributed
     }
 
-    /// Drops the caches so a newly installed or removed family is picked up.
-    static func invalidate() {
-        cachedFamilies = nil
-        cachedInstalled = nil
-        cachedTitles.removeAll()
-    }
 }

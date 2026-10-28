@@ -56,35 +56,6 @@ struct ScreenCapturer {
         }
     }
 
-    /// Synchronous bridge retained for the headless agent command, which runs
-    /// capture work outside the interactive overlay path.
-    static func capture(
-        windowID: CGWindowID,
-        pointSize: NSSize? = nil,
-        timeout: TimeInterval? = nil
-    ) -> NSImage? {
-        let resultBox = CaptureResultBox()
-        let semaphore = DispatchSemaphore(value: 0)
-
-        let task = Task.detached {
-            do {
-                let image = try await captureWindowAsync(windowID: windowID, pointSize: pointSize)
-                resultBox.set(image)
-            } catch {}
-            semaphore.signal()
-        }
-
-        if let timeout {
-            let waitResult = semaphore.wait(timeout: .now() + .milliseconds(max(1, Int(timeout * 1000))))
-            if waitResult == .timedOut {
-                task.cancel()
-                return nil
-            }
-        } else {
-            semaphore.wait()
-        }
-        return resultBox.get()
-    }
 
     static func isEffectivelyTransparent(_ image: NSImage, alphaThreshold: UInt8 = 3) -> Bool {
         guard let cgImage = image.cgImagePreservingBacking() else { return false }

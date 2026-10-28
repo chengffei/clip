@@ -434,11 +434,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 switch result {
                 case .failure:
-                    HistoryManager.shared.add(image: finalImage)
                     ToastWindow.show(message: L10n.screenshotCompressionFailed, duration: 3.0)
                 case .success(let output):
                     ClipboardManager.copyToClipboard(imageOutput: output)
-                    HistoryManager.shared.add(image: finalImage)
                     ToastWindow.show()
                 }
             }
@@ -822,7 +820,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showSavedRecording(_ destination: URL) {
-        HistoryManager.shared.addFile(destination)
         let directoryPath = SaveDestination.displayPath(destination.deletingLastPathComponent())
         ToastWindow.show(message: L10n.recordingSaved(to: directoryPath))
         if Defaults.autoRevealSavedFiles {

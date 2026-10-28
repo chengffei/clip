@@ -50,7 +50,4 @@ enum Brand {
         .monospacedSystemFont(ofSize: size, weight: weight)
     }
 
-    static func label(_ size: CGFloat, weight: NSFont.Weight = .semibold) -> NSFont {
-        .systemFont(ofSize: size, weight: weight)
-    }
 }

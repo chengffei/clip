@@ -30,44 +30,6 @@ enum EditorToolbarPlacement {
         return NSRect(x: x, y: y, width: width, height: height)
     }
 
-    static func sideToolbarRect(
-        referenceRect: NSRect,
-        in bounds: NSRect,
-        size: NSSize,
-        avoiding primaryFrame: NSRect? = nil
-    ) -> NSRect {
-        let width = size.width
-        let height = size.height
-        let margin = edgeMargin
-
-        let minimumX = bounds.minX + margin
-        let maximumX = bounds.maxX - width - margin
-        var x = referenceRect.maxX + margin
-        if x + width > bounds.maxX - margin {
-            x = referenceRect.minX - width - margin
-        }
-        x = max(minimumX, min(maximumX, x))
-
-        let minimumY = bounds.minY + margin
-        let maximumY = bounds.maxY - height - margin
-        var y = max(minimumY, min(maximumY, referenceRect.minY))
-
-        var rect = NSRect(x: x, y: y, width: width, height: height)
-
-        if let primary = primaryFrame, rect.intersects(primary) {
-            // Try to sit fully above the primary toolbar's band; fall back
-            // to below it when there isn't enough headroom.
-            let above = primary.maxY + margin
-            if above + height <= bounds.maxY - margin {
-                y = above
-            } else {
-                y = max(minimumY, primary.minY - margin - height)
-            }
-            rect.origin.y = y
-        }
-
-        return rect
-    }
 }
 
 struct FixedImageCropGeometry {
@@ -2503,13 +2465,6 @@ class EditWindowController {
         confirm()
     }
 
-    @discardableResult
-    func pinFromKeyboard() -> Bool {
-        guard !isWaitingForWindowCaptureOutput else { return true }
-        guard !isScrollCaptureBusy else { return false }
-        pin()
-        return true
-    }
 
     /// Called by the overlay's local mouse monitor before AppKit dispatches a
     /// left click. This lets the editor preserve the selection's established
@@ -2930,27 +2885,6 @@ class EditWindowController {
         )
     }
 
-    /// Frame for the vertical side toolbar. Prefers the right of the
-    /// selection, flips to the left when there's no room, and aligns its
-    /// bottom edge with the selection.
-    ///
-    /// `avoiding` is the primary toolbar's frame, when it exists. The two
-    /// bars are positioned independently against their own preferred
-    /// anchors, so for a small selection near a screen edge the side
-    /// toolbar can dip into the horizontal bar's row. When that happens we
-    /// slide the side toolbar clear of the primary toolbar's band.
-    private func sideToolbarRect(
-        in bounds: NSRect,
-        size: NSSize,
-        avoiding primaryFrame: NSRect? = nil
-    ) -> NSRect {
-        EditorToolbarPlacement.sideToolbarRect(
-            referenceRect: outerVisualRect(in: bounds),
-            in: bounds,
-            size: size,
-            avoiding: primaryFrame
-        )
-    }
 
     private func subToolbarRect(
         width: CGFloat,
@@ -3192,7 +3126,6 @@ class ToolbarView: NSView {
     func setUndoEnabled(_ enabled: Bool) { setEnabled(enabled, for: .undo) }
     func setRedoEnabled(_ enabled: Bool) { setEnabled(enabled, for: .redo) }
     func setRecordingEnabled(_ enabled: Bool) { setEnabled(enabled, for: .record) }
-    var scrollCaptureButtonFrame: NSRect? { frame(for: .scrollCapture) }
 
     private func setupButtons() {
         let size = Self.buttonSize
@@ -4683,9 +4616,6 @@ private class ColorSizeSubToolbar: NSView {
         }
     }
 
-    private func updateShapeFillModeSelection() {
-        shapeFillModeControl?.selectedMode = currentShapeFillMode ?? .none
-    }
 
     private func updateShapeStrokeStyleSelection() {
         for view in shapeStrokeStyleButtons {

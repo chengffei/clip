@@ -62,35 +62,8 @@ final class PinWindow: NSWindow {
 /// Builds pinned-image windows. Used by the editor's pin button and by the
 /// source-specific global pin hotkeys.
 enum PinLauncher {
-    private static let stackOffset = NSSize(width: 28, height: -28)
-    private static let maxDistinctStackOffsets = 8
 
-    /// Pins the image currently on the clipboard. This shortcut is
-    /// source-specific: it does not check the Finder selection.
-    @discardableResult
-    static func pinClipboardImageIfAvailable() -> Bool {
-        guard let image = ClipboardImageSource.currentImage() else {
-            ToastWindow.show(message: L10n.clipboardImagePinNoImage)
-            return false
-        }
 
-        pin(image: image, source: .clipboard)
-        ToastWindow.show(message: L10n.pinFromClipboardHint)
-        return true
-    }
-
-    /// Pins plain text currently on the clipboard as an editable text view.
-    @discardableResult
-    static func pinClipboardTextIfAvailable() -> Bool {
-        guard let text = ClipboardTextSource.currentText() else {
-            ToastWindow.show(message: L10n.clipboardTextPinNoText)
-            return false
-        }
-
-        pin(text: text, source: .clipboardText)
-        ToastWindow.show(message: L10n.pinFromClipboardTextHint)
-        return true
-    }
 
     /// Creates a floating pinned window for `image`. When `origin` is nil the
     /// window is centered on the screen under the cursor. Oversized images are
@@ -115,42 +88,7 @@ enum PinLauncher {
         )
     }
 
-    /// Creates a floating editable text pin backed by a regular AppKit text view.
-    static func pin(text: String, at origin: NSPoint? = nil, source: PinSource? = nil) {
-        let previewText = TextPinLayout.previewText(text)
-        guard !previewText.isEmpty else { return }
-        let screen = activeScreen()
-        let size = TextPinLayout.size(
-            for: previewText,
-            maxWidth: TextPinLayout.maxWidth(on: screen)
-        )
-        let fittedSize = fittedSize(for: size, on: screen)
-        let frameOrigin = origin ?? centeredOrigin(for: fittedSize, on: screen)
 
-        makeTextWindow(text: previewText, size: fittedSize, origin: frameOrigin, source: source)
-    }
-
-    private static func pin(images: [NSImage], source: PinSource) {
-        let screen = activeScreen()
-        let pins = images.compactMap { image -> (image: NSImage, size: NSSize)? in
-            let size = fittedSize(for: image.size, on: screen)
-            guard size.width > 0, size.height > 0 else { return nil }
-            return (image, size)
-        }
-        guard let first = pins.first else { return }
-
-        let baseOrigin = centeredOrigin(for: first.size, on: screen)
-        for (index, pin) in pins.enumerated() {
-            let origin = stackedOrigin(baseOrigin: baseOrigin, index: index, size: pin.size, on: screen)
-            makeWindow(
-                image: pin.image,
-                size: pin.size,
-                origin: origin,
-                source: source,
-                saveToHistory: true
-            )
-        }
-    }
 
     private static func makeWindow(
         image: NSImage,
@@ -193,47 +131,8 @@ enum PinLauncher {
         window.makeKeyAndOrderFront(nil)
         window.makeFirstResponder(contentView)
 
-        if saveToHistory {
-            HistoryManager.shared.add(image: image)
-        }
     }
 
-    private static func makeTextWindow(
-        text: String,
-        size: NSSize,
-        origin: NSPoint,
-        source: PinSource?
-    ) {
-        let window = PinWindow(
-            contentRect: NSRect(origin: origin, size: size),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
-        )
-        window.level = .floating
-        if Defaults.pinAcrossSpaces {
-            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        }
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.isMovableByWindowBackground = false
-        window.acceptsMouseMovedEvents = true
-        window.hasShadow = true
-        window.isReleasedWhenClosed = false
-        window.pinSource = source
-
-        let contentView = TextPinContentView(
-            text: text,
-            frame: NSRect(origin: .zero, size: size)
-        )
-        contentView.pinWindow = window
-        window.contentView = contentView
-
-        PinWindowManager.shared.add(window)
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        window.makeFirstResponder(contentView)
-    }
 
     // MARK: - Helpers
 
@@ -244,13 +143,6 @@ enum PinLauncher {
             ?? NSScreen.screens[0]
     }
 
-    private static func loadImage(from url: URL) -> NSImage? {
-        guard let data = try? Data(contentsOf: url),
-              let image = NSImage.imagePreservingPixelDimensions(from: data),
-              image.size.width > 0, image.size.height > 0
-        else { return nil }
-        return image
-    }
 
     static func shouldUseSystemWindowShadow(for image: NSImage) -> Bool {
         guard let cgImage = image.cgImagePreservingBacking() else { return true }
@@ -330,30 +222,7 @@ enum PinLauncher {
         )
     }
 
-    private static func stackedOrigin(
-        baseOrigin: NSPoint,
-        index: Int,
-        size: NSSize,
-        on screen: NSScreen
-    ) -> NSPoint {
-        let distinctIndex = index % maxDistinctStackOffsets
-        let wrapIndex = index / maxDistinctStackOffsets
-        let proposed = NSPoint(
-            x: baseOrigin.x + CGFloat(distinctIndex) * stackOffset.width + CGFloat(wrapIndex) * 10,
-            y: baseOrigin.y + CGFloat(distinctIndex) * stackOffset.height - CGFloat(wrapIndex) * 10
-        )
-        return clampedOrigin(proposed, size: size, on: screen)
-    }
 
-    private static func clampedOrigin(_ origin: NSPoint, size: NSSize, on screen: NSScreen) -> NSPoint {
-        let frame = screen.visibleFrame
-        let maxX = max(frame.minX, frame.maxX - size.width)
-        let maxY = max(frame.minY, frame.maxY - size.height)
-        return NSPoint(
-            x: min(max(origin.x, frame.minX), maxX),
-            y: min(max(origin.y, frame.minY), maxY)
-        )
-    }
 
 }
 
@@ -472,20 +341,6 @@ private enum TextPinLayout {
         path.stroke()
     }
 
-    static func renderImage(for text: String, size: NSSize) -> NSImage? {
-        guard size.width > 0, size.height > 0 else { return nil }
-        let image = NSImage(size: size)
-        image.lockFocus()
-        let bounds = NSRect(origin: .zero, size: size)
-        drawBackground(in: bounds)
-        (normalizedText(text) as NSString).draw(
-            with: textFrame(in: bounds),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: textAttributes()
-        )
-        image.unlockFocus()
-        return image
-    }
 
     private static func textSystemUsedRect(for text: String, width: CGFloat) -> NSRect {
         let storage = NSTextStorage(string: normalizedText(text), attributes: textAttributes())
@@ -516,13 +371,6 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
 
     override var acceptsFirstResponder: Bool { true }
 
-    init(text: String, frame frameRect: NSRect) {
-        self.text = text
-        super.init(frame: frameRect)
-        wantsLayer = true
-        setupDisplayTextView()
-        setupToolbar()
-    }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -588,30 +436,6 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
         refreshToolbarVisibility()
     }
 
-    private func setupDisplayTextView() {
-        displayTextView.isEditable = false
-        displayTextView.isSelectable = false
-        displayTextView.isRichText = false
-        displayTextView.importsGraphics = false
-        displayTextView.drawsBackground = false
-        displayTextView.insertionPointColor = NSColor(calibratedWhite: 0.08, alpha: 1)
-        displayTextView.textContainer?.widthTracksTextView = true
-        displayTextView.textContainer?.containerSize = NSSize(
-            width: max(1, bounds.width),
-            height: CGFloat.greatestFiniteMagnitude
-        )
-        displayTextView.onMouseDown = { [weak self] event in
-            self?.handleDisplayMouseDown(event)
-        }
-        displayTextView.onPointerEvent = { [weak self] event in
-            self?.updateToolbarVisibility(for: event)
-        }
-        displayTextView.onCommit = { [weak self] in self?.commitTextEditingIfNeeded() }
-        displayTextView.onCancel = { [weak self] in self?.cancelTextEditing() }
-        displayTextView.delegate = self
-        TextPinLayout.configure(displayTextView, text: text)
-        addSubview(displayTextView)
-    }
 
     private func layoutDisplayTextView() {
         displayTextView.frame = TextPinLayout.textFrame(in: bounds)
@@ -621,36 +445,7 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
         )
     }
 
-    private func handleDisplayMouseDown(_ event: NSEvent) {
-        if isTextEditing {
-            return
-        }
-        window?.makeFirstResponder(self)
-        if event.clickCount >= 2 {
-            beginTextEditing()
-            displayTextView.forwardEditingMouseDown(with: event)
-            return
-        }
-        pinWindow?.performDrag(with: event)
-    }
 
-    private func setupToolbar() {
-        toolbar.alphaValue = 0
-        toolbar.isHidden = true
-        toolbar.onClose = { [weak self] in
-            self?.pinWindow?.dismissClearingSource()
-        }
-        toolbar.onEdit = { [weak self] in
-            self?.editTextImage()
-        }
-        toolbar.onEditText = { [weak self] in
-            self?.beginTextEditingFromToolbar()
-        }
-        toolbar.onPointerEvent = { [weak self] event in
-            self?.updateToolbarVisibility(for: event)
-        }
-        addSubview(toolbar)
-    }
 
     private func layoutToolbar() {
         toolbar.frame = NSRect(
@@ -706,19 +501,7 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
         resizeForLiveTextEditing()
     }
 
-    private func beginTextEditing() {
-        guard !isTextEditing else { return }
-        committedTextDuringEditing = false
-        displayTextView.isTextEditing = true
-        displayTextView.isEditable = true
-        displayTextView.isSelectable = true
-        window?.makeFirstResponder(displayTextView)
-    }
 
-    private func beginTextEditingFromToolbar() {
-        beginTextEditing()
-        displayTextView.setSelectedRange(NSRange(location: displayTextView.string.utf16.count, length: 0))
-    }
 
     @discardableResult
     func commitTextEditingIfNeeded() -> Bool {
@@ -737,12 +520,6 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
         return true
     }
 
-    private func cancelTextEditing() {
-        guard isTextEditing else { return }
-        TextPinLayout.configure(displayTextView, text: text)
-        endTextEditing()
-        updateDisplayTextAndResize()
-    }
 
     private func endTextEditing() {
         isEndingTextEditing = true
@@ -827,17 +604,6 @@ private final class TextPinContentView: NSView, NSTextViewDelegate {
         return result
     }
 
-    private func editTextImage() {
-        guard commitTextEditingIfNeeded() else { return }
-        guard let pinWindow,
-              let appDelegate = NSApp.delegate as? AppDelegate,
-              let image = TextPinLayout.renderImage(for: text, size: bounds.size)
-        else { return }
-
-        appDelegate.handlePinnedImageEditRequest(image) {
-            pinWindow.dismiss()
-        }
-    }
 }
 
 private final class TextPinDisplayTextView: NSTextView {
@@ -913,10 +679,6 @@ private final class TextPinDisplayTextView: NSTextView {
         super.keyDown(with: event)
     }
 
-    func forwardEditingMouseDown(with event: NSEvent) {
-        guard isTextEditing else { return }
-        super.mouseDown(with: event)
-    }
 
     func ensureSelectionVisible() {
         guard isTextEditing else { return }
@@ -1267,7 +1029,6 @@ final class PinContentView: NSView, NSDraggingSource {
         }
     }
     private var hasOCRResult = false
-    private var ocrProviderKind: OCRProviderKind?
     private var ocrRunID = UUID()
     private var ocrRecognitionTask: Task<Void, Never>?
 
@@ -1817,10 +1578,6 @@ final class PinContentView: NSView, NSDraggingSource {
 
     private func toggleOCRSelection() {
         guard image != nil else { return }
-        if ocrProviderKind != Defaults.ocrProviderKind {
-            resetOCRSelection()
-            ocrProviderKind = Defaults.ocrProviderKind
-        }
         if isOCRSelectionEnabled {
             isOCRSelectionEnabled = false
             return

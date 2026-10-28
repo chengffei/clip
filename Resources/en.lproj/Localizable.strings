@@ -1,9 +1,7 @@
-/* Clip — English (base language) */
 
 /* Settings */
 "settingsTitle" = "Clip Settings";
 "showMenuBarIcon" = "Show Menu Bar Icon";
-"permissionsHeader" = "Required Permissions";
 "accessibilityPermission" = "Accessibility";
 "accessibilityDescription" = "Needed to detect double-tap ⌘ Command key globally to trigger screenshots";
 "screenRecordingPermission" = "Screen Recording";
@@ -14,21 +12,6 @@
 "launchAtLogin" = "Launch at Login";
 "pinAcrossSpaces" = "Show Pins Across Desktops";
 "pinAcrossSpacesHint" = "New pinned images appear on every desktop and full-screen Space";
-"historyCacheToggleLabel" = "Cache Screenshots";
-"historyCacheToggleHint" = "Store recent screenshots and picked colors for quick reuse from the history panel";
-"clipboardTextCacheToggleLabel" = "Record Clipboard Text and Files";
-"clipboardTextCacheToggleHint" = "Keep text and source file references without copying files";
-"clipboardTextHistoryLimitLabel" = "Text / File History Limit";
-"historyCacheLabel" = "Image and Media History Limit";
-"historyPanelDisplayModeLabel" = "History Panel Display";
-"historyPanelDisplayModeHint" = "Choose Dialog or Notch for history";
-"historyPanelDialogMode" = "Dialog";
-"historyPanelDialogModeHint" = "Open a horizontal preview panel from the menu or shortcut";
-"historyPanelNotchMode" = "Notch";
-"historyPanelNotchModeHint" = "Open at the top notch by hovering or clicking, leave to hide";
-"countdownLabel" = "Countdown Seconds";
-"countdownHint" = "Hold ⌥ Option then double-tap ⌘ or press the screenshot shortcut to start a countdown before capture, Esc cancels";
-"countdownSecondsSuffix" = "s";
 "windowShadowToggleLabel" = "Window Capture Shadow";
 "windowShadowToggleHint" = "Round the corners of window captures and add a macOS-style drop shadow";
 "shadowSizeLabel" = "Drop Shadow Size";
@@ -36,7 +19,6 @@
 
 /* Screenshot shortcut */
 "shortcutHeader" = "Screenshot";
-"shortcutHint" = "Default: double-tap ⌘. Setting a custom shortcut disables double-tap";
 "shortcutDefaultDisplay" = "Double-tap ⌘";
 "shortcutSet" = "Set";
 "shortcutCancel" = "Cancel";
@@ -47,21 +29,6 @@
 "quickPinShortcutHeader" = "Quick Pin";
 "quickPinShortcutDefaultDisplay" = "Not set";
 "quickPinShortcutClear" = "Clear Quick Pin Shortcut";
-"selectedImagePinShortcutHeader" = "Pin Selected Image";
-"selectedImagePinShortcutDefaultDisplay" = "Not set";
-"selectedImagePinShortcutClear" = "Clear Pin Selected Image Shortcut";
-"clipboardImagePinShortcutHeader" = "Pin Current or Clipboard Image";
-"clipboardImagePinShortcutDefaultDisplay" = "Not set";
-"clipboardImagePinShortcutClear" = "Clear Pin Current or Clipboard Image Shortcut";
-"clipboardTextPinShortcutHeader" = "Pin Clipboard Text";
-"clipboardTextPinShortcutDefaultDisplay" = "Not set";
-"clipboardTextPinShortcutClear" = "Clear Pin Clipboard Text Shortcut";
-"selectedImagePinNoImage" = "No Finder image selected";
-"clipboardImagePinNoImage" = "No image on the clipboard";
-"clipboardTextPinNoText" = "No text on the clipboard";
-"pinFromFinderHint" = "Pinned Finder image, press X to close";
-"pinFromClipboardHint" = "Pinned clipboard image, press X to close";
-"pinFromClipboardTextHint" = "Pinned clipboard text, double-click to edit";
 "pinToolbarClose" = "Close pinned image";
 "pinToolbarCopy" = "Copy pinned image";
 "pinToolbarDrag" = "Drag pinned image";
@@ -69,18 +36,10 @@
 "pinToolbarEditText" = "Edit text";
 
 /* Image-edit shortcuts */
-"selectedImageEditShortcutHeader" = "Edit Selected Image";
-"selectedImageEditShortcutHint" = "Press it to edit the single image selected in Finder. Not set by default";
-"selectedImageEditShortcutDefaultDisplay" = "Not set";
-"clipboardImageEditShortcutHeader" = "Edit Clipboard Image";
-"clipboardImageEditShortcutHint" = "Press it to edit the current image on the clipboard. Not set by default";
-"clipboardImageEditShortcutDefaultDisplay" = "Not set";
 "textRecognitionShortcutHeader" = "Text Recognition";
 "textRecognitionShortcutDefaultDisplay" = "Not set";
 "copyImageTextShortcutHeader" = "Copy Image Text";
 "copyImageTextShortcutDefaultDisplay" = "Not set";
-"screenshotTranslationShortcutHeader" = "Screenshot Translation";
-"screenshotTranslationShortcutDefaultDisplay" = "Not set";
 "recordShortcutHeader" = "Record";
 "recordShortcutDefaultDisplay" = "Not set";
 "fullScreenScreenshotShortcutHeader" = "Full Screen Screenshot";
@@ -90,35 +49,19 @@
 
 /* Copy-to-clipboard shortcut (editor confirm) */
 "clipboardShortcutHeader" = "Copy to Clipboard";
-"clipboardShortcutHint" = "Pressed inside the editor to commit the edit and copy the screenshot to the clipboard. Defaults to double-tap ⌘ when not set";
 "clipboardShortcutDefaultDisplay" = "Double-tap ⌘";
 
 /* Save-to-file shortcut (editor save) */
 "fileSaveShortcutHeader" = "Save to File";
-"fileSaveShortcutHint" = "Pressed inside the editor to save the screenshot as a PNG in the configured screenshot folder. Defaults to ⌘S";
-"previousHistoryImageShortcutHeader" = "Previous History Screenshot";
-"nextHistoryImageShortcutHeader" = "Next History Screenshot";
-"historyPanelShortcutHeader" = "History Panel";
-"historyPanelShortcutDefaultDisplay" = "Not Set";
 
 /* Shortcut conflict */
 "shortcutConflictTitle" = "Shortcut Already in Use";
 "shortcutConflictScreenshot" = "This key combination is already used by the screenshot shortcut. Please choose a different one";
-"shortcutConflictCountdown" = "This key combination is already used by the countdown screenshot shortcut (screenshot shortcut + ⌥). Please choose a different one";
 "shortcutConflictQuickPin" = "This key combination is already used by the Quick Pin shortcut. Please choose a different one";
-"shortcutConflictSelectedImagePin" = "This key combination is already used by the Pin Selected Image shortcut. Please choose a different one";
-"shortcutConflictClipboardImagePin" = "This key combination is already used by the Pin Clipboard Image shortcut. Please choose a different one";
-"shortcutConflictClipboardTextPin" = "This key combination is already used by the Pin Clipboard Text shortcut. Please choose a different one";
 "shortcutConflictClipboard" = "This key combination is already used by the Copy to Clipboard shortcut. Please choose a different one";
 "shortcutConflictFileSave" = "This key combination is already used by the Save to File shortcut. Please choose a different one";
-"shortcutConflictPreviousHistoryImage" = "This key combination is already used by the Previous History Screenshot shortcut. Please choose a different one";
-"shortcutConflictNextHistoryImage" = "This key combination is already used by the Next History Screenshot shortcut. Please choose a different one";
-"shortcutConflictHistoryPanel" = "This key combination is already used by the History Panel shortcut. Please choose a different one";
-"shortcutConflictSelectedImageEdit" = "This key combination is already used by the Edit Selected Image shortcut. Please choose a different one";
-"shortcutConflictClipboardImageEdit" = "This key combination is already used by the Edit Clipboard Image shortcut. Please choose a different one";
 "shortcutConflictTextRecognition" = "This key combination is already used by the Text Recognition shortcut. Please choose a different one";
 "shortcutConflictCopyImageText" = "This key combination is already used by the Copy Image Text shortcut. Please choose a different one";
-"shortcutConflictScreenshotTranslation" = "This key combination is already used by the Screenshot Translation shortcut. Please choose a different one";
 "shortcutConflictRecord" = "This key combination is already used by the Record shortcut. Please choose a different one";
 "shortcutConflictFullScreenScreenshot" = "This key combination is already used by the Full Screen Screenshot shortcut. Please choose a different one";
 "shortcutConflictColorPicker" = "This key combination is already used by the Color Picker shortcut. Please choose a different one";
@@ -130,70 +73,6 @@
 "colorPicker" = "Color Picker";
 "settings" = "Settings";
 "quitApp" = "Quit Clip";
-"historyMenu" = "History";
-"historyClear" = "Clear History";
-"historyCleared" = "History cleared";
-"historyShowInFinder" = "Show in Finder";
-"historyPanelLock" = "Lock History Panel";
-"historyPanelUnlock" = "Unlock History Panel";
-"historyPanelFavorite" = "Favorite";
-"historyPanelUnfavorite" = "Remove from Favorites";
-"historyPanelItemFavorited" = "Added to favorites";
-"historyPanelItemUnfavorited" = "Removed from favorites";
-"historyPanelMenu" = "History Panel";
-"historyPanelDeleteAll" = "Delete All History";
-"historyPanelDeleteSelectedOne" = "Delete %d Item";
-"historyPanelDeleteSelected" = "Delete %d Items";
-"historyPanelDeletedSelectedOne" = "Deleted %d Item";
-"historyPanelDeletedSelected" = "Deleted %d Items";
-"historyPanelFavoriteFailed" = "Could not change favorite";
-"historyDeletedSkippingFavorites" = "Items deleted: %d, favorites skipped: %d";
-"historyPanelFilterAll" = "All";
-"historyPanelFilterScreenshots" = "Screenshots";
-"historyPanelFilterGIF" = "GIF";
-"historyPanelFilterMP4" = "MP4";
-"historyPanelFilterColors" = "Colors";
-"historyPanelFilterText" = "Text";
-"historyPanelSearchColorsAndText" = "Search colors, text, and files";
-"historyPanelSearchColors" = "Search colors";
-"historyPanelSearchText" = "Search text";
-"historyPanelClearSearch" = "Clear search";
-"historyPanelSearchNoResults" = "No matching history";
-"historyPreviewCopyText" = "Copy Text";
-"historyPreviewTranslateText" = "Translate Text";
-"historyPreviewConvertToQRCode" = "Convert to QR Code";
-"historyPreviewQRCodeTooLong" = "Text is too long to convert to a QR code";
-"historyPreviewOriginalText" = "Original Text";
-"historyPreviewQRCodeTitle" = "Text QR Code";
-"historyPanelCopyHint" = "Click to copy";
-"historyPanelCopyDragHint" = "Click to copy · drag into an app";
-"historyPanelCopyMarkdownLink" = "Copy MD link";
-"historyPanelCopyPlainLink" = "Copy plain link";
-"historyPanelEmpty" = "No history yet";
-"historyPanelShortcutGuide" = "Keyboard shortcuts";
-"historyPanelShortcutGuideHide" = "Show history";
-"historyPanelShortcutKeyClick" = "Click";
-"historyPanelShortcutKeyDrag" = "Drag";
-"historyPanelShortcutKeySpace" = "Space";
-"historyPanelShortcutSearch" = "Search or close search";
-"historyPanelShortcutSwitchFilter" = "Switch categories";
-"historyPanelShortcutSwitchItem" = "Switch to the previous or next item";
-"historyPanelShortcutToggleSelection" = "Select or deselect one item";
-"historyPanelShortcutRangeSelection" = "Select a range";
-"historyPanelShortcutSelectAll" = "Select all visible items";
-"historyPanelShortcutCancel" = "Exit search or clear current state";
-"historyPanelShortcutCopyItem" = "Copy item";
-"historyPanelShortcutDragItem" = "Drag image or video to another app";
-"historyPanelShortcutOpenPreview" = "Preview hovered image or text";
-"historyPanelShortcutBrowsePreview" = "Browse previous or next preview";
-"historyPanelShortcutClosePreview" = "Close preview";
-"historyPanelShortcutCopyPreview" = "Copy preview content";
-"historyPanelShortcutEditImage" = "Edit image";
-"historyPanelShortcutPinImage" = "Pin image";
-"historyPanelShortcutUploadImage" = "Upload image";
-"historyPanelShortcutTranslateText" = "Translate text";
-"historyPanelShortcutQRCode" = "Create QR code";
-"historyPanelShortcutToggleGuide" = "Show or hide keyboard shortcuts";
 
 /* Cursor chip */
 "dragToQuickPin" = "Click a window or drag to pin the selection";
@@ -202,7 +81,6 @@
 "dragToScreenshotAspect" = "Click window or drag to screenshot · Drag selection %@ (R)";
 "dragToTextRecognition" = "Click window or select area to recognize text";
 "dragToCopyImageText" = "Click window or select area to copy text";
-"dragToScreenshotTranslation" = "Click window or select area to translate content";
 "dragToRecord" = "Click window or drag to record";
 "dragToRecordAspectFree" = "Click window or drag to record · Drag selection free ratio (R)";
 "dragToRecordAspect" = "Click window or drag to record · Drag selection %@ (R)";
@@ -220,14 +98,10 @@
 "editSuspendedToast" = "Edit suspended, trigger screenshot again to continue";
 "editSuspendedResumeToast" = "Continuing your suspended edit";
 "fullScreenScreenshotFailed" = "Full-screen screenshot failed";
-"openImageNoImage" = "Copy an image to the clipboard or choose an image file";
-"selectedImageEditNoImage" = "No single Finder image selected";
-"clipboardImageEditNoImage" = "No editable image on the clipboard";
 "recordingSaved" = "Recording saved to %@";
 "recordingCancelled" = "Recording cancelled";
 "recordingExportingGIF" = "Creating GIF";
 "recordingFailed" = "Recording failed: %@";
-"saveRecording" = "Save Recording";
 "saveRecordingPrompt" = "Save";
 "recordingFormatLabel" = "Format";
 "recordingFormatManual" = "Choose each time";
@@ -276,17 +150,14 @@
 "tipRotateRight" = "Rotate right 90°";
 "tipBeautify" = "Beautify";
 "tipOCR" = "Text Recognition";
-"tipScreenshotTranslate" = "Screenshot Translation";
 "tipSave" = "Save to File";
 "tipPin" = "Pin to Screen";
 "tipRecord" = "Record";
 "tipCancel" = "Cancel";
 "tipConfirm" = "Copy to Clipboard";
-"tipScrollCropConfirm" = "Save and Edit";
 "copyQRCodeContent" = "Copy QR code content";
 
 /* Beautify */
-"beautify" = "Beautify";
 "beautifyPresetTransparent" = "Transparent";
 "beautifyPresetPeachBlue" = "Peach Blue";
 "beautifyPresetMintTeal" = "Mint Teal";
@@ -320,7 +191,6 @@
 "shapeFillNone" = "Outline";
 "shapeFillOpaque" = "Fill";
 "shapeFillTranslucent" = "Translucent fill";
-"shapeStyleStandard" = "Default style";
 "shapeStyleRounded" = "Rounded rectangle style";
 "shapeStyleHandDrawn" = "Hand-drawn style";
 "arrowStyleTapered" = "Tapered arrow";
@@ -339,7 +209,6 @@
 "settingsTabGeneral" = "General";
 "settingsTabShortcuts" = "Shortcuts";
 "settingsTabPermissions" = "Permissions";
-"settingsTabUpload" = "Upload";
 "settingsTabAbout" = "About";
 "settingsSectionCapture" = "Capture";
 "settingsSectionSystem" = "Recognition & System";
@@ -358,7 +227,6 @@
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
 "ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
 "tipShapePicker" = "chevron or long-press for other shapes";
-"settingsTabTranslation" = "Translation";
 "settingsTabToolbar" = "Toolbar";
 "settingsQuit" = "Quit App";
 
@@ -379,8 +247,6 @@
 "toolbarSettingsShortcutUnavailable" = "N/A";
 "toolbarSettingsAdditionalShortcuts" = "Additional editor actions";
 "toolbarSettingsReset" = "Reset to Default";
-"toolbarSettingsCancel" = "Cancel";
-"toolbarSettingsApply" = "Apply";
 "editorShortcutSelect" = "Selection tool";
 "editorShortcutShapeFill" = "Toggle shape fill";
 "editorShortcutConflict" = "This shortcut is already assigned to “%@”";
@@ -393,58 +259,6 @@
 "aboutStarOnGitHub" = "Star Clip on GitHub 🌟";
 "aboutFeatureRequest" = "Request a feature";
 "aboutBugReport" = "Report a bug";
-"aboutUpdateTitle" = "Updates";
-"aboutErrorLog" = "Error Log";
-"aboutErrorLogNoCrash" = "No error logs";
-"aboutErrorLogLastCrash" = "Latest log · %@";
-"aboutErrorLogCopy" = "Copy Log";
-"aboutErrorLogCopied" = "Copied";
-"aboutErrorLogReveal" = "Show in Finder";
-"aboutErrorLogRefresh" = "Refresh Log";
-"aboutErrorLogClear" = "Clear Log";
-"aboutErrorLogEmptyBody" = "Clip hasn't recorded any error logs yet. If the app freezes or crashes, come back here to copy the log for a bug report";
-
-/* Updates — About pane */
-"checkForUpdates" = "Check for Updates";
-"updateChecking" = "Checking";
-"updateUpToDateStatus" = "Up to date";
-"updateNewVersionStatus" = "Release v%@ available";
-"updateFailedStatus" = "Check failed";
-"updateDownloadButton" = "Download";
-"updateRetryButton" = "Retry";
-"updateInstallNowButton" = "Update Now";
-"updateDownloadingStatus" = "Downloading %d%%";
-"updateInstallingStatus" = "Installing";
-"updateInstallFailedStatus" = "Install failed";
-
-/* Updates — menu bar */
-"checkForUpdatesMenu" = "Check for Updates";
-"checkingForUpdatesMenu" = "Checking for Updates";
-"updateAvailableMenu" = "Release v%@ Available";
-"updateDownloadingMenu" = "Downloading Update… %d%%";
-"updateInstallingMenu" = "Installing Update";
-"updateInstallFailedMenu" = "Update Install Failed";
-
-/* Updates — progress HUD */
-"updateCheckingHUD" = "Checking for updates";
-"updateDownloadingHUD" = "Downloading update %d%%";
-"updateVerifyingHUD" = "Verifying update";
-"updateUnzippingHUD" = "Extracting";
-"updateInstallingHUD" = "Installing";
-
-/* Updates — manual check result alert */
-"updateAvailableTitle" = "Release v%@ is available";
-"updateAvailableBody" = "Clip will download and install the latest version, then relaunch automatically";
-"updateUpToDateTitle" = "You're up to date";
-"updateUpToDateBody" = "Clip v%@ is the latest version";
-"updateFailedTitle" = "Update check failed";
-"updateFailedBody" = "Could not reach GitHub. Check your connection and try again";
-"updateInstallFailedTitle" = "Update failed";
-"updateInstallFailedBody" = "Something went wrong while downloading or installing the update. You can download it manually from the GitHub releases page";
-"updateOpenPageButton" = "Open GitHub";
-"updateSkipButton" = "Skip This Version";
-"updateLaterButton" = "Later";
-"updateOKButton" = "OK";
 
 /* Quit confirmation dialog */
 "quitConfirmTitle" = "Quit Clip";
@@ -452,24 +266,7 @@
 "quitConfirmAction" = "Quit";
 "quitConfirmCancel" = "Cancel";
 
-/* Upload — toolbar / toast / progress */
-"tipUpload" = "Upload to image host";
-"uploadingTitle" = "Uploading";
-"uploadCopied" = "Image URL copied";
-"uploadCopiedMarkdown" = "Markdown link copied";
-"uploadNoProvider" = "Configure an uploader in Settings first";
-"uploadFailedPrefix" = "Upload failed";
-
 /* Upload — settings tab */
-"uploadDefaultProvider" = "Default Uploader";
-"uploadDefaultNone" = "Disabled";
-"uploadSetDefaultButton" = "Set Default";
-"uploadSaveButton" = "Save";
-"uploadClearButton" = "Clear";
-"uploadSavedToast" = "Config saved";
-"uploadCurrentDefault" = "Current default";
-"uploadMarkdownToggleTitle" = "Copy as Markdown link";
-"uploadMarkdownToggleSubtitle" = "When on, copies a Markdown image tag (![](url)) after upload; when off, copies a plain URL. In History Panel, cloud images follow this setting on click, with hover buttons for MD or plain links";
 "filenameRuleTitle" = "File name rules";
 "filenameRuleSubtitle" = "Controls image save defaults and recording save defaults. Extensions are added automatically";
 "filenameRulePresetLabel" = "Preset";
@@ -489,47 +286,6 @@
 "filenameRuleVariableSize" = "Size";
 "filenameRulePreview" = "%@";
 
-/* Upload — provider field labels */
-"uploadFieldBucket" = "Bucket";
-"uploadFieldBucketSpace" = "Bucket";
-"uploadFieldRegion" = "Region";
-"uploadFieldRegionOptional" = "Optional region";
-"uploadFieldPathOptional" = "Optional path";
-"uploadFieldCustomUrlOptional" = "Optional custom URL";
-"uploadFieldPublicDomain" = "Public Domain";
-"uploadFieldEndpointArea" = "Endpoint";
-"uploadFieldEndpointOptional" = "Optional endpoint";
-"uploadFieldAccountId" = "Account ID";
-"uploadTestImageFailed" = "Failed to build test image";
-
-/* Upload — provider names */
-"providerTencentCOS" = "Tencent COS";
-"providerQiniuKodo" = "Qiniu Kodo";
-"providerAliyunOSS" = "Aliyun OSS";
-
-/* Upload — errors */
-"uploadErrMissingConfig" = "No uploader configured";
-"uploadErrInvalidConfigPrefix" = "Invalid config";
-"uploadErrNetworkPrefix" = "Network error";
-"uploadErrServerPrefix" = "Upload failed code %d";
-"uploadErrUnexpectedResponsePrefix" = "Unexpected response";
-"missingField" = "Missing %@";
-
-/* Upload — test/validation pill */
-"uploadStatusUntested" = "Not tested";
-"uploadStatusTesting" = "Testing";
-"uploadStatusValid" = "Active";
-"uploadStatusInvalid" = "Invalid config";
-
-/* Upload — log lines */
-"uploadLogStartingTest" = "Starting test upload";
-"uploadLogConfigSaved" = "Config saved";
-"uploadLogMissingFields" = "Missing required fields: %@";
-"uploadLogTestSucceeded" = "Test upload succeeded: %@";
-"uploadLogTestFailed" = "Test upload failed: %@";
-"uploadLogProviderDisabled" = "Provider disabled";
-"uploadLogConfigCleared" = "Config cleared";
-
 /* Permissions — status label */
 "permissionGranted" = "Granted";
 "permissionNotGranted" = "Not granted";
@@ -541,96 +297,13 @@
 "ocrCopy" = "Copy";
 "ocrCopied" = "Copied";
 "ocrRetry" = "Retry";
-"ocrTranslating" = "Translating";
-"ocrTranslateFailedPrefix" = "Failed";
-"ocrNoProviderTitle" = "No translation service configured";
-"ocrNoProviderHint" = "Enable a provider in Settings → Translation";
-"ocrOpenSettings" = "Open Settings";
 "ocrLineCopied" = "Line copied";
 "copyImageTextCopying" = "Copying";
 "copyImageTextCopied" = "Image text copied";
 "copyImageTextNoText" = "No text found";
-"screenshotTranslationHeader" = "Translation";
-"screenshotTranslationLanguageButton" = "To %@";
-"dictionaryEntryLabel" = "Entry";
-"dictionaryPhoneticLabel" = "Pronunciation";
-"dictionaryPartOfSpeechLabel" = "Part of speech";
-"dictionaryDefinitionLabel" = "Meaning";
-"dictionaryExampleLabel" = "Example";
-"dictionaryDifficultyLabel" = "Difficulty";
-"dictionaryNoProviderTitle" = "No dictionary-capable AI service configured";
-"dictionaryNoProviderHint" = "Enable OpenAI, DeepSeek, Claude, or a custom OpenAI-compatible service in Settings → Translation";
-
-/* Translation — settings tab */
-"translationDictionaryModeTitle" = "Dictionary Mode";
-"translationDictionaryModeSubtitle" = "When screenshot translation recognizes a single English word, show pronunciation, meaning, example, translation, and CEFR level";
-"translationTargetLanguage" = "Target Language";
-"translationTargetHint" = "Recognized text is translated into this language; if it is already in that language, it is translated to English instead";
-"translationApiKey" = "API Key";
-"translationApiKeyOptional" = "Optional API Key";
-"translationModel" = "Model";
-"translationEndpoint" = "Endpoint";
-"translationEndpointOptional" = "Optional endpoint";
-"translationSave" = "Save";
-"translationClear" = "Clear";
-"translationConfigSaved" = "Config saved";
-"translationTesting" = "Testing";
-"translationTestPassed" = "Test passed";
-"translationTestFailed" = "Test failed";
-"translationTestFailedTitle" = "Saved, but the connection test failed";
-"translationProviderCustom" = "Custom OpenAI-compatible";
-"translationAppleSubtitle" = "Uses Apple’s on-device models and may download language data";
-"translationErrAppleUnavailable" = "Apple Translation requires macOS 15 or later";
-"translationMoveUp" = "Move up";
-"translationMoveDown" = "Move down";
-
-/* Translation — target language names */
-"transLangChinese" = "Chinese";
-"transLangEnglish" = "English";
-"transLangJapanese" = "Japanese";
-"transLangKorean" = "Korean";
-
-/* Translation — errors */
-"translationErrMissingAPIKey" = "API key not configured";
-"translationErrBadEndpoint" = "Invalid endpoint";
-"translationErrBadResponse" = "Unexpected response";
 
 /* Image Merge */
-"imageMergeShortcutHeader" = "Merge Images";
-"imageMergeShortcutDefaultDisplay" = "Not set";
-"shortcutConflictImageMerge" = "This key combination is already used by the Merge Images shortcut. Please choose a different one";
-"mergeImages" = "Merge Images";
 "mergeEditExitHint" = "Editing merged image. Press X to exit editing";
-"imageMergeNeedTwoImages" = "Select at least two Finder images to merge";
-"imageMergeSomeImagesSkipped" = "Some images could not be loaded";
-"imageMergeNoClipboardImage" = "No image on the clipboard";
-"imageMergeFailed" = "Image merge failed";
-"imageMergeSaved" = "Merged image saved";
-"imageMergeWindowTitle" = "Merge Images";
-"imageMergeSources" = "Sources";
-"imageMergeAddFiles" = "Add Files";
-"imageMergeAddFromClipboard" = "Add from Clipboard";
-"imageMergeImageList" = "Images";
-"imageMergeTemplate" = "Arrangement";
-"imageMergeTemplateHorizontal" = "Horizontal";
-"imageMergeTemplateVertical" = "Vertical";
-"imageMergeTemplateGrid" = "Grid";
-"imageMergeTemplateLongStitch" = "Long Stitch";
-"imageMergeLayout" = "Layout";
-"imageMergeSpacing" = "Spacing";
-"imageMergeMargin" = "Outer Margin";
-"imageMergeCornerRadius" = "Corner Radius";
-"imageMergeBackground" = "Background";
-"imageMergeTransparent" = "Transparent";
-"imageMergeSolid" = "Solid";
-"imageMergeOutput" = "Output";
-"imageMergeCopy" = "Copy";
-"imageMergeSave" = "Save";
-"imageMergeContinueEditing" = "Edit";
-"imageMergeClose" = "Close";
-"imageMergeEmptyTitle" = "Drop images to merge";
-"imageMergeEmptyBody" = "Add files, paste from clipboard, or drag images here";
-"imageMergeClipboardSourceName" = "Clipboard Image";
 
 /* Screenshot quality */
 "screenshotQualityTitle" = "Screenshot quality";
@@ -641,7 +314,6 @@
 "screenshotQualityOriginalHint" = "PNG at full size and lossless quality, largest file";
 "screenshotQualityCompressed" = "Compressed";
 "screenshotQualityCompressedHint" = "Keeps original dimensions and uses local PNG compression";
-"screenshotQualityCompressingUpload" = "Compressing before upload";
 "screenshotQualityCompressingSave" = "Compressing before save";
 "screenshotQualityCompressingClipboard" = "Compressing before copy";
 "screenshotCompressionFailed" = "Image compression failed";
@@ -680,90 +352,20 @@
 /* Magnifier lens panel */
 "magnifierLensPanelCoordinatesLabel" = "Coordinates";
 "magnifierLensPanelColorValueLabel" = "Color";
-"magnifierLensPanelCoordinates" = "Coordinates: %@, %@";
-"magnifierLensPanelHex" = "HEX: %@";
-"magnifierLensPanelRgb" = "RGB: %@";
 "magnifierLensPanelRgbString" = "rgb(%d, %d, %d)";
 "magnifierLensPanelCopyHint" = "Copy color(C)";
 "magnifierLensPanelFormatHint" = "Color format(F)";
 "magnifierLensPanelAspectFree" = "Free";
 "magnifierLensPanelAspectHint" = "Capture ratio(R)";
-/* File upload */
-"fileUploadShortcutHeader" = "Upload Files";
-"finderUploadShortcutDefaultDisplay" = "Not set";
-"shortcutConflictFileUpload" = "This key combination is already used by the Upload Files shortcut. Please choose a different one";
-"uploadFilesMenu" = "Upload Files";
-"finderUploadDialogTitle" = "Upload to Image Host";
-"finderUploadDialogHeading" = "Files to Upload";
-"finderUploadSummary" = "%d files selected · %@";
-"finderUploadSelectAll" = "Select All";
-"finderUploadAction" = "Upload %d Files";
-"finderUploadRetryAction" = "Retry %d Files";
-"finderUploadingProgress" = "Uploading %d/%d";
-"finderUploadSucceeded" = "Uploaded";
-"finderUploadFailed" = "Failed";
-"finderUploadErrorLogTitle" = "Error Log";
-"finderUploadUnknownSize" = "Unknown size";
-"finderUploadReadFailed" = "Cannot read file %@";
-"finderUploadCompleted" = "Uploaded %d files and copied links";
-
-"historyNotchTriggerLabel" = "Notch activation";
-"historyNotchTriggerHover" = "Open on hover";
-"historyNotchTriggerClick" = "Open on click";
 
 /* General settings categories */
-"settingsGeneralBasic" = "Basics";
 "settingsGeneralCapture" = "Capture & Pin";
 "settingsGeneralRecording" = "Recording";
-"settingsGeneralHistory" = "History";
 "settingsGeneralFiles" = "Files & Output";
-
-"historyPreviewTextSaveFailed" = "Unable to save text, please try again";
 
 "windowCapturePreparing" = "Preparing screenshot";
 
 // Configurable OCR providers
 "settingsTabOCR" = "OCR";
-"ocrProviderApple" = "Apple · On-device";
-"ocrProviderBaidu" = "Baidu OCR";
-"ocrProviderTencent" = "Tencent Cloud OCR";
-"ocrProviderCompatible" = "OpenAI-compatible vision model";
-"ocrProviderLabel" = "OCR provider";
-"ocrEndpointLabel" = "Full API endpoint";
-"ocrModelLabel" = "Vision model name";
-"ocrRegionLabel" = "Region";
-"ocrOptionalKey" = "Optional for servers without authentication";
-"ocrVisionModelHint" = "Enter an installed or available vision model";
-"ocrLocalDescription" = "Recognize text on this Mac without uploading images";
-"ocrCloudDescription" = "Images are sent to the selected provider when you use OCR, including screenshot translation, pins and history previews";
-"ocrCompatibleDescription" = "Use a vision-capable Chat Completions API, including OpenAI, Qwen or a local server · Images are sent to the endpoint you configure";
-"ocrOllamaDescription" = "Connect to Ollama and enter an installed vision model · Images are sent to your configured Ollama server";
-"ocrTextOnlyDescription" = "This model returns text without coordinates · Pins and history open the text result panel instead of image text selection";
-"ocrDocumentation" = "Provider documentation";
 "ocrSettingsSaved" = "Settings save automatically and apply to the next recognition";
-"ocrConfigurationError" = "Complete the required credentials, endpoint and model settings";
-"ocrEndpointError" = "Use a full HTTPS API URL or HTTP on localhost";
-"ocrImageError" = "Unable to decode the image";
-"ocrResponseError" = "OCR failed or returned an incomplete response";
-"ocrTimeoutError" = "OCR timed out · Check the service or try again";
-"ocrRequestFailed" = "OCR request failed";
 
-"historyPanelFilterFiles" = "Files";
-
-"historyPanelFolder" = "Folder";
-
-"historyPanelSearchFiles" = "Search file names and paths";
-
-"historyPanelSourceUnavailable" = "Source unavailable";
-
-"historyPanelSourceUnavailableHint" = "Some source files are deleted, offline, or not downloaded";
-
-"historyFilePreviewPrevious" = "Previous file";
-
-"historyFilePreviewNext" = "Next file";
-
-"historyFilePreviewLoading" = "Loading preview";
-
-"historyFilePreviewRetry" = "Check again";
-
-"historyFilePreviewUnavailable" = "Preview unavailable for this file";
