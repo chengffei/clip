@@ -3029,7 +3029,9 @@ class ToolbarView: NSView {
         var width = Self.endPadding * 2
         var first = true
         for slot in slots {
-            if case .gap = slot { width += Self.zoneGap; continue }
+            // Mirror setupButtons: the first button after a gap gets no
+            // spacing, otherwise each gap leaves 4pt of slack at the end.
+            if case .gap = slot { width += Self.zoneGap; first = true; continue }
             if !first { width += Self.buttonSpacing }
             width += Self.buttonSize
             first = false

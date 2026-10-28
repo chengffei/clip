@@ -38,6 +38,9 @@ final class ToolbarSnapshotTests: XCTestCase {
         let close = try XCTUnwrap(bar.frame(for: .close))
         let confirm = try XCTUnwrap(bar.frame(for: .confirm))
         XCTAssertLessThan(close.maxX, confirm.minX, "close sits left, confirm sits right")
+        let last = try XCTUnwrap(bar.subviews.map(\.frame).max { $0.maxX < $1.maxX })
+        let first = try XCTUnwrap(bar.subviews.map(\.frame).min { $0.minX < $1.minX })
+        XCTAssertEqual(bar.frame.width - last.maxX, first.minX, accuracy: 0.5, "same padding on both ends")
 
         guard let dir = ProcessInfo.processInfo.environment["CLIP_SNAPSHOT_DIR"] else { return }
         let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
