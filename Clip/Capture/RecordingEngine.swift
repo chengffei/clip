@@ -1013,7 +1013,7 @@ final class RecordingEngine: NSObject {
         let token = ProcessInfo.processInfo.globallyUniqueString
             .replacingOccurrences(of: "/", with: "-")
         return FileManager.default.temporaryDirectory
-            .appendingPathComponent("capcap-recording-\(date)-\(token).mp4")
+            .appendingPathComponent("clip-recording-\(date)-\(token).mp4")
     }
 
     enum RecordingError: LocalizedError {

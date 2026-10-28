@@ -904,13 +904,25 @@ struct Defaults {
         return ScreenshotImageQuality(rawValue: raw) ?? ScreenshotImageQuality.defaultValue
     }
 
-    static let defaultImageFilenameTemplate = "capcap-{date}-{time}"
-    static let defaultRecordingFilenameTemplate = "capcap-rec-{date}-{time}"
+    static let defaultImageFilenameTemplate = "clip-{date}-{time}"
+    static let defaultRecordingFilenameTemplate = "clip-rec-{date}-{time}"
+
+    /// Presets saved by builds that still used the capcap prefix move to
+    /// clip-; templates the user typed are left alone.
+    private static func migratingLegacyPreset(_ value: String?) -> String? {
+        guard let value, value.hasPrefix("capcap-") else { return value }
+        let legacyPresets = [
+            "capcap-{date}-{time}", "capcap-{date}-{time}-{rand:3}", "capcap-{date}-{daily:3}",
+            "capcap-rec-{date}-{time}", "capcap-rec-{date}-{time}-{rand:3}", "capcap-rec-{date}-{daily:3}",
+        ]
+        guard legacyPresets.contains(value) else { return value }
+        return "clip-" + value.dropFirst("capcap-".count)
+    }
 
     static var imageFilenameTemplate: String {
         get {
             normalizedFilenameTemplate(
-                defaults.string(forKey: "imageFilenameTemplate"),
+                migratingLegacyPreset(defaults.string(forKey: "imageFilenameTemplate")),
                 fallback: defaultImageFilenameTemplate
             )
         }
@@ -925,7 +937,7 @@ struct Defaults {
     static var recordingFilenameTemplate: String {
         get {
             normalizedFilenameTemplate(
-                defaults.string(forKey: "recordingFilenameTemplate"),
+                migratingLegacyPreset(defaults.string(forKey: "recordingFilenameTemplate")),
                 fallback: defaultRecordingFilenameTemplate
             )
         }

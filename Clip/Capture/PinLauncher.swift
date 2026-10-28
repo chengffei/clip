@@ -862,7 +862,7 @@ struct PinImageDragPayload {
     let temporaryFileURL: URL
 
     private static let defaultTemporaryDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("capcap-pin-drag", isDirectory: true)
+        .appendingPathComponent("clip-pin-drag", isDirectory: true)
 
     static func make(
         from image: NSImage,
@@ -876,7 +876,7 @@ struct PinImageDragPayload {
                 withIntermediateDirectories: true
             )
             let fileURL = directory.appendingPathComponent(
-                "capcap-pin-\(UUID().uuidString).png",
+                "clip-pin-\(UUID().uuidString).png",
                 isDirectory: false
             )
             try pngData.write(to: fileURL, options: .atomic)
