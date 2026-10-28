@@ -165,13 +165,13 @@ final class ScrollCapturer {
         }
     }
 
-    /// Captures a frame synchronously and reports the outcome. Used by the
-    /// auto-scroll loop: it scrolls a fixed step, then calls this to learn
-    /// whether the step revealed new content (keep going) or not (page end).
+    /// Captures one frame right away and reports the outcome. Used while the
+    /// user scrolls: waiting for the page to settle made polls ~1.5s apart,
+    /// and a fast scroll then left no overlap between frames (2026-10-28).
     func captureSynchronously(expectedShiftPoints: CGFloat) -> FrameOutcome {
         var outcome: FrameOutcome = .noNewContent
         captureQueue.sync {
-            outcome = captureFrame(expectedShiftPoints: expectedShiftPoints)
+            outcome = captureFrame(expectedShiftPoints: expectedShiftPoints, settled: false)
         }
         return outcome
     }
@@ -249,19 +249,26 @@ final class ScrollCapturer {
     private var lastRejectedOverlap: (overlap: Int, height: Int)?
 
     @discardableResult
-    private func captureFrame(expectedShiftPoints _: CGFloat) -> FrameOutcome {
+    private func captureFrame(expectedShiftPoints _: CGFloat, settled: Bool = true) -> FrameOutcome {
         guard frames.count < maxFrames else {
             return .atFrameLimit
         }
-        guard let image = captureSettledFrame() else {
+        let captured = settled
+            ? captureSettledFrame()
+            : ScreenCapturer.capture(rect: captureRect, screen: screen,
+                                     excludingWindowNumbers: excludedWindowNumbers, timeout: 1)
+        guard let image = captured else {
             rejectedNoImage += 1
             return .noNewContent
         }
-        return consider(image)
+        // Polls run every 80ms; keep only frames that add a real step so the
+        // frame budget covers long pages. The final settled frame takes any
+        // remainder.
+        return consider(image, minimumNewFraction: settled ? 1.0 / 200 : 1.0 / 4)
     }
 
     /// Accepts or rejects one captured frame against the last accepted one.
-    private func consider(_ image: NSImage) -> FrameOutcome {
+    private func consider(_ image: NSImage, minimumNewFraction: Double = 1.0 / 200) -> FrameOutcome {
         guard frames.count < maxFrames else { return .atFrameLimit }
         guard let bitmap = bitmapData(from: image) else {
             rejectedNoImage += 1
@@ -287,7 +294,7 @@ final class ScrollCapturer {
             current: candidateFrame.bitmap
         )
 
-        let minimumNewRows = max(8, candidateFrame.bitmap.height / 200)
+        let minimumNewRows = max(8, Int(Double(candidateFrame.bitmap.height) * minimumNewFraction))
         let newRows = candidateFrame.bitmap.height - overlap
         guard newRows >= minimumNewRows else {
             rejectedSmallShift += 1
@@ -542,10 +549,15 @@ final class ScrollCapturer {
         // Because both Vision inputs were cropped identically, ty is the same
         // shift we would see in the original frame coordinates — apply directly.
         let visionShift = Int(observation.alignmentTransform.ty.rounded())
-        let newContentPx = visionShift > 0
-            ? refinedShift(previous: previous, current: current, estimate: visionShift,
-                           top: cropY, bottom: height - cropBottom, width: cropWidth)
-            : visionShift
+        var newContentPx = visionShift
+        if visionShift > 0 {
+            // No shift matches: the frames don't overlap, so taking this one
+            // would splice unrelated content.
+            guard let refined = refinedShift(previous: previous, current: current, estimate: visionShift,
+                                             top: cropY, bottom: height - cropBottom, width: cropWidth)
+            else { return height }
+            newContentPx = refined
+        }
 
         // First time we see a real shift, try to learn where the sticky
         // header ends so subsequent frames can crop it out.
@@ -572,7 +584,7 @@ final class ScrollCapturer {
     private func refinedShift(
         previous: BitmapData, current: BitmapData, estimate: Int,
         top: Int, bottom: Int, width: Int
-    ) -> Int {
+    ) -> Int? {
         let rows = bottom - top
         let columnCount = 96
         guard rows > 32, width > columnCount else { return estimate }
@@ -618,9 +630,17 @@ final class ScrollCapturer {
                 bestScore = candidate
             }
         }
-        // Keep Vision unless the match is clearly better; compressed sources
-        // (iPhone Mirroring) never match exactly anywhere.
-        if let estimateScore, estimateScore <= bestScore + 1 { return estimate }
+        // Take another shift only when it matches near-exactly or much better
+        // than Vision; compressed sources (iPhone Mirroring) never match
+        // exactly anywhere. When nothing matches, there is no overlap.
+        let visionScore = estimateScore ?? .infinity
+        guard bestScore < 3 || bestScore < visionScore * 0.5 else {
+            if min(bestScore, visionScore) > 12 {
+                FileLog.write("scroll capture no overlap: vision \(estimate) score \(String(format: "%.1f", visionScore)), best \(best) score \(String(format: "%.1f", bestScore))")
+                return nil
+            }
+            return estimate
+        }
         FileLog.write("scroll capture refined shift \(estimate) -> \(best) score \(estimateScore.map { String(format: "%.1f", $0) } ?? "-") -> \(String(format: "%.1f", bestScore))")
         return best
     }

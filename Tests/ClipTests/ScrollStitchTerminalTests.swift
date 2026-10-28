@@ -30,6 +30,19 @@ final class ScrollStitchTerminalTests: XCTestCase {
         XCTAssertEqual(rowMismatches(stitched, page), 0, "stitched rows differ from the page")
     }
 
+    /// Scrolling faster than the polls leaves no overlap; that frame must be
+    /// turned away instead of spliced in, and capture resumes once frames
+    /// overlap again.
+    func testFrameWithoutOverlapIsRejected() throws {
+        let page = makePage(height: 2400)
+        let frames = [slice(page, top: 0), slice(page, top: 1200), slice(page, top: 500)]
+        let result = ScrollCapturer.stitchForTesting(frames)
+        XCTAssertEqual(result.accepted, 2)
+        let stitched = try XCTUnwrap(result.image?.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        let expected = try XCTUnwrap(page.cropping(to: CGRect(x: 0, y: 0, width: width, height: frameHeight + 500)))
+        XCTAssertEqual(rowMismatches(stitched, expected), 0)
+    }
+
     // MARK: - Fixtures
 
     private func makePage(height: Int) -> CGImage {

@@ -1849,7 +1849,7 @@ class EditWindowController {
             queue: DispatchQueue(label: "capcap.manual-scroll-capture", qos: .userInitiated)
         )
         manualScrollCaptureTimer = timer
-        timer.schedule(deadline: .now() + 0.25, repeating: 0.25, leeway: .milliseconds(80))
+        timer.schedule(deadline: .now() + 0.1, repeating: 0.08, leeway: .milliseconds(20))
         timer.setEventHandler { [weak capturer] in
             _ = capturer?.captureSynchronously(expectedShiftPoints: 0)
         }
