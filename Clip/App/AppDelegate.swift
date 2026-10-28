@@ -752,6 +752,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func promptToSaveRecording(tmpURL: URL) {
+        if Defaults.askSaveLocation {
+            promptForRecordingSaveLocation(tmpURL: tmpURL)
+            return
+        }
         if let format = Defaults.recordingSavePreference.format {
             saveRecordingToConfiguredDirectory(tmpURL: tmpURL, format: format)
             return
@@ -780,6 +784,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         Defaults.recordingSaveFormat = selectedFormat
         saveRecordingToConfiguredDirectory(tmpURL: tmpURL, format: selectedFormat)
+    }
+
+    /// Save panel for recordings. Cancelling still keeps the take in the
+    /// recording folder: unlike a screenshot there is no editor to return to.
+    private func promptForRecordingSaveLocation(tmpURL: URL) {
+        let fixedFormat = Defaults.recordingSavePreference.format
+        var format = fixedFormat ?? Defaults.recordingSaveFormat
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        panel.directoryURL = Defaults.recordingSaveDirectory
+        panel.allowedContentTypes = [UTType(filenameExtension: format.fileExtension) ?? .data]
+        panel.nameFieldStringValue = FilenameTemplate.recordingFileName(fileExtension: format.fileExtension, consumeCounters: false)
+        if fixedFormat == nil {
+            panel.accessoryView = RecordingSaveAccessoryView(initialFormat: format) { [weak panel] newFormat in
+                format = newFormat
+                panel?.allowedContentTypes = [UTType(filenameExtension: newFormat.fileExtension) ?? .data]
+            }
+        }
+
+        NSApp.activate(ignoringOtherApps: true)
+        let response = panel.runModal()
+        if fixedFormat == nil {
+            Defaults.recordingSaveFormat = format
+        }
+        guard response == .OK, let url = panel.url else {
+            saveRecordingToConfiguredDirectory(tmpURL: tmpURL, format: format)
+            return
+        }
+        saveRecording(tmpURL: tmpURL, destination: url, format: format)
     }
 
     private func saveRecordingToConfiguredDirectory(tmpURL: URL, format: ScreenRecordingFormat) {

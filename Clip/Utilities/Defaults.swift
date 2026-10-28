@@ -820,8 +820,8 @@ struct Defaults {
         }
     }
 
-    /// When true (default), screenshot "Save to file" shows a save panel.
-    /// When false, screenshots write straight to `screenshotSaveDirectory`.
+    /// When true (default), saving a screenshot or recording shows a save panel.
+    /// When false, files write straight to the screenshot/recording directory.
     static var askSaveLocation: Bool {
         get {
             if defaults.object(forKey: "askSaveLocation") == nil {

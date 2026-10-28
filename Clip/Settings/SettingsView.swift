@@ -230,7 +230,7 @@ class SettingsView: NSView {
     private var screenshotSavePathValueLabel: NSTextField!
     private var screenshotSavePathChooseButton: NSButton!
     private var screenshotSavePathRevealButton: NSButton!
-    private var screenshotSavePathGroup: [NSView] = []
+    private var savePathGroup: [NSView] = []
 
     private var refreshTimer: Timer?
     private var gradientLayer: CAGradientLayer?
@@ -1128,10 +1128,6 @@ class SettingsView: NSView {
         inner.addArrangedSubview(screenshotPath.row)
         screenshotPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
-        // The screenshot folder only matters once the save panel is off.
-        screenshotSavePathGroup = [screenshotPathDivider, screenshotPath.row]
-        refreshScreenshotSavePathVisibility()
-
         let recordingDivider = rowDivider()
         inner.addArrangedSubview(recordingDivider)
         recordingDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
@@ -1147,6 +1143,10 @@ class SettingsView: NSView {
         recordingSavePathRevealButton = recordingPath.revealButton
         inner.addArrangedSubview(recordingPath.row)
         recordingPath.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+
+        // The folders only matter once the save panel is off.
+        savePathGroup = [screenshotPathDivider, screenshotPath.row, recordingDivider, recordingPath.row]
+        refreshSavePathVisibility()
 
         let revealDivider = rowDivider()
         inner.addArrangedSubview(revealDivider)
@@ -1968,11 +1968,11 @@ class SettingsView: NSView {
 
     @objc private func askSaveLocationToggled(_ sender: NSSwitch) {
         Defaults.askSaveLocation = sender.state == .on
-        refreshScreenshotSavePathVisibility()
+        refreshSavePathVisibility()
     }
 
-    private func refreshScreenshotSavePathVisibility() {
-        screenshotSavePathGroup.forEach { $0.isHidden = Defaults.askSaveLocation }
+    private func refreshSavePathVisibility() {
+        savePathGroup.forEach { $0.isHidden = Defaults.askSaveLocation }
     }
 
     @objc private func autoRevealSavedFilesToggled(_ sender: NSSwitch) {
@@ -3145,7 +3145,7 @@ class SettingsView: NSView {
         askSaveLocationTitleLabel?.toolTip = L10n.askSaveLocationHint
         askSaveLocationSwitch?.toolTip = L10n.askSaveLocationHint
         askSaveLocationSwitch?.state = Defaults.askSaveLocation ? .on : .off
-        refreshScreenshotSavePathVisibility()
+        refreshSavePathVisibility()
         autoRevealSavedFilesTitleLabel?.stringValue = L10n.autoRevealSavedFilesLabel
         autoRevealSavedFilesHintLabel?.stringValue = L10n.autoRevealSavedFilesHint
         autoRevealSavedFilesTitleLabel?.toolTip = L10n.autoRevealSavedFilesHint

@@ -321,8 +321,8 @@
 /* Save paths */
 "savePathTitle" = "Save paths";
 "savePathSubtitle" = "Default locations for screenshots and recordings";
-"askSaveLocationLabel" = "Ask where to save screenshots";
-"askSaveLocationHint" = "Show a save dialog when saving screenshots; turn off to save directly to the screenshot path";
+"askSaveLocationLabel" = "Ask where to save";
+"askSaveLocationHint" = "Show a save dialog for screenshots and recordings; turn off to save directly to the folders below";
 "autoRevealSavedFilesLabel" = "Show in Finder after saving";
 "autoRevealSavedFilesHint" = "Select the saved screenshot or recording in Finder after a successful save";
 "recordingSavePathLabel" = "Recording save path";
