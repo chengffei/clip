@@ -15,7 +15,7 @@
 "pinAcrossSpaces" = "Show Pins Across Desktops";
 "pinAcrossSpacesHint" = "New pinned images appear on every desktop and full-screen Space";
 "historyCacheToggleLabel" = "Cache Screenshots";
-"historyCacheToggleHint" = "Store recent screenshots, picked colors, and upload links for quick reuse from the history panel";
+"historyCacheToggleHint" = "Store recent screenshots and picked colors for quick reuse from the history panel";
 "clipboardTextCacheToggleLabel" = "Record Clipboard Text and Files";
 "clipboardTextCacheToggleHint" = "Keep text and source file references without copying files";
 "clipboardTextHistoryLimitLabel" = "Text / File History Limit";
@@ -471,7 +471,7 @@
 "uploadMarkdownToggleTitle" = "Copy as Markdown link";
 "uploadMarkdownToggleSubtitle" = "When on, copies a Markdown image tag (![](url)) after upload; when off, copies a plain URL. In History Panel, cloud images follow this setting on click, with hover buttons for MD or plain links";
 "filenameRuleTitle" = "File name rules";
-"filenameRuleSubtitle" = "Controls image uploads, image save defaults, and recording save defaults. Extensions are added automatically";
+"filenameRuleSubtitle" = "Controls image save defaults and recording save defaults. Extensions are added automatically";
 "filenameRulePresetLabel" = "Preset";
 "filenameRulePresetCustom" = "Custom";
 "filenameRulePresetShort" = "Short";
@@ -634,8 +634,7 @@
 
 /* Screenshot quality */
 "screenshotQualityTitle" = "Screenshot quality";
-"screenshotQualitySubtitle" = "Screenshots are processed before upload, save, or copy, original is the default";
-"screenshotQualityUploadLabel" = "Upload";
+"screenshotQualitySubtitle" = "Screenshots are processed before save or copy, original is the default";
 "screenshotQualitySaveLabel" = "Save to file";
 "screenshotQualityClipboardLabel" = "Copy to clipboard";
 "screenshotQualityOriginal" = "Original";

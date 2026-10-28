@@ -15,7 +15,7 @@
 "pinAcrossSpaces" = "贴图跨桌面显示";
 "pinAcrossSpacesHint" = "开启后新贴图会出现在所有桌面与全屏空间";
 "historyCacheToggleLabel" = "缓存截图";
-"historyCacheToggleHint" = "保存最近截图、取色和上传结果，便于从历史面板快速再次复制";
+"historyCacheToggleHint" = "保存最近截图和取色结果，便于从历史面板快速再次复制";
 "clipboardTextCacheToggleLabel" = "记录剪贴板文本与文件";
 "clipboardTextCacheToggleHint" = "保存文本和源文件引用，不复制文件副本";
 "clipboardTextHistoryLimitLabel" = "文本 / 文件历史数量";
@@ -471,7 +471,7 @@
 "uploadMarkdownToggleTitle" = "复制为 Markdown 链接";
 "uploadMarkdownToggleSubtitle" = "开启后上传完成自动复制 Markdown 图片格式（![](链接)），关闭则复制普通 URL。历史面板中，点击云图片按此设置复制，也可用悬浮按钮选择 MD 或普通链接";
 "filenameRuleTitle" = "文件名规则";
-"filenameRuleSubtitle" = "控制图片上传、图片保存默认名和录制保存默认名。扩展名会自动添加";
+"filenameRuleSubtitle" = "控制图片保存默认名和录制保存默认名。扩展名会自动添加";
 "filenameRulePresetLabel" = "预设";
 "filenameRulePresetCustom" = "自定义";
 "filenameRulePresetShort" = "简短";
@@ -634,8 +634,7 @@
 
 /* Screenshot quality */
 "screenshotQualityTitle" = "截图质量";
-"screenshotQualitySubtitle" = "上传、保存或复制前按所选档位处理截图，默认保留原图";
-"screenshotQualityUploadLabel" = "上传";
+"screenshotQualitySubtitle" = "保存或复制前按所选档位处理截图，默认保留原图";
 "screenshotQualitySaveLabel" = "保存到文件";
 "screenshotQualityClipboardLabel" = "复制到剪贴板";
 "screenshotQualityOriginal" = "原图";

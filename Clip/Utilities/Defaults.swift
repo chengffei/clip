@@ -139,7 +139,6 @@ enum L10n {
     static var chooseScreenshotSavePathTitle: String { s("chooseScreenshotSavePathTitle") }
     static var screenshotQualityTitle: String { s("screenshotQualityTitle") }
     static var screenshotQualitySubtitle: String { s("screenshotQualitySubtitle") }
-    static var screenshotQualityUploadLabel: String { s("screenshotQualityUploadLabel") }
     static var screenshotQualitySaveLabel: String { s("screenshotQualitySaveLabel") }
     static var screenshotQualityClipboardLabel: String { s("screenshotQualityClipboardLabel") }
     static var screenshotQualityOriginal: String { s("screenshotQualityOriginal") }
@@ -1397,10 +1396,6 @@ struct Defaults {
         }
     }
 
-    static var screenshotUploadQuality: ScreenshotImageQuality {
-        get { screenshotQuality(forKey: "screenshotUploadQuality") }
-        set { defaults.set(newValue.rawValue, forKey: "screenshotUploadQuality") }
-    }
 
     static var screenshotSaveQuality: ScreenshotImageQuality {
         get { screenshotQuality(forKey: "screenshotSaveQuality") }

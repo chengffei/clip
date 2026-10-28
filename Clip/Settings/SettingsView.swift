@@ -245,9 +245,6 @@ class SettingsView: NSView {
     private var sectionCaptions: [SidebarSectionCaption] = []
     private var screenshotQualityTitleLabel: NSTextField!
     private var screenshotQualitySubtitleLabel: NSTextField!
-    private var screenshotQualityUploadTitleLabel: NSTextField!
-    private var screenshotQualityUploadHintLabel: NSTextField!
-    private var screenshotQualityUploadPopup: NSPopUpButton!
     private var screenshotQualitySaveTitleLabel: NSTextField!
     private var screenshotQualitySaveHintLabel: NSTextField!
     private var screenshotQualitySavePopup: NSPopUpButton!
@@ -814,11 +811,8 @@ class SettingsView: NSView {
     }
 
     private func refreshScreenshotQualityControls() {
-        refreshScreenshotQualityPopup(screenshotQualityUploadPopup, selected: Defaults.screenshotUploadQuality)
         refreshScreenshotQualityPopup(screenshotQualitySavePopup, selected: Defaults.screenshotSaveQuality)
         refreshScreenshotQualityPopup(screenshotQualityClipboardPopup, selected: Defaults.screenshotClipboardQuality)
-        screenshotQualityUploadHintLabel?.stringValue = Defaults.screenshotUploadQuality.localizedHint
-        screenshotQualityUploadPopup?.toolTip = Defaults.screenshotUploadQuality.localizedHint
         screenshotQualitySaveHintLabel?.stringValue = Defaults.screenshotSaveQuality.localizedHint
         screenshotQualitySavePopup?.toolTip = Defaults.screenshotSaveQuality.localizedHint
         screenshotQualityClipboardHintLabel?.stringValue = Defaults.screenshotClipboardQuality.localizedHint
@@ -1055,21 +1049,6 @@ class SettingsView: NSView {
         let topDivider = rowDivider()
         inner.addArrangedSubview(topDivider)
         topDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
-        let upload = makeScreenshotQualityRow(
-            title: L10n.screenshotQualityUploadLabel,
-            quality: Defaults.screenshotUploadQuality,
-            action: #selector(screenshotUploadQualityChanged(_:))
-        )
-        screenshotQualityUploadTitleLabel = upload.title
-        screenshotQualityUploadHintLabel = upload.hint
-        screenshotQualityUploadPopup = upload.popup
-        inner.addArrangedSubview(upload.row)
-        upload.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
-
-        let uploadDivider = rowDivider()
-        inner.addArrangedSubview(uploadDivider)
-        uploadDivider.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
         let save = makeScreenshotQualityRow(
             title: L10n.screenshotQualitySaveLabel,
@@ -2065,12 +2044,6 @@ class SettingsView: NSView {
             return
         }
         Defaults.recordingSavePreference = preference
-    }
-
-    @objc private func screenshotUploadQualityChanged(_ sender: NSPopUpButton) {
-        guard let quality = selectedScreenshotQuality(from: sender) else { return }
-        Defaults.screenshotUploadQuality = quality
-        refreshScreenshotQualityControls()
     }
 
     @objc private func screenshotSaveQualityChanged(_ sender: NSPopUpButton) {
@@ -3302,7 +3275,6 @@ class SettingsView: NSView {
         screenshotQualityTitleLabel?.stringValue = L10n.screenshotQualityTitle
         screenshotQualitySubtitleLabel?.stringValue = L10n.screenshotQualitySubtitle
         screenshotQualityTitleLabel?.toolTip = L10n.screenshotQualitySubtitle
-        screenshotQualityUploadTitleLabel?.stringValue = L10n.screenshotQualityUploadLabel
         screenshotQualitySaveTitleLabel?.stringValue = L10n.screenshotQualitySaveLabel
         screenshotQualityClipboardTitleLabel?.stringValue = L10n.screenshotQualityClipboardLabel
         refreshScreenshotQualityControls()
