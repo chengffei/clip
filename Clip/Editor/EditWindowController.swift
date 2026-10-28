@@ -1973,6 +1973,17 @@ class EditWindowController {
                              width: selectionRect.width, height: selectionRect.height)
         hostSelectionView.updateSelectionRect(selectionViewRect)
         hostSelectionView.selectionLocked = true
+        // Pinch or ⌘-scroll to look closer: from the fitted view up to twice
+        // the image's real size. Only the view zooms; annotations and export
+        // stay in image coordinates.
+        if let scrollView = canvasScrollView {
+            scrollView.allowsMagnification = true
+            scrollView.minMagnification = 1
+            scrollView.maxMagnification = max(1, 2 / scale)
+            scrollView.magnification = 1
+            scrollView.hasHorizontalScroller = true
+            scrollView.autohidesScrollers = true
+        }
     }
 
     private static func sizeLabelText(for size: NSSize) -> String? {
@@ -2992,12 +3003,22 @@ final class EditorScrollView: NSScrollView {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     override func scrollWheel(with event: NSEvent) {
+        // ⌘-scroll zooms a long screenshot result around the pointer.
+        if allowsMagnification, event.modifierFlags.contains(.command) {
+            let delta = event.hasPreciseScrollingDeltas ? event.scrollingDeltaY / 100 : event.scrollingDeltaY / 10
+            guard delta != 0 else { return }
+            let target = max(minMagnification, min(maxMagnification, magnification * (1 + delta)))
+            setMagnification(target, centeredAt: contentView.convert(event.locationInWindow, from: nil))
+            return
+        }
         // Screen-backed annotations must stay aligned with the frozen desktop.
-        // Only a taller, self-contained image (such as a scroll capture) pans.
+        // Only a self-contained image larger than the view (a scroll capture,
+        // or a zoomed-in one) pans.
         guard let canvas = editorCanvasView,
               canvas.hasPreviewImage || canvas.overrideBaseImage != nil,
               let documentView,
-              documentView.frame.height > contentView.bounds.height + 0.5 else { return }
+              documentView.frame.height > contentView.bounds.height + 0.5
+                || documentView.frame.width > contentView.bounds.width + 0.5 else { return }
         super.scrollWheel(with: event)
     }
 

@@ -39,6 +39,14 @@ final class LongScreenshotFitTests: XCTestCase {
         XCTAssertGreaterThan(scrollView.frame.height, selectionRect.height, "frame did not grow")
         XCTAssertTrue(screen.visibleFrame.offsetBy(dx: -screen.frame.minX, dy: -screen.frame.minY).contains(scrollView.frame))
 
+        // Zoom: up to twice the real size, and the zoomed view pans.
+        XCTAssertTrue(scrollView.allowsMagnification)
+        XCTAssertEqual(scrollView.maxMagnification * scrollView.frame.height / 4000, 2, accuracy: 0.01)
+        scrollView.magnification = scrollView.maxMagnification
+        XCTAssertGreaterThan(document.frame.height, scrollView.contentView.bounds.height + 0.5)
+        XCTAssertGreaterThan(document.frame.width, scrollView.contentView.bounds.width + 0.5)
+        scrollView.magnification = 1
+
         if let dir = ProcessInfo.processInfo.environment["CLIP_SNAPSHOT_DIR"] {
             let rep = try XCTUnwrap(selectionView.bitmapImageRepForCachingDisplay(in: selectionView.bounds))
             selectionView.cacheDisplay(in: selectionView.bounds, to: rep)
