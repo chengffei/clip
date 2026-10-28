@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg"><b>下載</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>下載</b></a> ·
   <a href="https://chengffei.github.io/clip/">網站</a> ·
   <a href="#從原始碼建置">從原始碼建置</a>
 </p>
@@ -47,8 +47,12 @@
 
 ## 安裝
 
-1. 下載 [Clip-0.3.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg)，把 Clip 拖進「應用程式」。
-2. Clip 已簽署但未經 Apple 公證，首次開啟會被 macOS 擋下。先開啟一次並關閉提示，再到「系統設定 › 隱私權與安全性」按「強制打開」。
+1. 下載 [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg)，把 Clip 拖進「應用程式」。
+2. Clip 已簽署但未經 Apple 公證，首次開啟會被 macOS 擋下。先開啟一次並關閉提示，再到「系統設定 › 隱私權與安全性」按「強制打開」。也可以在「終端機」裡執行一次下面的指令，之後正常開啟即可：
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Clip.app
+   ```
 3. Clip 會要求兩項權限，都要允許：「輔助使用」用於連按 ⌘ 觸發，「螢幕錄製」用於截圖和錄影。
 
 需要 macOS 14 或以上版本。介面目前只有簡體中文和英文，繁體中文系統會顯示簡體中文。

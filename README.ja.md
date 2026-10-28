@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg"><b>ダウンロード</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>ダウンロード</b></a> ·
   <a href="https://chengffei.github.io/clip/">ウェブサイト</a> ·
   <a href="#ソースからビルド">ソースからビルド</a>
 </p>
@@ -47,8 +47,12 @@
 
 ## インストール
 
-1. [Clip-0.3.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
-2. Clipは署名済みですがAppleの公証を受けていないため、初回起動時にmacOSにブロックされます。一度開いて警告を閉じたあと、「システム設定 › プライバシーとセキュリティ」で「このまま開く」をクリックしてください。
+1. [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
+2. Clipは署名済みですがAppleの公証を受けていないため、初回起動時にmacOSにブロックされます。一度開いて警告を閉じたあと、「システム設定 › プライバシーとセキュリティ」で「このまま開く」をクリックしてください。または「ターミナル」で次のコマンドを一度実行すれば、そのまま開けます。
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Clip.app
+   ```
 3. 求められる2つのアクセス権を許可します。⌘の2回押しには「アクセシビリティ」、キャプチャには「画面収録」が必要です。
 
 macOS 14以降が必要です。インターフェイスは現在、英語と簡体字中国語のみです。日本語環境では英語で表示されます。

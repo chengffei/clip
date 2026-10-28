@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg"><b>下载</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>下载</b></a> ·
   <a href="https://chengffei.github.io/clip/">官网</a> ·
   <a href="#从源码构建">从源码构建</a>
 </p>
@@ -47,8 +47,12 @@
 
 ## 安装
 
-1. 下载 [Clip-0.3.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.3.0.dmg)，把 Clip 拖进「应用程序」。
-2. Clip 已签名但未经 Apple 公证，首次打开会被 macOS 拦下。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。
+1. 下载 [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg)，把 Clip 拖进「应用程序」。
+2. Clip 已签名但未经 Apple 公证，首次打开会被 macOS 拦下。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。也可以在「终端」里运行一次下面的命令，之后正常打开即可：
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Clip.app
+   ```
 3. Clip 会申请两项权限，都要允许：「辅助功能」用于连按 ⌘ 触发，「屏幕录制」用于截图和录屏。
 
 需要 macOS 14 或更高版本。界面支持简体中文和英文。
