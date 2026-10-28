@@ -31,6 +31,51 @@ final class SelectionSnapshotTests: XCTestCase {
     }
 }
 
+/// Long screenshot result: the frozen page around the selection shows the
+/// same content, so the result must read as lifted off it. Writes
+/// selection-long-result-{before,after}.png when `CLIP_SNAPSHOT_DIR` is set.
+final class LongResultSnapshotTests: XCTestCase {
+    func testLongResultStandsOffThePage() throws {
+        guard let dir = ProcessInfo.processInfo.environment["CLIP_SNAPSHOT_DIR"] else { return }
+        _ = NSApplication.shared
+        for (name, emphasized) in [("before", false), ("after", true)] {
+            let host = NSView(frame: NSRect(x: 0, y: 0, width: 720, height: 460))
+            host.wantsLayer = true
+            host.layer?.backgroundColor = NSColor(srgbRed: 0.16, green: 0.17, blue: 0.2, alpha: 1).cgColor
+            func addLines(to view: NSView, height: CGFloat) {
+                var y = height - 30
+                var index = 0
+                while y > 0 {
+                    let bar = NSView(frame: NSRect(x: 16, y: y, width: CGFloat(260 + (index * 97) % 380), height: 9))
+                    bar.wantsLayer = true
+                    bar.layer?.backgroundColor = NSColor(white: 0.7, alpha: 1).cgColor
+                    view.addSubview(bar)
+                    y -= 24
+                    index += 1
+                }
+            }
+            addLines(to: host, height: host.bounds.height)
+            let selection = SelectionView(frame: host.bounds)
+            host.addSubview(selection)
+            let rect = NSRect(x: 140, y: 90, width: 420, height: 280)
+            let canvas = NSView(frame: rect)
+            canvas.wantsLayer = true
+            canvas.layer?.backgroundColor = host.layer?.backgroundColor
+            addLines(to: canvas, height: rect.height)
+            host.addSubview(canvas)
+            let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView = host
+            selection.updateSelectionRect(rect)
+            selection.selectionSizeLabelOverride = "760 x 3526"
+            selection.emphasizesSelection = emphasized
+            let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: rep)
+            let data = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+            try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent("selection-long-result-\(name).png"))
+        }
+    }
+}
+
 /// Product shot for the website: a light "document" backdrop, a selection
 /// with no tool chosen and the single toolbar under it. Only renders when
 /// `CLIP_SNAPSHOT_DIR` is set.

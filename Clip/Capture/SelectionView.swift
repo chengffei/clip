@@ -81,6 +81,12 @@ class SelectionView: NSView {
 
     // Scroll capture mode: update border styling while the controller manages event routing.
     var scrollCaptureActive = false
+    /// Set once a long screenshot replaces the selection's content. The
+    /// frozen desktop around it shows the same page, so the result is lifted
+    /// off it with a darker dim and a shadow to keep the two apart.
+    var emphasizesSelection = false {
+        didSet { if emphasizesSelection != oldValue { needsDisplay = true } }
+    }
 
     // When false, the selection frame becomes a fixed viewport.
     var selectionInteractionEnabled = true {
@@ -653,9 +659,19 @@ class SelectionView: NSView {
         path.addRect(bounds)
         let cutoutRect = scrollCaptureActive ? rect.insetBy(dx: -0.5, dy: -0.5) : rect
         path.addRect(cutoutRect)
-        context.setFillColor(NSColor.black.withAlphaComponent(dimmingOverlayAlpha).cgColor)
+        context.setFillColor(NSColor.black.withAlphaComponent(emphasizesSelection ? 0.62 : dimmingOverlayAlpha).cgColor)
         context.addPath(path)
         context.fillPath(using: .evenOdd)
+
+        if emphasizesSelection {
+            // The fill sits under the canvas; only its shadow shows.
+            context.saveGState()
+            context.setShadow(offset: CGSize(width: 0, height: -10), blur: 36,
+                              color: NSColor.black.withAlphaComponent(0.55).cgColor)
+            context.setFillColor(NSColor.black.cgColor)
+            context.fill(rect)
+            context.restoreGState()
+        }
 
         // Draw border — solid red during scroll capture, green dashed otherwise
         if scrollCaptureActive {

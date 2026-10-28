@@ -1926,9 +1926,12 @@ class EditWindowController {
     private func loadScrollCaptureImageIntoEditor(_ image: NSImage) {
         canvasView?.loadPreviewImage(image)
         hostSelectionView?.selectionSizeLabelOverride = Self.sizeLabelText(for: image.size)
+        hostSelectionView?.emphasizesSelection = true
         beautifyContainerView?.canvasSizeDidChange()
         updateCanvasScrollAvailability()
         canvasScrollView?.scrollToTop()
+        // Hint that the result is taller than the frame.
+        canvasScrollView?.flashScrollers()
         updateEditorInteractionState()
         updateCaptureActionAvailability()
     }
