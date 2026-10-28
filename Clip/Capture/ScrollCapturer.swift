@@ -46,6 +46,10 @@ final class ScrollCapturer {
         didSet { countLock.withLock { storedFrameCount = frames.count } }
     }
     private var overlaps: [Int] = []
+    /// Set by the first accepted step. Terminals keep the newest output at the
+    /// bottom, so people often scroll up; frames are then stored in capture
+    /// order and stitched bottom-up (2026-10-28).
+    private var scrollsUp: Bool?
 
     // MARK: - Sticky element exclusion state
     //
@@ -289,12 +293,20 @@ final class ScrollCapturer {
             return .appended
         }
 
-        let overlap = findOverlap(
-            previous: previousFrame.bitmap,
-            current: candidateFrame.bitmap
-        )
-
         let minimumNewRows = max(8, Int(Double(candidateFrame.bitmap.height) * minimumNewFraction))
+        var overlap = candidateFrame.bitmap.height
+        var steppedUp = false
+        if scrollsUp != true {
+            overlap = findOverlap(previous: previousFrame.bitmap, current: candidateFrame.bitmap)
+        }
+        if scrollsUp != false, candidateFrame.bitmap.height - overlap < minimumNewRows {
+            // The candidate sits above the last frame.
+            let upward = findOverlap(previous: candidateFrame.bitmap, current: previousFrame.bitmap)
+            if candidateFrame.bitmap.height - upward >= minimumNewRows {
+                overlap = upward
+                steppedUp = true
+            }
+        }
         let newRows = candidateFrame.bitmap.height - overlap
         guard newRows >= minimumNewRows else {
             rejectedSmallShift += 1
@@ -315,10 +327,18 @@ final class ScrollCapturer {
             return .noNewContent
         }
 
-        FileLog.write("scroll capture frame \(frames.count + 1) overlap=\(overlap) new=\(newRows) of \(candidateFrame.bitmap.height)px")
+        if scrollsUp == nil { scrollsUp = steppedUp }
+        FileLog.write("scroll capture frame \(frames.count + 1) overlap=\(overlap) new=\(newRows) of \(candidateFrame.bitmap.height)px\(steppedUp ? " up" : "")")
         frames.append(candidateFrame)
         overlaps.append(overlap)
-        appendToPreview(candidateFrame.bitmap, overlapPixels: overlap)
+        if steppedUp {
+            // Growing upward: re-stitch for the thumbnail instead of appending.
+            if let image = stitchAcceptedFrames() {
+                DispatchQueue.main.async { [weak self] in self?.onPreviewUpdated?(image) }
+            }
+        } else {
+            appendToPreview(candidateFrame.bitmap, overlapPixels: overlap)
+        }
         return .appended
     }
 
@@ -409,6 +429,9 @@ final class ScrollCapturer {
     // MARK: - Final Stitch
 
     private func stitchAcceptedFrames() -> NSImage? {
+        // Top to bottom, whichever way the user scrolled.
+        let frames = scrollsUp == true ? Array(self.frames.reversed()) : self.frames
+        let overlaps = scrollsUp == true ? Array(self.overlaps.reversed()) : self.overlaps
         guard let firstFrame = frames.first else { return nil }
 
         let bitmapHeight = firstFrame.bitmap.height
@@ -635,7 +658,7 @@ final class ScrollCapturer {
         // exactly anywhere. When nothing matches, there is no overlap.
         let visionScore = estimateScore ?? .infinity
         guard bestScore < 3 || bestScore < visionScore * 0.5 else {
-            if min(bestScore, visionScore) > 12 {
+            if min(bestScore, visionScore) > 10 {
                 FileLog.write("scroll capture no overlap: vision \(estimate) score \(String(format: "%.1f", visionScore)), best \(best) score \(String(format: "%.1f", bestScore))")
                 return nil
             }

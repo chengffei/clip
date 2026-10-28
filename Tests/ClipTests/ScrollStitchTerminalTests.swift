@@ -43,6 +43,18 @@ final class ScrollStitchTerminalTests: XCTestCase {
         XCTAssertEqual(rowMismatches(stitched, expected), 0)
     }
 
+    /// Terminals keep the newest output at the bottom, so people scroll up.
+    /// Those frames once all got turned away (2026-10-28).
+    func testScrollingUpStitchesTopToBottom() throws {
+        let page = makePage(height: 2600)
+        let tops = [1600, 1100, 700, 120]
+        let result = ScrollCapturer.stitchForTesting(tops.map { slice(page, top: $0) })
+        XCTAssertEqual(result.accepted, tops.count)
+        let stitched = try XCTUnwrap(result.image?.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        let expected = try XCTUnwrap(page.cropping(to: CGRect(x: 0, y: 120, width: width, height: 1600 + frameHeight - 120)))
+        XCTAssertEqual(rowMismatches(stitched, expected), 0)
+    }
+
     // MARK: - Fixtures
 
     private func makePage(height: Int) -> CGImage {
