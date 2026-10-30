@@ -10,7 +10,8 @@
 
 <p align="center">
   Double-tap ⌘. Frame it. Done.<br>
-  Screenshots, recording and text recognition. Nothing leaves your Mac.
+  Screenshots, recording and text recognition. Nothing leaves your Mac.<br><br>
+  A free, open-source screenshot, screen recording and OCR tool for Mac. An alternative to CleanShot X and Shottr.
 </p>
 
 <p align="center">
