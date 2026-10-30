@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>ダウンロード</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg"><b>ダウンロード</b></a> ·
   <a href="https://chengffei.github.io/clip/">ウェブサイト</a> ·
   <a href="#ソースからビルド">ソースからビルド</a>
 </p>
@@ -47,7 +47,7 @@ Shottrは小さいけれど録画できません。CleanShot Xはいちばん多
 
 ## インストール
 
-1. [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
+1. [Clip-0.5.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
 2. Clipは署名済みですがAppleの公証を受けていないため、初回起動時にmacOSにブロックされます。一度開いて警告を閉じたあと、「システム設定 › プライバシーとセキュリティ」で「このまま開く」をクリックしてください。または「ターミナル」で次のコマンドを一度実行すれば、そのまま開けます。
 
    ```sh

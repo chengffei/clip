@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>下载</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg"><b>下载</b></a> ·
   <a href="https://chengffei.github.io/clip/">官网</a> ·
   <a href="#从源码构建">从源码构建</a>
 </p>
@@ -47,7 +47,7 @@ Shottr 很小，但不能录屏。CleanShot X 功能最全，售价 35 美元。
 
 ## 安装
 
-1. 下载 [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg)，把 Clip 拖进「应用程序」。
+1. 下载 [Clip-0.5.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg)，把 Clip 拖进「应用程序」。
 2. Clip 已签名但未经 Apple 公证，首次打开会被 macOS 拦下。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。也可以在「终端」里运行一次下面的命令，之后正常打开即可：
 
    ```sh

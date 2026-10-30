@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg"><b>Download</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg"><b>Download</b></a> ·
   <a href="https://chengffei.github.io/clip/">Website</a> ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -47,7 +47,7 @@ Shottr is tiny but can't record. CleanShot X does the most and costs $35. PixPin
 
 ## Install
 
-1. Download [Clip-0.4.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg) and drag Clip into Applications.
+1. Download [Clip-0.5.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.0.dmg) and drag Clip into Applications.
 2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*. Or run this once in Terminal and open Clip as usual:
 
    ```sh
