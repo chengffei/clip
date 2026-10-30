@@ -34,7 +34,7 @@ enum BeautifyRenderer {
     private static var wallpaperLoadCallbacks: [String: [(NSImage?) -> Void]] = [:]
     private static let wallpaperCacheLock = NSLock()
     private static let wallpaperDecodeQueue = DispatchQueue(
-        label: "capcap.beautify.wallpaper.decode",
+        label: "clip.beautify.wallpaper.decode",
         qos: .userInitiated
     )
 

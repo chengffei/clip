@@ -7,7 +7,7 @@ enum AsyncDeadline {
     struct TimedOut: Error {}
 
     private static let timerQueue = DispatchQueue(
-        label: "capcap.async-deadline", qos: .userInitiated, attributes: .concurrent
+        label: "clip.async-deadline", qos: .userInitiated, attributes: .concurrent
     )
 
     static func run<Value>(

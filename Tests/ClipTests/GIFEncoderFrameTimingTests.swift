@@ -45,7 +45,7 @@ final class GIFEncoderFrameTimingTests: XCTestCase {
     @discardableResult
     private func totalDuration(targetFPS: Int, sourceFPS: Int, frames: Int) -> Double {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("capcap-gif-timing-\(UUID().uuidString).gif")
+            .appendingPathComponent("clip-gif-timing-\(UUID().uuidString).gif")
         defer { try? FileManager.default.removeItem(at: url) }
 
         let encoder = GIFEncoder(url: url, fps: targetFPS, sourceFPS: sourceFPS)

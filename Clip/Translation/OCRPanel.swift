@@ -5,7 +5,7 @@ import VisionKit
 
 // MARK: - Shared helpers
 
-/// capcap is an LSUIElement app with no main menu, so Cmd+C/V/X/A never reach
+/// Clip is an LSUIElement app with no main menu, so Cmd+C/V/X/A never reach
 /// the field editor on their own. Route them through the responder chain.
 func dispatchEditingShortcut(_ event: NSEvent) -> Bool {
     guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command else {

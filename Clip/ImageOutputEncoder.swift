@@ -19,7 +19,7 @@ struct EncodedClipboardImageOutput {
 enum ImageOutputEncoder {
     private static let indexedPNGColorLimit = 104
     private static let indexedPNGCompressionLevel: Int32 = 6
-    private static let queue = DispatchQueue(label: "capcap.image-output-encoder", qos: .userInitiated)
+    private static let queue = DispatchQueue(label: "clip.image-output-encoder", qos: .userInitiated)
 
     static func encodeAsync(
         image: NSImage,

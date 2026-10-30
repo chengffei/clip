@@ -230,7 +230,7 @@ class SelectionView: NSView {
     /// Registers the initial crosshair and the selected frame's directional
     /// resize cursors. Explicit mouse-event updates below mirror these rects
     /// so drag events cannot fall back to the initial crosshair.
-    /// OverlayWindowController activates capcap before invalidating cursor
+    /// OverlayWindowController activates Clip before invalidating cursor
     /// rects, because AppKit cursor ownership is scoped to the frontmost app.
     override func resetCursorRects() {
         super.resetCursorRects()
@@ -508,7 +508,7 @@ class SelectionView: NSView {
 
         // In idle state, detect windows under cursor for hover highlight
         if state == .idle && !selectionLocked {
-            // capcap may lose activation over time, which causes WindowServer
+            // Clip may lose activation over time, which causes WindowServer
             // to ignore the crosshair cursor rect registered in resetCursorRects.
             // Re-activate on every mouse-move so the cursor stays crosshair.
             if !NSApp.isActive {

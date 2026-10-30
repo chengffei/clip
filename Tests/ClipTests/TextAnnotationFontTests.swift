@@ -30,7 +30,7 @@ final class TextAnnotationFontTests: XCTestCase {
 
     func testUnknownFontFamilyFallsBackToSystemBold() {
         XCTAssertEqual(
-            TextAnnotation.font(named: "capcap No Such Family 12345", size: 20),
+            TextAnnotation.font(named: "Clip No Such Family 12345", size: 20),
             NSFont.systemFont(ofSize: 20, weight: .bold)
         )
     }
@@ -124,7 +124,7 @@ final class TextAnnotationFontTests: XCTestCase {
         Defaults.textFontName = installedFamily
         XCTAssertEqual(Defaults.textFontName, installedFamily)
 
-        UserDefaults.standard.set("capcap No Such Family 12345", forKey: "textFontName")
+        UserDefaults.standard.set("Clip No Such Family 12345", forKey: "textFontName")
         XCTAssertNil(Defaults.textFontName, "An uninstalled family must read back as the system default")
 
         Defaults.textFontName = nil
@@ -144,7 +144,7 @@ final class TextAnnotationFontTests: XCTestCase {
     func testFontCatalogTitleFallsBackToSystemDefaultLabel() {
         XCTAssertEqual(FontCatalog.title(for: nil), L10n.textFontSystemDefault)
         XCTAssertEqual(
-            FontCatalog.title(for: "capcap No Such Family 12345"),
+            FontCatalog.title(for: "Clip No Such Family 12345"),
             L10n.textFontSystemDefault
         )
         XCTAssertEqual(

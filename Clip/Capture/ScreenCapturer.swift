@@ -3,7 +3,7 @@ import ScreenCaptureKit
 
 struct ScreenCapturer {
     /// - Parameter excludingWindowNumbers: window numbers (`NSWindow.windowNumber`)
-    ///   to omit from the capture — used so capcap's own scroll-capture chrome
+    ///   to omit from the capture — used so Clip's own scroll-capture chrome
     ///   (e.g. the on-screen hint toast) is never baked into a captured frame.
     static func capture(
         rect: CGRect,

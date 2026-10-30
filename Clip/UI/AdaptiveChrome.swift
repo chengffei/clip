@@ -1,6 +1,6 @@
 import AppKit
 
-/// Shared semantic colors for capcap's floating dialogs and editor chrome
+/// Shared semantic colors for Clip's floating dialogs and editor chrome
 ///
 /// AppKit semantic colors already follow the effective appearance when they
 /// are used for text or drawing. Layer colors are different: assigning a

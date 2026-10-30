@@ -178,7 +178,7 @@ class EditWindowController {
     /// the stitched long screenshot.
     private var scrollCaptureHintWindow: ScrollCaptureHintWindow?
     private var manualScrollCaptureTimer: DispatchSourceTimer?
-    /// Key monitor while capcap is deactivated for scroll capture, so any key
+    /// Key monitor while Clip is deactivated for scroll capture, so any key
     /// stops scrolling and hands the stitched image to the editor.
     private var scrollCaptureKeyMonitor: Any?
 
@@ -1846,7 +1846,7 @@ class EditWindowController {
     /// a forgiving capture window without adding a second stitching path.
     private func startManualScrollCapture(capturer: ScrollCapturer) {
         let timer = DispatchSource.makeTimerSource(
-            queue: DispatchQueue(label: "capcap.manual-scroll-capture", qos: .userInitiated)
+            queue: DispatchQueue(label: "clip.manual-scroll-capture", qos: .userInitiated)
         )
         manualScrollCaptureTimer = timer
         timer.schedule(deadline: .now() + 0.1, repeating: 0.05, leeway: .milliseconds(10))
@@ -2860,7 +2860,7 @@ class EditWindowController {
         return windowBaseImage ?? WindowEffects.roundedCorners(image)
     }
 
-    /// While scroll capture runs capcap is deactivated, so a local key monitor
+    /// While scroll capture runs Clip is deactivated, so a local key monitor
     /// would not fire; this global monitor lets any key finish the capture.
     private func installScrollCaptureKeyMonitor() {
         removeScrollCaptureKeyMonitor()

@@ -81,8 +81,6 @@ swift test                         # 180以上のテスト。CLIP_SNAPSHOT_DIR=�
 
 ## クレジット
 
-Clipは、realskyrinによる[capcap](https://github.com/realskyrin/capcap)（MIT）のフォークです。キャプチャエンジン、エディタ、収録パイプラインはcapcapから受け継いでいます。Clipでは名前、アクセス権の流れ、見た目を変え、ひとりでは使わない機能を外しました。クラウドアップロード、翻訳、画像結合、履歴、エージェントCLI、自動アップデート、カウントダウン、QRコード、美化です。
-
 内蔵のテキスト認識モデルは、[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)のPP-OCRv6 small（Apache-2.0）をCore MLに変換したものです。詳しくは `Resources/OCRModels/NOTICE` をご覧ください。
 
 ## ライセンス

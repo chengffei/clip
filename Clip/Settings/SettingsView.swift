@@ -1396,7 +1396,7 @@ class SettingsView: NSView {
         iconView.heightAnchor.constraint(equalToConstant: 56).isActive = true
         headerRow.addArrangedSubview(iconView)
 
-        let nameLabel = NSTextField(labelWithString: "capcap")
+        let nameLabel = NSTextField(labelWithString: "Clip")
         nameLabel.font = NSFont.systemFont(ofSize: 18, weight: .bold)
         nameLabel.textColor = Brand.text.withAlphaComponent(0.96)
 
@@ -1438,7 +1438,7 @@ class SettingsView: NSView {
 
         let repo = makeLinkRow(
             title: L10n.aboutSourceCode,
-            value: "github.com/realskyrin/capcap",
+            value: "github.com/chengffei/clip",
             action: #selector(openSourceRepo)
         )
         aboutSourceTitleLabel = repo.title
@@ -1550,25 +1550,25 @@ class SettingsView: NSView {
     }
 
     @objc private func openSourceRepo() {
-        if let url = URL(string: "https://github.com/realskyrin/capcap") {
+        if let url = URL(string: "https://github.com/chengffei/clip") {
             NSWorkspace.shared.open(url)
         }
     }
 
     @objc private func openStarOnGitHub() {
-        if let url = URL(string: "https://github.com/realskyrin/capcap") {
+        if let url = URL(string: "https://github.com/chengffei/clip") {
             NSWorkspace.shared.open(url)
         }
     }
 
     @objc private func openFeatureRequest() {
-        if let url = URL(string: "https://github.com/realskyrin/capcap/issues/new?template=feature_request.yml") {
+        if let url = URL(string: "https://github.com/chengffei/clip/issues/new?labels=enhancement") {
             NSWorkspace.shared.open(url)
         }
     }
 
     @objc private func openBugReport() {
-        if let url = URL(string: "https://github.com/realskyrin/capcap/issues/new?template=bug_report.yml") {
+        if let url = URL(string: "https://github.com/chengffei/clip/issues/new?labels=bug") {
             NSWorkspace.shared.open(url)
         }
     }

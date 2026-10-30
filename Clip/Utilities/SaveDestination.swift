@@ -24,7 +24,7 @@ enum SaveDestination {
         let nameParts = splitFileName(fileName)
         let rawBase = nameParts.base
         let fileExtension = nameParts.fileExtension
-        let base = rawBase.isEmpty ? "capcap" : rawBase
+        let base = rawBase.isEmpty ? "clip" : rawBase
 
         for index in 2...999 {
             let candidateName: String

@@ -789,7 +789,7 @@ class OverlayWindowController {
             claimSelectionKeyboardFocus()
             refreshSelectionCursor()
             NSCursor.crosshair.set()
-            // Activate capcap so NSCursor APIs and cursor rects take effect.
+            // Activate Clip so NSCursor APIs and cursor rects take effect.
             // Without activation, cursor changes from an LSUIElement background
             // app are ignored by WindowServer. The caller (AppDelegate) captures
             // the previous frontmost app before this point and restores focus
@@ -809,7 +809,7 @@ class OverlayWindowController {
         }
     }
 
-    /// Make the nonactivating selection panel own key events before capcap is
+    /// Make the nonactivating selection panel own key events before Clip is
     /// activated for cursor ownership. This prevents a previously focused text
     /// field from receiving capture shortcuts such as R.
     private func claimSelectionKeyboardFocus() {
@@ -821,10 +821,10 @@ class OverlayWindowController {
         targetWindow.makeFirstResponder(targetView)
     }
 
-    /// Refresh the selection cursor after capcap claims activation.
+    /// Refresh the selection cursor after Clip claims activation.
     ///
     /// AppKit cursor APIs are ignored while another app is frontmost. Once
-    /// presentOverlay activates capcap, invalidating cursor rects lets
+    /// presentOverlay activates Clip, invalidating cursor rects lets
     /// WindowServer re-evaluate the full-view crosshair rect registered by
     /// SelectionView.resetCursorRects.
     private func refreshSelectionCursor() {

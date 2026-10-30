@@ -1,6 +1,6 @@
 # Clip
 
-Felix's personal macOS menu bar tool: region screenshot with annotations, region recording (mp4 / gif), screenshot OCR to clipboard. Pure AppKit, SwiftPM, forked from capcap (MIT).
+Felix's personal macOS menu bar tool: region screenshot with annotations, region recording (mp4 / gif), screenshot OCR to clipboard. Pure AppKit, SwiftPM.
 
 ## Build & run
 

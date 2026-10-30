@@ -1,7 +1,7 @@
 import Foundation
 
 /// Resolves UI strings from the per-language `.lproj` bundles shipped inside
-/// `capcap.app/Contents/Resources/`.
+/// `Clip.app/Contents/Resources/`.
 ///
 /// The app has an in-app language picker, so we can't lean on
 /// `NSLocalizedString` — that keys off the *system* locale. Instead we load the
@@ -10,7 +10,7 @@ import Foundation
 enum Localizer {
     /// Sentinel returned by `localizedString` when a key is absent — distinct
     /// from any real value so we can detect misses and fall back.
-    private static let missing = "\u{0}capcap.l10n.missing\u{0}"
+    private static let missing = "\u{0}clip.l10n.missing\u{0}"
 
     /// (language, resolved bundle) — recomputed only when the language changes.
     private static var cache: (lang: AppLanguage, bundle: Bundle)?

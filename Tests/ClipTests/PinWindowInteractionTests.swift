@@ -213,7 +213,7 @@ final class PinWindowInteractionTests: XCTestCase {
     func testPinCopyWritesPNGAndTIFFToPasteboard() throws {
         let image = try Self.makeImage(edgeAlpha: 255)
         let pasteboard = NSPasteboard(
-            name: NSPasteboard.Name("capcap.pin-copy-tests.\(UUID().uuidString)")
+            name: NSPasteboard.Name("clip.pin-copy-tests.\(UUID().uuidString)")
         )
 
         ClipboardManager.copyToClipboard(image: image, pasteboard: pasteboard)
@@ -272,7 +272,7 @@ final class PinWindowInteractionTests: XCTestCase {
     func testPinDragPayloadProvidesImageDataAndTemporaryPNGFile() throws {
         let image = try Self.makeImage(edgeAlpha: 255)
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "capcap-pin-drag-tests-\(UUID().uuidString)",
+            "clip-pin-drag-tests-\(UUID().uuidString)",
             isDirectory: true
         )
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -284,7 +284,7 @@ final class PinWindowInteractionTests: XCTestCase {
         let pasteboardFileURL = try XCTUnwrap(URL(string: fileURLString))
         let pngData = try XCTUnwrap(payload.pasteboardItem.data(forType: .png))
         let pasteboard = NSPasteboard(
-            name: NSPasteboard.Name("capcap.pin-drag-tests.\(UUID().uuidString)")
+            name: NSPasteboard.Name("clip.pin-drag-tests.\(UUID().uuidString)")
         )
         pasteboard.clearContents()
         XCTAssertTrue(pasteboard.writeObjects([payload.pasteboardItem]))

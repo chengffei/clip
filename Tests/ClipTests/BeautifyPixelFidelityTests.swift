@@ -34,7 +34,7 @@ final class BeautifyPixelFidelityTests: XCTestCase {
                     }
                     XCTAssertEqual(changed, 0, "scale=\(scale), padding=\(padding), shadow=\(shadow)")
                     if scale == 2 && padding == 9.3 && shadow,
-                       let directory = ProcessInfo.processInfo.environment["CAPCAP_PIXEL_ARTIFACTS"] {
+                       let directory = ProcessInfo.processInfo.environment["CLIP_PIXEL_ARTIFACTS"] {
                         try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
                         try source.pngDataPreservingBacking()?.write(to: URL(fileURLWithPath: directory + "/source.png"))
                         try png.write(to: URL(fileURLWithPath: directory + "/beautified.png"))

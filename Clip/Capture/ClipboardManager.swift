@@ -1,7 +1,7 @@
 import AppKit
 
 private let skipClipboardHistoryPasteboardType = NSPasteboard.PasteboardType(
-    "cn.skyrin.capcap.skip-clipboard-text-history"
+    "com.chengffei.clip.skip-clipboard-text-history"
 )
 
 enum ClipboardColorParser {

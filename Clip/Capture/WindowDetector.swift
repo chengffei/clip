@@ -75,7 +75,7 @@ class WindowDetector {
                   layer >= 0
             else { return nil }
 
-            // Keep this app's own menus/popups detectable so capcap can capture
+            // Keep this app's own menus/popups detectable so Clip can capture
             // its visible transient UI. Only screen-saver-level chrome (toasts,
             // tooltips, countdown and progress panels) is excluded.
             // The capture overlay itself is created after refresh(), so it is

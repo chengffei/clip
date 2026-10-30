@@ -81,8 +81,6 @@ swift test                         # 180 多个测试；设置 CLIP_SNAPSHOT_DIR
 
 ## 致谢
 
-Clip 分叉自 realskyrin 的 [capcap](https://github.com/realskyrin/capcap)（MIT）。截图引擎、编辑器和录屏流程都来自它。Clip 换了身份、权限流程和外观，并去掉了一个人用不上的部分：云上传、翻译、拼图、历史记录、Agent 命令行、自动更新、倒计时、二维码和美化。
-
 内置的文字识别模型是 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 PP-OCRv6 small（Apache-2.0），已转换为 Core ML，详见 `Resources/OCRModels/NOTICE`。
 
 ## 许可

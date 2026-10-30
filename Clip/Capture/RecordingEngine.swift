@@ -158,7 +158,7 @@ final class RecordingEngine: NSObject {
     private(set) var state: State = .idle
 
     private let fps: Int
-    private let recordingQueue = DispatchQueue(label: "capcap.recording")
+    private let recordingQueue = DispatchQueue(label: "clip.recording")
 
     private var screen: NSScreen?
     private var sourceRect: CGRect = .zero
@@ -1047,7 +1047,7 @@ private final class RecordingStreamOutput: NSObject, SCStreamOutput, SCStreamDel
             guard sampleBuffer.numSamples > 0 else { return }
             onAudioSampleBuffer?(sampleBuffer)
         case .microphone:
-            // SCStream doesn't capture microphone directly — capcap routes it
+            // SCStream doesn't capture microphone directly — Clip routes it
             // through AVAudioEngine via MicrophoneRecorder instead.
             break
         @unknown default:

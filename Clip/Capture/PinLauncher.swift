@@ -910,7 +910,7 @@ struct PinImageDragPayload {
 /// resample the full-resolution source image on the main thread.
 private enum PinInteractivePreviewRenderer {
     private static let queue = DispatchQueue(
-        label: "capcap.pin.interactive-preview",
+        label: "clip.pin.interactive-preview",
         qos: .userInitiated
     )
 

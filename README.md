@@ -81,8 +81,6 @@ Trigger diagnostics are written to `~/Library/Logs/Clip/clip.log`. `Clip --diagn
 
 ## Credits
 
-Clip is a fork of [capcap](https://github.com/realskyrin/capcap) by realskyrin (MIT). The capture engine, editor and recording pipeline come from there. Clip changes the identity, the permission flow and the look, and removes what one person doesn't need: cloud upload, translation, image merge, history, the agent CLI, auto-update, countdown, QR and beautify.
-
 The built-in text recognition model is PP-OCRv6 small from [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) (Apache-2.0), converted to Core ML. See `Resources/OCRModels/NOTICE`.
 
 ## License

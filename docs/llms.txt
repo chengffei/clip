@@ -2,7 +2,7 @@
 
 > Clip is a free, open-source macOS menu bar tool for region screenshots with annotations, region screen recording (MP4 or GIF) and on-device OCR to the clipboard. It wakes on a double-tap of the ⌘ key. Requires macOS 14 or later. MIT License.
 
-Clip is a fork of capcap (MIT) rewritten around three jobs. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary. It has no cloud upload, no account and no telemetry.
+Clip is built around three jobs. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary. It has no cloud upload, no account and no telemetry.
 
 ## Key facts
 

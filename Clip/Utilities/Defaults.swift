@@ -9,7 +9,7 @@ enum AppLanguage: String, CaseIterable {
     case en
 
     /// Folder name (without extension) of the matching `.lproj` bundle inside
-    /// `capcap.app/Contents/Resources/`.
+    /// `Clip.app/Contents/Resources/`.
     var lprojName: String {
         switch self {
         case .zh: return "zh-Hans"
@@ -38,10 +38,10 @@ enum AppLanguage: String, CaseIterable {
 }
 
 extension Notification.Name {
-    static let languageDidChange = Notification.Name("capcap.languageDidChange")
-    static let recordingSaveDirectoryDidChange = Notification.Name("capcap.recordingSaveDirectoryDidChange")
-    static let hotkeyDidChange = Notification.Name("capcap.hotkeyDidChange")
-    static let editorShortcutsDidChange = Notification.Name("capcap.editorShortcutsDidChange")
+    static let languageDidChange = Notification.Name("clip.languageDidChange")
+    static let recordingSaveDirectoryDidChange = Notification.Name("clip.recordingSaveDirectoryDidChange")
+    static let hotkeyDidChange = Notification.Name("clip.hotkeyDidChange")
+    static let editorShortcutsDidChange = Notification.Name("clip.editorShortcutsDidChange")
 }
 
 /// Centralized accessor for every user-facing string. Each property resolves a
@@ -907,22 +907,10 @@ struct Defaults {
     static let defaultImageFilenameTemplate = "clip-{date}-{time}"
     static let defaultRecordingFilenameTemplate = "clip-rec-{date}-{time}"
 
-    /// Presets saved by builds that still used the capcap prefix move to
-    /// clip-; templates the user typed are left alone.
-    private static func migratingLegacyPreset(_ value: String?) -> String? {
-        guard let value, value.hasPrefix("capcap-") else { return value }
-        let legacyPresets = [
-            "capcap-{date}-{time}", "capcap-{date}-{time}-{rand:3}", "capcap-{date}-{daily:3}",
-            "capcap-rec-{date}-{time}", "capcap-rec-{date}-{time}-{rand:3}", "capcap-rec-{date}-{daily:3}",
-        ]
-        guard legacyPresets.contains(value) else { return value }
-        return "clip-" + value.dropFirst("capcap-".count)
-    }
-
     static var imageFilenameTemplate: String {
         get {
             normalizedFilenameTemplate(
-                migratingLegacyPreset(defaults.string(forKey: "imageFilenameTemplate")),
+                defaults.string(forKey: "imageFilenameTemplate"),
                 fallback: defaultImageFilenameTemplate
             )
         }
@@ -937,7 +925,7 @@ struct Defaults {
     static var recordingFilenameTemplate: String {
         get {
             normalizedFilenameTemplate(
-                migratingLegacyPreset(defaults.string(forKey: "recordingFilenameTemplate")),
+                defaults.string(forKey: "recordingFilenameTemplate"),
                 fallback: defaultRecordingFilenameTemplate
             )
         }
@@ -997,7 +985,7 @@ struct Defaults {
     // `hasCustomClipboardHotkey` since key code 0 (`A`) is a valid value.
 
     private static func migrateLegacySaveHotkeyIfNeeded() {
-        // capcap ≤ 1.x stored this same hotkey under "saveHotkey*". Migrate
+        // Older builds stored this same hotkey under "saveHotkey*". Migrate
         // once on first read so existing users don't lose their binding.
         let migratedKey = "clipboardHotkeyMigrated"
         guard !defaults.bool(forKey: migratedKey) else { return }
