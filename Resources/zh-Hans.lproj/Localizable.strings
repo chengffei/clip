@@ -259,6 +259,16 @@
 "aboutStarOnGitHub" = "给 Clip 点个 Star 🌟";
 "aboutFeatureRequest" = "提需求";
 "aboutBugReport" = "提 Bug";
+"checkForUpdates" = "检查更新…";
+"updateChecking" = "正在检查更新…";
+"updateAvailableTitle" = "Clip %@ 已发布";
+"updateAvailableMessage" = "你正在使用 %@。可以到 GitHub 下载新版本。";
+"updateUpToDateTitle" = "已是最新版本";
+"updateUpToDateMessage" = "Clip %@ 是最新版本。";
+"updateFailedTitle" = "无法检查更新";
+"updateDownload" = "前往下载";
+"updateLater" = "以后再说";
+"updateOpenReleasesPage" = "打开发布页";
 
 /* Quit confirmation dialog */
 "quitConfirmTitle" = "退出 Clip";

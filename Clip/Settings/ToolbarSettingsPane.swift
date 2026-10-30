@@ -433,6 +433,9 @@ final class ToolbarSettingsPane: NSView {
         label.font = NSFont.systemFont(ofSize: 11)
         label.textColor = Brand.text.withAlphaComponent(0.45)
         label.translatesAutoresizingMaskIntoConstraints = false
+        // Wrap instead of widening the pane: the English hints are longer
+        // than one line and would otherwise push the window past 820pt.
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         return label
     }
 

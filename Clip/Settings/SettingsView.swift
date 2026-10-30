@@ -182,6 +182,7 @@ class SettingsView: NSView {
     private var aboutStarTitleLabel: NSTextField?
     private var aboutFeatureRequestTitleLabel: NSTextField?
     private var aboutBugReportTitleLabel: NSTextField?
+    private var aboutUpdateTitleLabel: NSTextField?
 
     // Error log card (About pane) — expandable macOS crash report viewer.
 
@@ -1474,6 +1475,16 @@ class SettingsView: NSView {
         aboutBugReportTitleLabel = bugReport.title
         infoInner.addArrangedSubview(bugReport.row)
         bugReport.row.widthAnchor.constraint(equalTo: infoInner.widthAnchor).isActive = true
+        infoInner.addArrangedSubview(rowDivider())
+
+        let update = makeLinkRow(
+            title: L10n.checkForUpdates,
+            value: "",
+            action: #selector(checkForUpdates)
+        )
+        aboutUpdateTitleLabel = update.title
+        infoInner.addArrangedSubview(update.row)
+        update.row.widthAnchor.constraint(equalTo: infoInner.widthAnchor).isActive = true
 
         stack.addArrangedSubview(infoCard)
         infoCard.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
@@ -1565,6 +1576,10 @@ class SettingsView: NSView {
         if let url = URL(string: "https://github.com/chengffei/clip/issues/new?labels=enhancement") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    @objc private func checkForUpdates() {
+        UpdateChecker.checkInteractively()
     }
 
     @objc private func openBugReport() {
@@ -3202,6 +3217,7 @@ class SettingsView: NSView {
         aboutStarTitleLabel?.stringValue = L10n.aboutStarOnGitHub
         aboutFeatureRequestTitleLabel?.stringValue = L10n.aboutFeatureRequest
         aboutBugReportTitleLabel?.stringValue = L10n.aboutBugReport
+        aboutUpdateTitleLabel?.stringValue = L10n.checkForUpdates
         refreshShortcutDisplay()
         refreshFullScreenScreenshotShortcutDisplay()
         refreshColorPickerShortcutDisplay()

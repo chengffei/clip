@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clip — Screenshot, Recording &amp; OCR for Mac</title>
-<meta name="description" content="Clip is a free, open-source macOS menu bar tool. Double-tap ⌘ to take an annotated region screenshot, record the region to MP4 or GIF, or OCR the text straight into your clipboard. Requires macOS 14.">
+<meta name="description" content="Clip is a free, open-source screenshot tool for Mac. Double-tap ⌘ to capture, mark up, record to MP4 or GIF, or copy the text. No upload, no account, no telemetry. Requires macOS 14.">
 <link rel="canonical" href="https://chengffei.github.io/clip/">
 <link rel="alternate" type="text/plain" title="llms.txt" href="https://chengffei.github.io/clip/llms.txt">
 <meta name="theme-color" content="#f5f5f7">
@@ -12,7 +12,7 @@
 <meta property="og:site_name" content="Clip">
 <meta property="og:url" content="https://chengffei.github.io/clip/">
 <meta property="og:title" content="Clip — Screenshot, Recording &amp; OCR for Mac">
-<meta property="og:description" content="Double-tap ⌘. Frame it. Done. A macOS menu bar tool that only does screenshots, recording and OCR. Free and open source.">
+<meta property="og:description" content="Double-tap ⌘. Frame it. Done. Screenshots, recording and text recognition for Mac. Free, open source, and nothing leaves your Mac.">
 <meta property="og:image" content="https://chengffei.github.io/clip/images/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,7 +20,7 @@
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Clip — Screenshot, Recording &amp; OCR for Mac">
-<meta name="twitter:description" content="Double-tap ⌘. Frame it. Done. A macOS menu bar tool that only does screenshots, recording and OCR. Free and open source.">
+<meta name="twitter:description" content="Double-tap ⌘. Frame it. Done. Screenshots, recording and text recognition for Mac. Free, open source, and nothing leaves your Mac.">
 <meta name="twitter:image" content="https://chengffei.github.io/clip/images/og.png">
 <link rel="icon" type="image/png" sizes="64x64" href="images/favicon.png">
 <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
@@ -29,12 +29,12 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Clip",
-  "description": "A free, open-source macOS menu bar tool for annotated region screenshots, region screen recording and on-device OCR to the clipboard.",
+  "description": "A free, open-source Mac screenshot tool with annotation, region recording and on-device OCR. It never uploads anything and collects no data.",
   "applicationCategory": "UtilitiesApplication",
   "applicationSubCategory": "Screenshot tool",
   "operatingSystem": "macOS 14 or later",
   "softwareVersion": "0.4.0",
-  "dateModified": "2026-10-24",
+  "dateModified": "2026-10-30",
   "downloadUrl": "https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg",
   "inLanguage": "en",
   "url": "https://chengffei.github.io/clip/",
@@ -56,11 +56,13 @@
     { "@type": "Question", "name": "How do I take a screenshot with Clip?",
       "acceptedAnswer": { "@type": "Answer", "text": "Double-tap the ⌘ key. Drag a region or click a window, annotate if you like, then press the check mark or double-tap ⌘ again to copy it to the clipboard." } },
     { "@type": "Question", "name": "Does Clip upload my screenshots anywhere?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. Clip has no cloud upload, no account and no telemetry. Screenshots go to your clipboard or to a folder you choose; OCR runs on your Mac with Apple Vision." } },
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Clip has no upload, no account and no telemetry. It goes online only when you choose Check for Updates. Screenshots go to your clipboard or a folder you choose, and text recognition runs on your Mac." } },
     { "@type": "Question", "name": "Why does macOS say it can’t verify the developer?",
       "acceptedAnswer": { "@type": "Answer", "text": "Clip is signed but not notarized by Apple. Open it once and dismiss the warning, then go to System Settings › Privacy & Security and click Open Anyway. You only need to do this once." } },
     { "@type": "Question", "name": "Which permissions does Clip need?",
       "acceptedAnswer": { "@type": "Answer", "text": "Accessibility, so it can see the ⌘ double-tap, and Screen Recording, so it can capture the screen. Clip asks for both through the system prompts." } },
+    { "@type": "Question", "name": "How is Clip different from Shottr, CleanShot X or PixPin?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Clip is free, open source and goes online only when you check for updates. Shottr is smaller but can’t record the screen. CleanShot X does more, with cloud sharing, and costs $35. PixPin is free with more features, but closed source and 127 MB." } },
     { "@type": "Question", "name": "Is Clip free?",
       "acceptedAnswer": { "@type": "Answer", "text": "Yes. Clip is free and open source under the MIT License." } }
   ]
@@ -176,6 +178,12 @@
   td { padding: 16px 24px; border-bottom: 1px solid var(--line); font-size: 16px; }
   tr:last-child td { border-bottom: none; }
   td:last-child { text-align: right; color: var(--muted); }
+  .table-scroll { overflow-x: auto; }
+  table.compare { max-width: 1000px; }
+  table.compare th { padding: 16px 18px; text-align: left; font-size: 15px; border-bottom: 1px solid var(--line); }
+  table.compare td { padding: 16px 18px; text-align: left; color: var(--ink); font-size: 15px; }
+  table.compare td:first-child { color: var(--muted); }
+  table.compare th:nth-child(2), table.compare td:nth-child(2) { background: rgba(0, 122, 255, .06); font-weight: 600; }
   kbd {
     font: 500 14px -apple-system, BlinkMacSystemFont, sans-serif; color: var(--ink);
     background: var(--paper); border: 1px solid var(--line); border-bottom-width: 2px;
@@ -211,6 +219,7 @@
     <a class="brand" href="#"><img src="images/favicon.png" width="28" height="28" alt="">Clip</a>
     <div class="nav-links">
       <a class="hide-sm" href="#features">Features</a>
+      <a class="hide-sm" href="#compare">Compare</a>
       <a class="hide-sm" href="#install">Install</a>
       <a href="https://github.com/chengffei/clip">GitHub</a>
     </div>
@@ -222,14 +231,14 @@
   <p class="eyebrow">Free screenshot tool for Mac · Capture · Record · OCR</p>
   <h1>Double-tap ⌘.<br>Frame it. Done.</h1>
   <p class="lead">
-    A macOS menu bar tool that only does three things: an annotated region screenshot, a region recording, and OCR straight into your clipboard.
+    Screenshots, recording and text recognition. Nothing leaves your Mac.
   </p>
   <div class="actions">
     <a class="btn btn-primary" href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.4.0.dmg">Download Clip</a>
     <a class="btn btn-secondary" href="https://github.com/chengffei/clip">View on GitHub</a>
   </div>
   <p class="meta">
-    Free &amp; open source · macOS 14 or later · Apple silicon and Intel · Version 0.4.0
+    Free &amp; open source · No upload, no telemetry · macOS 14 or later · Version 0.4.0
   </p>
 </header>
 
@@ -242,45 +251,69 @@
 <section id="about" class="wrap narrow">
   <h2>What is Clip?</h2>
   <p class="definition">
-    Clip is a free, open-source screenshot tool for macOS. It lives in the menu bar and wakes on a double-tap of the ⌘ key. You frame a region or click a window, mark it up if you need to, and send it to the clipboard, a file, a pinned window or the OCR engine. It records the same region to MP4 or GIF. It is pure AppKit and requires macOS 14 or later.
+    Clip is a free, open-source screenshot tool for Mac. Double-tap ⌘ to frame a region or a window, mark it up, then copy, save or pin it, record it to MP4 or GIF, or copy the text in it. Clip never uploads anything and collects no data; it goes online only when you check for updates. Text recognition runs on your Mac with Apple Vision, and a built-in model takes over when Vision fails. Native AppKit, universal, macOS 14 or later.
   </p>
 </section>
 
 <section id="features" class="wrap">
-  <h2>Three jobs, done well</h2>
+  <h2>Nothing leaves your Mac.</h2>
   <p class="section-lead">
-    No cloud, no team plan, no account. The parts you use every day, and nothing in the way.
+    No upload. No account. No telemetry.
   </p>
   <div class="grid">
     <div class="card">
-      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/><path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-      <h3>Double-tap ⌘</h3>
-      <p>Tap ⌘ twice anywhere. Windows snap to their edges, the selection is pixel-precise, the label shows origin and size.</p>
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+      <h3>Online only when you ask.</h3>
+      <p>Clip goes online for one thing: when you choose Check for Updates. Nothing else, ever.</p>
     </div>
     <div class="card">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
+      <h3>Text, every time.</h3>
+      <p>Apple Vision reads first. If it stalls or finds nothing, a built-in model steps in. Both run on your Mac.</p>
+    </div>
+    <div class="card">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V6a2 2 0 0 1 2-2h3"/><path d="M15 4h3a2 2 0 0 1 2 2v3"/><path d="M20 15v3a2 2 0 0 1-2 2h-3"/><path d="M9 20H6a2 2 0 0 1-2-2v-3"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      <h3>Double-tap in. Double-tap out.</h3>
+      <p>Double-tap to start. Double-tap again to copy. Nothing to remember.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Everything else, built in.</h2>
+  <p class="section-lead">
+    Free and open source. Nothing to upgrade to.
+  </p>
+  <div class="grid">
+    <div class="card">
       <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M13 7l3 3"/></svg>
-      <h3>Annotate in place</h3>
-      <p>Rectangle, ellipse, arrow, line, pen, highlighter, mosaic, numbered markers, text. Every mark stays editable, with undo and redo.</p>
+      <h3>Mark it up</h3>
+      <p>Shapes, arrows, pen, mosaic, numbers and text. Every mark stays editable.</p>
     </div>
     <div class="card">
       <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>
       <h3>Record the region</h3>
-      <p>The same frame records to MP4 or GIF. A small HUD handles pause and stop.</p>
+      <p>The same frame, to MP4 or GIF.</p>
     </div>
     <div class="card">
-      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2"/><path d="M16 4h2a2 2 0 0 1 2 2v2"/><path d="M20 16v2a2 2 0 0 1-2 2h-2"/><path d="M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M8 9h8M8 12h8M8 15h5"/></svg>
-      <h3>OCR to clipboard</h3>
-      <p>Apple Vision runs on your Mac. One click copies the text; Chinese and English by default, five languages optional.</p>
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h6"/></svg>
+      <h3>Go long</h3>
+      <p>Scroll, and Clip stitches as you go. Fixed headers and footers appear once.</p>
     </div>
     <div class="card">
-      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="6" rx="3"/><path d="M7 12h.01M11 12h.01M15 12h.01"/></svg>
-      <h3>One toolbar</h3>
-      <p>Cancel on the left, tools in the middle, outcomes on the right. Nothing is selected when it opens, so there is one bar, not two.</p>
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg>
+      <h3>Pin and pick</h3>
+      <p>Float a capture above your windows. Pick any color on screen.</p>
     </div>
     <div class="card">
-      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
-      <h3>Nothing leaves your Mac</h3>
-      <p>No upload, no account, no telemetry. Native AppKit, open source under MIT, universal binary.</p>
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg>
+      <h3>Snap to windows</h3>
+      <p>Click a window to frame it. Pixel-precise, on every display.</p>
+    </div>
+    <div class="card">
+      <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>
+      <h3>Made for the Mac</h3>
+      <p>Native AppKit. One app for Apple silicon and Intel.</p>
     </div>
   </div>
 </section>
@@ -288,9 +321,9 @@
 <section class="wrap">
   <div class="split">
     <div>
-      <h2>Your toolbar, your order</h2>
+      <h2>Your toolbar, your way.</h2>
       <p class="section-lead">
-        Settings › Toolbar moves any tool between the bar, the “more” menu and hidden. Shapes collapse into one button; long-press it to switch.
+        Put any tool on the bar, in More, or out of sight. Add dividers anywhere.
       </p>
     </div>
     <div class="shot">
@@ -299,10 +332,32 @@
   </div>
 </section>
 
+<section id="compare" class="wrap">
+  <h2>Clip vs Shottr, CleanShot X and PixPin</h2>
+  <p class="section-lead">
+    Shottr is tiny. CleanShot X does the most. PixPin is free and packed. Clip is free, open and stays offline.
+  </p>
+  <div class="table-scroll">
+  <table class="compare">
+    <thead><tr><th></th><th>Clip</th><th>Shottr</th><th>CleanShot X</th><th>PixPin</th></tr></thead>
+    <tbody>
+      <tr><td>Price</td><td>Free · MIT</td><td>Pay what you want; asks you to buy</td><td>$35 once, or $10 a month with Cloud Pro</td><td>Free; optional membership</td></tr>
+      <tr><td>Open source</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+      <tr><td>Goes online</td><td>Only when you check for updates</td><td>Update check; telemetry you can turn off</td><td>Optional cloud uploads</td><td>Not stated</td></tr>
+      <tr><td>Screen recording</td><td>MP4 · GIF</td><td>No</td><td>Yes</td><td>Video · GIF</td></tr>
+      <tr><td>Scrolling capture</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Text recognition</td><td>Vision, plus a built-in model</td><td>Yes</td><td>Yes</td><td>On-device</td></tr>
+      <tr><td>Download</td><td>15 MB</td><td>2.3 MB</td><td>48 MB</td><td>127 MB</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">Checked on 30 October 2026 against <a href="https://shottr.cc/">shottr.cc</a>, <a href="https://cleanshot.com/pricing">CleanShot pricing</a> and <a href="https://pixpin.com/">pixpin.com</a>. Download sizes are the current DMGs linked from Homebrew.</p>
+</section>
+
 <section id="install" class="wrap">
   <h2>Install</h2>
   <p class="section-lead">
-    Clip is an independent open-source project and isn’t notarized by Apple. Allow it once on first launch; after that it opens like any other app.
+    Clip isn’t notarized by Apple. Allow it once on first launch.
   </p>
   <div class="steps">
     <div class="step">
@@ -350,9 +405,10 @@ bash scripts/rebuild-and-open.sh</pre>
   <p class="section-lead">Common questions about installing and using Clip.</p>
   <div class="faq">
     <details><summary>How do I take a screenshot with Clip?</summary><p>Double-tap the ⌘ key. Drag a region or click a window, annotate if you like, then press the check mark or double-tap ⌘ again to copy it to the clipboard.</p></details>
-    <details><summary>Does Clip upload my screenshots anywhere?</summary><p>No. Clip has no cloud upload, no account and no telemetry. Screenshots go to your clipboard or to a folder you choose; OCR runs on your Mac with Apple Vision.</p></details>
+    <details><summary>Does Clip upload my screenshots anywhere?</summary><p>No. Clip has no upload, no account and no telemetry. It goes online only when you choose Check for Updates. Screenshots go to your clipboard or a folder you choose, and text recognition runs on your Mac.</p></details>
     <details><summary>Why does macOS say it can’t verify the developer?</summary><p>Clip is signed but not notarized by Apple. Open it once and dismiss the warning, then go to System Settings › Privacy &amp; Security and click Open Anyway. You only need to do this once.</p></details>
     <details><summary>Which permissions does Clip need?</summary><p>Accessibility, so it can see the ⌘ double-tap, and Screen Recording, so it can capture the screen. Clip asks for both through the system prompts.</p></details>
+    <details><summary>How is Clip different from Shottr, CleanShot X or PixPin?</summary><p>Clip is free, open source and goes online only when you check for updates. Shottr is smaller but can’t record the screen. CleanShot X does more, with cloud sharing, and costs $35. PixPin is free with more features, but closed source and 127 MB.</p></details>
     <details><summary>Is Clip free?</summary><p>Yes. Clip is free and open source under the MIT License.</p></details>
   </div>
 </section>
@@ -360,7 +416,7 @@ bash scripts/rebuild-and-open.sh</pre>
 <footer class="wrap">
   <p>Clip is open source under the MIT License</p>
   <p><a href="https://github.com/chengffei/clip">github.com/chengffei/clip</a></p>
-  <p>Made by <a href="https://github.com/chengffei">Felix</a> · Version 0.4.0 · Last updated <time datetime="2026-10-28">28 October 2026</time></p>
+  <p>Made by <a href="https://github.com/chengffei">Felix</a> · Version 0.4.0 · Last updated <time datetime="2026-10-30">30 October 2026</time></p>
 </footer>
 
 </body>

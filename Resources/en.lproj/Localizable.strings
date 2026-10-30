@@ -259,6 +259,16 @@
 "aboutStarOnGitHub" = "Star Clip on GitHub 🌟";
 "aboutFeatureRequest" = "Request a feature";
 "aboutBugReport" = "Report a bug";
+"checkForUpdates" = "Check for Updates…";
+"updateChecking" = "Checking for updates…";
+"updateAvailableTitle" = "Clip %@ is available";
+"updateAvailableMessage" = "You have %@. Get the new version on GitHub.";
+"updateUpToDateTitle" = "You’re up to date";
+"updateUpToDateMessage" = "Clip %@ is the latest version.";
+"updateFailedTitle" = "Couldn’t check for updates";
+"updateDownload" = "Open Release Page";
+"updateLater" = "Later";
+"updateOpenReleasesPage" = "Open Releases Page";
 
 /* Quit confirmation dialog */
 "quitConfirmTitle" = "Quit Clip";

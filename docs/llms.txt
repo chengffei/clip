@@ -2,7 +2,7 @@
 
 > Clip is a free, open-source macOS menu bar tool for region screenshots with annotations, region screen recording (MP4 or GIF) and on-device OCR to the clipboard. It wakes on a double-tap of the ⌘ key. Requires macOS 14 or later. MIT License.
 
-Clip is built around three jobs. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary. It has no cloud upload, no account and no telemetry.
+Clip has no upload, no account and no telemetry. Its only network requests are a manual update check when the user chooses Check for Updates: a HEAD request to its GitHub releases page and a lookup of the latest tag on jsDelivr, sent at the same time. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary.
 
 ## Key facts
 
@@ -10,11 +10,22 @@ Clip is built around three jobs. It is pure AppKit, built with Swift Package Man
 - Capture: window snapping, pixel-precise selection, origin and size label, multiple displays, scrolling capture
 - Annotations: rectangle, ellipse, arrow, line, pen, highlighter, mosaic, numbered markers, text; editable with undo and redo
 - Recording: selected region to MP4 or GIF with a pause/stop HUD
-- OCR: Apple Vision on device, Chinese and English by default (five languages optional), copied straight to the clipboard
-- Toolbar: one bar with three zones; nothing selected when the editor opens; layout customizable in Settings › Toolbar
+- OCR: Apple Vision on device, with a built-in PP-OCRv6 model (Core ML) taking over when Vision errors, finds nothing or takes longer than 1.5 s; Chinese and English by default, copied straight to the clipboard
+- Toolbar: one bar; any tool on the bar, in the More menu or hidden, with dividers anywhere (Settings › Toolbar)
+- Network: only the manual update check; nothing is uploaded
+- Download: about 15 MB DMG (the OCR model accounts for most of it)
 - Platform: macOS 14 or later; Apple silicon and Intel
 - Price: free; source code under the MIT License
 - First launch: not notarized by Apple; allow once in System Settings › Privacy & Security › Open Anyway, then grant Accessibility and Screen Recording
+
+## How it compares
+
+Checked 30 October 2026.
+
+- Shottr: 2.3 MB, pay what you want with purchase reminders; scrolling capture and OCR but no screen recording; checks for updates and collects telemetry that can be turned off.
+- CleanShot X: 48 MB, $35 one-time or $10 a month with Cloud Pro; the most features, with optional cloud uploads.
+- PixPin: 127 MB, free with an optional membership, closed source; scrolling capture, on-device OCR, video and GIF recording.
+- Clip: 15 MB, free and MIT-licensed, goes online only for a manual update check.
 
 ## Links
 

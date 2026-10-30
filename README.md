@@ -10,7 +10,7 @@
 
 <p align="center">
   Double-tap ⌘. Frame it. Done.<br>
-  Screenshots, screen recording and text recognition, right in your menu bar.
+  Screenshots, recording and text recognition. Nothing leaves your Mac.
 </p>
 
 <p align="center">
@@ -23,27 +23,27 @@
   <img src="docs/images/hero.png" width="760" alt="Clip capture overlay with a selection and a single toolbar">
 </p>
 
-## Less, on purpose.
+## Nothing leaves your Mac.
 
-Screenshot tools keep adding cloud sync, teams and subscriptions. Clip does three things and stays out of the way: capture, record and recognize text. No account. No telemetry. Everything stays on your Mac.
+**Online only when you ask.** No upload, no account, no telemetry. Clip goes online for one thing: when you choose Check for Updates.
 
-## Features
+**Text, every time.** Apple Vision reads first. If it stalls or finds nothing, a built-in model steps in. Both run on your Mac, and the text lands on your clipboard.
 
-**Capture in a tap.** Double-tap ⌘ anywhere. Windows snap into place, selections are pixel-precise, and every display works.
+**Double-tap in. Double-tap out.** Double-tap ⌘ to start, double-tap again to copy.
 
-**Mark it up.** Rectangle, ellipse, arrow, line, pen, highlighter, mosaic, numbered markers and text. Every mark stays editable, with undo and redo.
+## Everything else, built in.
 
-**Record just the part you need.** Record the region you selected as MP4 or GIF. A small HUD lets you pause and stop.
+- **Mark it up:** shapes, arrows, pen, mosaic, numbers and text; every mark stays editable
+- **Record the region:** the same frame, to MP4 or GIF
+- **Go long:** scroll and Clip stitches as you go; fixed headers and footers appear once
+- **Pin and pick:** float a capture above your windows, pick any color on screen
+- **Snap to windows:** click a window to frame it, pixel-precise on every display
+- **Your toolbar, your way:** any tool on the bar, in More or out of sight, with dividers anywhere
+- **Made for the Mac:** native AppKit, one app for Apple silicon and Intel
 
-**Copy text from anything.** Recognition runs on your Mac. Apple Vision reads it first, and a built-in model steps in when Vision comes up empty. One click puts the text on your clipboard.
+## How it compares
 
-**Go long.** Start a scrolling capture and scroll. Clip stitches as you go, and fixed headers and footers appear only once.
-
-**Pin, pick, rotate.** Keep a capture floating above your windows, pick any color on screen, or turn an image in one click.
-
-**One toolbar, arranged your way.** Cancel on the left, tools in the middle, results on the right. Move any tool to the bar, the More menu or out of sight, and add dividers wherever you like.
-
-**Made for the Mac.** Native AppKit. One universal app for Apple silicon and Intel.
+Shottr is tiny but can't record. CleanShot X does the most and costs $35. PixPin is free and packed, but closed source and 127 MB. Clip is free, open and stays offline. See the [full table](https://chengffei.github.io/clip/#compare).
 
 ## Install
 

@@ -398,6 +398,18 @@ enum L10n {
     static var aboutFeatureRequest: String { s("aboutFeatureRequest") }
     static var aboutBugReport: String { s("aboutBugReport") }
 
+    // Update check
+    static var checkForUpdates: String { s("checkForUpdates") }
+    static var updateChecking: String { s("updateChecking") }
+    static func updateAvailableTitle(_ version: String) -> String { String(format: s("updateAvailableTitle"), version) }
+    static func updateAvailableMessage(_ current: String) -> String { String(format: s("updateAvailableMessage"), current) }
+    static var updateUpToDateTitle: String { s("updateUpToDateTitle") }
+    static func updateUpToDateMessage(_ current: String) -> String { String(format: s("updateUpToDateMessage"), current) }
+    static var updateFailedTitle: String { s("updateFailedTitle") }
+    static var updateDownload: String { s("updateDownload") }
+    static var updateLater: String { s("updateLater") }
+    static var updateOpenReleasesPage: String { s("updateOpenReleasesPage") }
+
 
 
 

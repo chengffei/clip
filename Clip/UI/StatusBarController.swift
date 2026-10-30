@@ -84,6 +84,11 @@ class StatusBarController: NSObject {
         settingsItem.image = Self.menuIcon(systemName: "gearshape")
         menu.addItem(settingsItem)
 
+        let updateItem = NSMenuItem(title: L10n.checkForUpdates, action: #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        updateItem.image = Self.menuIcon(systemName: "arrow.triangle.2.circlepath")
+        menu.addItem(updateItem)
+
         menu.addItem(NSMenuItem.separator())
 
         let quitItem = NSMenuItem(title: L10n.quitApp, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -123,6 +128,7 @@ class StatusBarController: NSObject {
     @objc private func copyImageText() { onCopyImageText() }
     @objc private func colorPicker() { onColorPicker() }
     @objc private func openSettings() { onOpenSettings() }
+    @objc private func checkForUpdates() { UpdateChecker.checkInteractively() }
 
     func setMenuBarVisible(_ visible: Bool) {
         statusItem.isVisible = visible
