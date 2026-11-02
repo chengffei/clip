@@ -715,6 +715,9 @@ class OverlayWindowController {
             if self?.editController?.deleteSelectedAnnotationFromKeyboard(for: event) == true {
                 return nil
             }
+            if self?.editController?.handleLongScreenshotViewShortcut(for: event) == true {
+                return nil
+            }
             if event.keyCode == 53 { // Escape
                 if self?.colorSamplerActiveProvider() == true {
                     return event

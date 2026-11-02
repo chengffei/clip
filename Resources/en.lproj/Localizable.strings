@@ -87,7 +87,7 @@
 
 /* Toast */
 "copiedToClipboard" = "Copied to clipboard";
-"mergedLongScreenshot" = "Long screenshot merged";
+"mergedLongScreenshot" = "Long screenshot merged. Drag the edges to resize, ⌃⌘F to fill the screen";
 "scrollCaptureFinish" = "Done";
 "scrollCaptureNothingCaptured" = "No new content was captured, so no long screenshot was made";
 "scrollCaptureManualHint" = "Scroll inside the selection, then click Done or press any key";

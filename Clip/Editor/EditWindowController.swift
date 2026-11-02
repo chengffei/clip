@@ -1290,7 +1290,21 @@ class EditWindowController {
     }
 
     private func updateSelectionChromePresentation() {
-        let isVisible = shouldShowSelectionChrome
+        // A finished long screenshot shows handles too, but they resize the
+        // display viewport (see `applyLongScreenshotViewport`).
+        let isLongScreenshotResult = canvasView?.hasPreviewImage == true && !isScrollCaptureBusy
+        let isVisible = shouldShowSelectionChrome || isLongScreenshotResult
+        if isLongScreenshotResult {
+            if selectionChromeOverlay?.viewportResizeHandler == nil {
+                selectionChromeOverlay?.viewportResizeHandler = { [weak self] rect, _ in
+                    self?.resizeLongScreenshotViewport(to: rect)
+                }
+            }
+            selectionChromeOverlay?.viewportResizeBounds = screenVisibleRectInView
+        } else {
+            selectionChromeOverlay?.viewportResizeHandler = nil
+            selectionChromeOverlay?.viewportResizeBounds = nil
+        }
         selectionChromeOverlay?.isHidden = !isVisible
         selectionChromeOverlay?.update(
             rect: selectionViewRect,
@@ -1312,6 +1326,16 @@ class EditWindowController {
 
     private func handleMoveSelectionDrag(delta: CGSize) {
         guard let moveSelectionStartRect else { return }
+        if canvasView?.hasPreviewImage == true {
+            // Long screenshot: move the display viewport, never re-crop.
+            let bounds = screenVisibleRectInView
+            var rect = moveSelectionStartRect.offsetBy(dx: delta.width, dy: delta.height)
+            rect.origin.x = max(bounds.minX, min(rect.minX, bounds.maxX - rect.width))
+            rect.origin.y = max(bounds.minY, min(rect.minY, bounds.maxY - rect.height))
+            longScreenshotRestoreRect = nil
+            applyLongScreenshotViewport(rect)
+            return
+        }
         hostSelectionView?.moveByExternalDrag(
             deltaFromOriginal: delta,
             originalRect: moveSelectionStartRect
@@ -1320,7 +1344,9 @@ class EditWindowController {
 
     private func handleMoveSelectionEnd() {
         guard moveSelectionStartRect != nil else { return }
-        hostSelectionView?.finalizeExternalDrag()
+        if canvasView?.hasPreviewImage != true {
+            hostSelectionView?.finalizeExternalDrag()
+        }
         moveSelectionStartRect = nil
     }
 
@@ -1929,6 +1955,7 @@ class EditWindowController {
         hostSelectionView?.emphasizesSelection = true
         fitLongScreenshotOnScreen(image.size)
         beautifyContainerView?.canvasSizeDidChange()
+        updateLongScreenshotMagnificationLimits()
         updateCanvasScrollAvailability()
         resetCanvasScrollPosition()
         updateCanvasFrameForBeautify()
@@ -1943,47 +1970,177 @@ class EditWindowController {
     }
 
     var canvasScrollViewForTesting: NSScrollView? { canvasScrollView }
+    var selectionChromeOverlayForTesting: SelectionChromeOverlay? { selectionChromeOverlay }
 
     /// Shows the whole long screenshot at once instead of a selection-sized
     /// window onto it (2026-10-28): the frame grows to the image, scaled down
     /// to fit the screen, top edge kept where the selection was. Annotations
     /// stay in full-resolution image coordinates; only the display scales.
     private func fitLongScreenshotOnScreen(_ imageSize: NSSize) {
-        guard let canvasView, let hostSelectionView, let hostWindow = hostSelectionView.window,
-              imageSize.width > 0, imageSize.height > 0 else { return }
-        let visibleRect = NSRect(
-            x: screen.visibleFrame.minX - screen.frame.minX,
-            y: screen.visibleFrame.minY - screen.frame.minY,
-            width: screen.visibleFrame.width, height: screen.visibleFrame.height
-        )
-        // Leave room above or below for the toolbar.
-        let available = NSSize(width: visibleRect.width - 80, height: visibleRect.height - 120)
+        guard let canvasView, imageSize.width > 0, imageSize.height > 0 else { return }
+        let available = longScreenshotFillRect
         let scale = min(1, available.width / imageSize.width, available.height / imageSize.height)
         canvasView.setPresentationScale(scale)
         let viewportSize = NSSize(width: imageSize.width * scale, height: imageSize.height * scale)
         let origin = NSPoint(
-            x: max(visibleRect.minX, min(selectionViewRect.midX - viewportSize.width / 2, visibleRect.maxX - viewportSize.width)),
-            y: max(visibleRect.minY + 60, min(selectionViewRect.maxY - viewportSize.height, visibleRect.maxY - viewportSize.height))
+            x: max(available.minX, min(selectionViewRect.midX - viewportSize.width / 2, available.maxX - viewportSize.width)),
+            y: max(available.minY, min(selectionViewRect.maxY - viewportSize.height, available.maxY - viewportSize.height))
         )
-        selectionViewRect = NSRect(origin: origin, size: viewportSize)
-        canvasScrollView?.frame = selectionViewRect
+        longScreenshotRestoreRect = nil
+        // Pinch, ⌘-scroll or ⌘= / ⌘- to look closer, up to twice the image's
+        // real size. Only the view zooms; annotations and export stay in
+        // image coordinates.
+        if let scrollView = canvasScrollView {
+            scrollView.allowsMagnification = true
+            scrollView.magnification = 1
+            scrollView.hasHorizontalScroller = true
+            scrollView.autohidesScrollers = true
+        }
+        applyLongScreenshotViewport(NSRect(origin: origin, size: viewportSize))
+    }
+
+    /// The screen's visible area (no menu bar or Dock) in host view coordinates.
+    private var screenVisibleRectInView: NSRect {
+        NSRect(
+            x: screen.visibleFrame.minX - screen.frame.minX,
+            y: screen.visibleFrame.minY - screen.frame.minY,
+            width: screen.visibleFrame.width, height: screen.visibleFrame.height
+        )
+    }
+
+    /// Largest long screenshot viewport: the visible area minus room for the
+    /// toolbar above or below it.
+    private var longScreenshotFillRect: NSRect {
+        screenVisibleRectInView.insetBy(dx: 40, dy: 60)
+    }
+
+    /// The viewport rect before "fill screen", restored when toggled off.
+    private var longScreenshotRestoreRect: NSRect?
+
+    private static let longScreenshotMinimumViewport = NSSize(width: 240, height: 160)
+
+    private func resizeLongScreenshotViewport(to proposed: NSRect) {
+        var rect = proposed
+        let minimum = Self.longScreenshotMinimumViewport
+        if rect.width < minimum.width {
+            rect.origin.x = rect.minX < selectionViewRect.minX ? selectionViewRect.maxX - minimum.width : selectionViewRect.minX
+            rect.size.width = minimum.width
+        }
+        if rect.height < minimum.height {
+            rect.origin.y = rect.minY < selectionViewRect.minY ? selectionViewRect.maxY - minimum.height : selectionViewRect.minY
+            rect.size.height = minimum.height
+        }
+        longScreenshotRestoreRect = nil
+        applyLongScreenshotViewport(rect)
+    }
+
+    /// Moves or resizes the long screenshot's display viewport. The image and
+    /// annotations keep their image coordinates; the part of the image at the
+    /// viewport's centre stays at the centre.
+    private func applyLongScreenshotViewport(_ rect: NSRect) {
+        guard let hostSelectionView, let hostWindow = hostSelectionView.window,
+              let scrollView = canvasScrollView else { return }
+        let oldBounds = scrollView.contentView.bounds
+        let hadViewport = oldBounds.width > 0 && oldBounds.height > 0
+        selectionViewRect = rect.integral
         selectionRect = hostWindow.convertToScreen(hostSelectionView.convert(selectionViewRect, to: nil))
         let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
         captureRect = CGRect(x: selectionRect.minX, y: primaryHeight - selectionRect.maxY,
                              width: selectionRect.width, height: selectionRect.height)
         hostSelectionView.updateSelectionRect(selectionViewRect)
         hostSelectionView.selectionLocked = true
-        // Pinch or ⌘-scroll to look closer: from the fitted view up to twice
-        // the image's real size. Only the view zooms; annotations and export
-        // stay in image coordinates.
-        if let scrollView = canvasScrollView {
-            scrollView.allowsMagnification = true
-            scrollView.minMagnification = 1
-            scrollView.maxMagnification = max(1, 2 / scale)
-            scrollView.magnification = 1
-            scrollView.hasHorizontalScroller = true
-            scrollView.autohidesScrollers = true
+        updateLongScreenshotMagnificationLimits()
+        let magnification = scrollView.magnification
+        let newSize = NSSize(width: selectionViewRect.width / magnification,
+                             height: selectionViewRect.height / magnification)
+        updateCanvasFrameForBeautify(preservingScrollOrigin: hadViewport
+            ? NSPoint(x: oldBounds.midX - newSize.width / 2, y: oldBounds.midY - newSize.height / 2)
+            : nil)
+        updateCanvasScrollAvailability()
+        updateSelectionChromePresentation()
+        repositionFloatingChrome()
+    }
+
+    /// Magnification that shows the whole image in the current viewport.
+    private var longScreenshotFitMagnification: CGFloat {
+        guard let scrollView = canvasScrollView, let document = scrollView.documentView,
+              document.frame.width > 0, document.frame.height > 0 else { return 1 }
+        let viewport = scrollView.frame.size
+        return min(viewport.width / document.frame.width, viewport.height / document.frame.height)
+    }
+
+    private func updateLongScreenshotMagnificationLimits() {
+        guard let scrollView = canvasScrollView, let canvasView else { return }
+        let fit = longScreenshotFitMagnification
+        scrollView.minMagnification = min(1, fit)
+        scrollView.maxMagnification = max(scrollView.minMagnification, 2 / max(canvasView.presentationScale, 0.01))
+        let clamped = max(scrollView.minMagnification, min(scrollView.maxMagnification, scrollView.magnification))
+        if clamped != scrollView.magnification {
+            scrollView.magnification = clamped
         }
+    }
+
+    enum LongScreenshotViewCommand {
+        case fitWhole, actualSize, zoomIn, zoomOut, toggleFillScreen
+    }
+
+    /// View commands for a finished long screenshot. Returns false when no
+    /// long screenshot is in the editor.
+    @discardableResult
+    func performLongScreenshotViewCommand(_ command: LongScreenshotViewCommand) -> Bool {
+        guard canvasView?.hasPreviewImage == true, !isScrollCaptureBusy,
+              let scrollView = canvasScrollView, let canvasView else { return false }
+        switch command {
+        case .fitWhole:
+            setLongScreenshotMagnification(longScreenshotFitMagnification)
+        case .actualSize:
+            setLongScreenshotMagnification(1 / max(canvasView.presentationScale, 0.01))
+        case .zoomIn:
+            setLongScreenshotMagnification(scrollView.magnification * 1.25)
+        case .zoomOut:
+            setLongScreenshotMagnification(scrollView.magnification / 1.25)
+        case .toggleFillScreen:
+            if let restore = longScreenshotRestoreRect {
+                longScreenshotRestoreRect = nil
+                applyLongScreenshotViewport(restore)
+                setLongScreenshotMagnification(longScreenshotFitMagnification)
+            } else {
+                let previous = selectionViewRect
+                applyLongScreenshotViewport(longScreenshotFillRect)
+                longScreenshotRestoreRect = previous
+                // Filling the screen is for reading detail: fit the width.
+                if let document = scrollView.documentView, document.frame.width > 0 {
+                    setLongScreenshotMagnification(scrollView.frame.width / document.frame.width)
+                }
+            }
+        }
+        return true
+    }
+
+    var isLongScreenshotFillingScreen: Bool { longScreenshotRestoreRect != nil }
+
+    private func setLongScreenshotMagnification(_ value: CGFloat) {
+        guard let scrollView = canvasScrollView else { return }
+        let target = max(scrollView.minMagnification, min(scrollView.maxMagnification, value))
+        let bounds = scrollView.contentView.bounds
+        scrollView.setMagnification(target, centeredAt: NSPoint(x: bounds.midX, y: bounds.midY))
+        updateCanvasScrollAvailability()
+    }
+
+    /// ⌘0 whole image, ⌘1 real size, ⌘= / ⌘- zoom, ⌃⌘F fill the screen.
+    func handleLongScreenshotViewShortcut(for event: NSEvent) -> Bool {
+        guard canvasView?.hasPreviewImage == true, !isScrollCaptureBusy else { return false }
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        let command: LongScreenshotViewCommand
+        switch (Int(event.keyCode), flags) {
+        case (kVK_ANSI_0, [.command]): command = .fitWhole
+        case (kVK_ANSI_1, [.command]): command = .actualSize
+        case (kVK_ANSI_Equal, [.command]), (kVK_ANSI_Equal, [.command, .shift]): command = .zoomIn
+        case (kVK_ANSI_Minus, [.command]): command = .zoomOut
+        case (kVK_ANSI_F, [.command, .control]): command = .toggleFillScreen
+        default: return false
+        }
+        return performLongScreenshotViewCommand(command)
     }
 
     private static func sizeLabelText(for size: NSSize) -> String? {
@@ -2993,9 +3150,23 @@ private final class ClosureMenuItem: NSMenuItem {
     }
 }
 
+/// Centres a document smaller than the viewport (a long screenshot viewport
+/// widened past the image, or zoomed out) instead of pinning it bottom-left.
+final class CenteringClipView: NSClipView {
+    override func constrainBoundsRect(_ proposedBounds: NSRect) -> NSRect {
+        var rect = super.constrainBoundsRect(proposedBounds)
+        guard let document = documentView else { return rect }
+        let frame = document.frame
+        if rect.width > frame.width { rect.origin.x = frame.midX - rect.width / 2 }
+        if rect.height > frame.height { rect.origin.y = frame.midY - rect.height / 2 }
+        return rect
+    }
+}
+
 final class EditorScrollView: NSScrollView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        contentView = CenteringClipView()
         horizontalScrollElasticity = .none
         verticalScrollElasticity = .none
     }
@@ -6669,6 +6840,13 @@ final class SelectionChromeOverlay: NSView {
     private var dragHandle: SelectionView.HandlePosition?
     private var dragOriginalRect: NSRect = .zero
 
+    /// Long screenshot result: the handles resize the display viewport
+    /// instead of the capture selection. Called with the proposed rect on
+    /// every drag frame; `finished` is true on mouse-up.
+    var viewportResizeHandler: ((NSRect, _ finished: Bool) -> Void)?
+    /// Area the viewport may grow into while `viewportResizeHandler` is set.
+    var viewportResizeBounds: NSRect?
+
     override var isFlipped: Bool { false }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -6730,9 +6908,19 @@ final class SelectionChromeOverlay: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let handle = dragHandle, let selectionView else { return }
+        guard let handle = dragHandle else { return }
         SelectionView.setCursorForHandle(handle)
         let point = convert(event.locationInWindow, from: nil)
+        if let viewportResizeHandler {
+            viewportResizeHandler(SelectionView.resizedRect(
+                from: dragOriginalRect,
+                handle: handle,
+                currentPoint: point,
+                bounds: viewportResizeBounds ?? bounds
+            ), false)
+            return
+        }
+        guard let selectionView else { return }
         selectionView.resizeByExternalDrag(
             handle: handle,
             originalRect: dragOriginalRect,
@@ -6746,7 +6934,12 @@ final class SelectionChromeOverlay: NSView {
             dragHandle = nil
             updateCursor(at: point)
         }
-        guard dragHandle != nil, let selectionView else { return }
+        guard dragHandle != nil else { return }
+        if let viewportResizeHandler {
+            viewportResizeHandler(selectionRectInView, true)
+            return
+        }
+        guard let selectionView else { return }
         selectionView.finalizeExternalResize()
     }
 
@@ -6793,6 +6986,10 @@ final class SelectionChromeOverlay: NSView {
 
         SelectionView.drawFrame(context: context, rect: rect, color: accentColor)
         SelectionView.drawHandles(context: context, rect: rect, color: accentColor)
+
+        // A long screenshot viewport has no beautify frame over the
+        // SelectionView's own label, so drawing it again would overlap.
+        guard viewportResizeHandler == nil else { return }
 
         // The SelectionView draws its own size label underneath, but the
         // editor image/beautify frame covers it. Re-draw it here, above the

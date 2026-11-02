@@ -87,7 +87,7 @@
 
 /* Toast */
 "copiedToClipboard" = "已添加到剪贴板";
-"mergedLongScreenshot" = "已合并长截图";
+"mergedLongScreenshot" = "已合并长截图，拖边框调大小，⌃⌘F 铺满屏幕";
 "scrollCaptureManualHint" = "在选区内滚动页面，滚完点「完成」或按任意键";
 "scrollCaptureFinish" = "完成";
 "scrollCaptureNothingCaptured" = "没有采到新内容，长截图未生成";
