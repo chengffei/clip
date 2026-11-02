@@ -9,7 +9,7 @@ final class EditorShortcutRegistryTests: XCTestCase {
         XCTAssertEqual(EditorShortcutAction.shapeFill.defaultBinding, binding(kVK_ANSI_F))
         XCTAssertEqual(EditorShortcutAction.toolbar(.rectangle).defaultBinding, binding(kVK_ANSI_R))
         XCTAssertEqual(EditorShortcutAction.toolbar(.ellipse).defaultBinding, binding(kVK_ANSI_O))
-        XCTAssertEqual(EditorShortcutAction.toolbar(.line).defaultBinding, binding(kVK_ANSI_L))
+        XCTAssertFalse(EditorShortcutAction.allCases.contains(.toolbar(.line)), "line is an arrow style now")
         XCTAssertEqual(EditorShortcutAction.toolbar(.arrow).defaultBinding, binding(kVK_ANSI_A))
         XCTAssertEqual(EditorShortcutAction.toolbar(.pen).defaultBinding, binding(kVK_ANSI_D))
         XCTAssertEqual(EditorShortcutAction.toolbar(.marker).defaultBinding, binding(kVK_ANSI_H))

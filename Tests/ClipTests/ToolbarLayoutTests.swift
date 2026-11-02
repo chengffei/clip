@@ -99,6 +99,13 @@ final class ToolbarDividerTests: XCTestCase {
         XCTAssertEqual(picture, ["close", "rectangle", "ellipse", "line", "pen", "arrow", "text"])
     }
 
+    func testRetiredLineToolIsDroppedFromSavedLayouts() {
+        let saved = ToolbarLayout(primary: [.close, .rectangle, .line, .arrow], side: [], hidden: []).normalized()
+        XCTAssertFalse((saved.primary + saved.side + saved.hidden).contains(.line))
+        XCTAssertFalse((ToolbarLayout.default.primary + ToolbarLayout.default.side + ToolbarLayout.default.hidden).contains(.line))
+        XCTAssertTrue(ArrowStyle.allCases.contains(.plain))
+    }
+
     func testMoreIsPinnedToPrimaryAndAddedOnceForOldLayouts() {
         let old = ToolbarLayout(primary: [.close, .divider1, .pen], side: [.ocr], hidden: []).normalized()
         XCTAssertEqual(Array(old.primary.suffix(2)), [.divider2, .more])

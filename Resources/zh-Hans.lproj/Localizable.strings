@@ -197,6 +197,7 @@
 "arrowStyleDoubleEnded" = "双向箭头";
 "arrowStyleLine" = "线条箭头";
 "arrowStyleDotTail" = "圆点箭头";
+"arrowStylePlain" = "直线";
 "insertImageFromClipboard" = "从剪贴板插入";
 "insertImageFromFile" = "从本地文件插入";
 "insertImageChooseFile" = "选择图片";

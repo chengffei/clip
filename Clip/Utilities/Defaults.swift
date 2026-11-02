@@ -323,6 +323,7 @@ enum L10n {
     static var arrowStyleDoubleEnded: String { s("arrowStyleDoubleEnded") }
     static var arrowStyleLine: String { s("arrowStyleLine") }
     static var arrowStyleDotTail: String { s("arrowStyleDotTail") }
+    static var arrowStylePlain: String { s("arrowStylePlain") }
 
     // Insert tools
     static var insertImageFromClipboard: String { s("insertImageFromClipboard") }

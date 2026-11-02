@@ -274,8 +274,12 @@ struct ToolbarLayout: Equatable {
     /// Canonical left-to-right order. Used for the default layout and to
     /// place any newly-introduced tool that an older persisted layout never
     /// recorded.
+    /// Items kept only so old saved layouts still decode; never shown.
+    /// `line` became the arrow tool's headless style (2026-11-02).
+    static let retired: Set<ToolbarItemID> = [.line]
+
     static let canonicalOrder: [ToolbarItemID] = [
-        .rectangle, .ellipse, .line, .arrow, .pen, .marker, .spotlight, .mosaic, .eraser, .numbered, .text, .emoji, .insertImage,
+        .rectangle, .ellipse, .arrow, .pen, .marker, .spotlight, .mosaic, .eraser, .numbered, .text, .emoji, .insertImage,
         .colorPicker, .magnifier, .undo, .redo, .moveSelection, .scrollCapture, .rotate, .beautify, .qrCode, .ocr,
         .save, .pin, .record, .close, .confirm,
     ]
@@ -287,7 +291,7 @@ struct ToolbarLayout: Equatable {
         ToolbarLayout(
             primary: [
                 .close, .divider1,
-                .rectangle, .ellipse, .arrow, .line, .pen, .text, .mosaic, .numbered, .divider2,
+                .rectangle, .ellipse, .arrow, .pen, .text, .mosaic, .numbered, .divider2,
                 .undo, .redo, .moveSelection, .divider3,
                 .ocr, .save, .pin, .confirm, .divider4, .more,
             ],
@@ -304,7 +308,7 @@ struct ToolbarLayout: Equatable {
     func normalized() -> ToolbarLayout {
         var seen = Set<ToolbarItemID>()
         func dedup(_ ids: [ToolbarItemID]) -> [ToolbarItemID] {
-            ids.filter { seen.insert($0).inserted }
+            ids.filter { !Self.retired.contains($0) && seen.insert($0).inserted }
         }
         var p = dedup(primary)
         var s = dedup(side)
@@ -364,7 +368,7 @@ struct ToolbarLayout: Equatable {
 
     /// The families the bar used to zone by before dividers became user
     /// data. Still used to translate a pre-divider layout once.
-    static let shapeFamily: [ToolbarItemID] = [.rectangle, .ellipse, .arrow, .line]
+    static let shapeFamily: [ToolbarItemID] = [.rectangle, .ellipse, .arrow]
     static let outcomeFamily: Set<ToolbarItemID> = [.ocr, .save, .pin, .record, .confirm]
     static let editFamily: Set<ToolbarItemID> = [.undo, .redo]
 

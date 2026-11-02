@@ -5276,6 +5276,7 @@ private final class ArrowStyleButtonView: StyleOptionView {
         case .doubleEnded: hoverTip = L10n.arrowStyleDoubleEnded
         case .line: hoverTip = L10n.arrowStyleLine
         case .dotTail: hoverTip = L10n.arrowStyleDotTail
+        case .plain: hoverTip = L10n.arrowStylePlain
         }
     }
 
@@ -5349,6 +5350,14 @@ private final class ArrowStyleButtonView: StyleOptionView {
                 height: radius * 2
             )).fill()
             drawRoundedHead(tip: end, unitX: 1, length: headLength, width: 6)
+
+        case .plain:
+            let shaft = NSBezierPath()
+            shaft.move(to: start)
+            shaft.line(to: end)
+            shaft.lineWidth = 2
+            shaft.lineCapStyle = .round
+            shaft.stroke()
         }
     }
 

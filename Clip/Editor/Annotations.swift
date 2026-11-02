@@ -631,6 +631,8 @@ enum ArrowStyle: String, CaseIterable {
     case doubleEnded
     case line
     case dotTail
+    /// No head: a straight line. Replaced the separate line tool (2026-11-02).
+    case plain
 }
 
 private enum NumberArrowShape {
@@ -1425,6 +1427,8 @@ struct ArrowAnnotation: Annotation {
         switch style {
         case .tapered:
             return (arrowGeometry?.headWidth ?? 0) / 2
+        case .plain:
+            return max(1, lineWidth) / 2 + 2
         case .doubleEnded, .line, .dotTail:
             guard let metrics = strokedMetrics else { return lineWidth / 2 }
             return max(metrics.headWidth / 2, metrics.shaftWidth / 2, metrics.tailRadius) + NumberArrowShape.headStrokeWidth + 2
@@ -1581,7 +1585,7 @@ struct ArrowAnnotation: Annotation {
         metrics: StrokedMetrics
     ) -> (start: NSPoint, end: NSPoint) {
         var startInset: CGFloat = 0
-        var endInset: CGFloat = metrics.headLength
+        var endInset: CGFloat = style == .plain ? 0 : metrics.headLength
 
         if style == .doubleEnded {
             startInset = metrics.headLength
@@ -1640,7 +1644,7 @@ struct ArrowAnnotation: Annotation {
         switch style {
         case .tapered:
             drawTapered(in: context, bounds: bounds)
-        case .doubleEnded, .line, .dotTail:
+        case .doubleEnded, .line, .dotTail, .plain:
             drawStroked(in: context, bounds: bounds)
         }
     }
@@ -1767,6 +1771,11 @@ struct ArrowAnnotation: Annotation {
         context.addPath(path)
         context.strokePath()
 
+        if style == .plain {
+            context.restoreGState()
+            return
+        }
+
         NumberArrowShape.drawHead(
             tip: endPoint,
             unitX: geometry.endUnit.x,
@@ -1802,7 +1811,7 @@ struct ArrowAnnotation: Annotation {
         switch style {
         case .tapered:
             return containsTapered(point)
-        case .doubleEnded, .line, .dotTail:
+        case .doubleEnded, .line, .dotTail, .plain:
             return containsStroked(point)
         }
     }
@@ -1895,6 +1904,7 @@ struct ArrowAnnotation: Annotation {
         if strokedPathContains(path, point: point, lineWidth: metrics.shaftWidth) {
             return true
         }
+        if style == .plain { return false }
 
         let endHead = arrowHeadPath(
             tip: endPoint,

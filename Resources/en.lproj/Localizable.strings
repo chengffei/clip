@@ -197,6 +197,7 @@
 "arrowStyleDoubleEnded" = "Double-headed arrow";
 "arrowStyleLine" = "Line arrow";
 "arrowStyleDotTail" = "Dot-tail arrow";
+"arrowStylePlain" = "Straight line";
 "insertImageFromClipboard" = "From Clipboard";
 "insertImageFromFile" = "From File";
 "insertImageChooseFile" = "Choose Image";
