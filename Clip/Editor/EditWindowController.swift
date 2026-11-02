@@ -3548,11 +3548,15 @@ final class ShapeGroupButton: ToolButton {
         }
         pickerOpenedFromPress = false
         longPressTimer?.invalidate()
-        longPressTimer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: false) { [weak self] _ in
+        // The press is tracked with nextEvent below, which spins the run loop
+        // in event-tracking mode; a default-mode timer would never fire there.
+        let timer = Timer(timeInterval: 0.35, repeats: false) { [weak self] _ in
             guard let self else { return }
             self.pickerOpenedFromPress = true
             self.onPickerRequested?()
         }
+        RunLoop.main.add(timer, forMode: .common)
+        longPressTimer = timer
         // Track the press ourselves so a long press can open the picker.
         isHighlighted = true
         var isInside = true

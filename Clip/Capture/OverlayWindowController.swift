@@ -776,6 +776,13 @@ class OverlayWindowController {
             if self?.editController?.isTextEditing == true {
                 return event
             }
+            // Right-click on the shape button opens its picker instead of
+            // cancelling the capture.
+            if let contentView = event.window?.contentView,
+               let hit = contentView.hitTest(contentView.convert(event.locationInWindow, from: nil)),
+               hit is ShapeGroupButton {
+                return event
+            }
             self?.cancel()
             return nil
         }
