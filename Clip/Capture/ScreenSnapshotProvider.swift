@@ -142,10 +142,6 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
         // Do not exclude the whole Clip process here: Settings, pinned
         // images, menus and popovers are valid screenshot targets and must
         // remain in the frozen desktop image.
-        if let image = await fastCapture(target: target) {
-            return .image(displayID: target.displayID, image: image)
-        }
-
         let filter = SCContentFilter(display: display, excludingWindows: [])
 
         let configuration = Self.makeStreamConfiguration(for: target)
@@ -159,22 +155,6 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
         } catch {
             return .failure(displayID: target.displayID, error: error)
         }
-    }
-
-    /// `captureImage(in:)` returns the same pixels as the filter path
-    /// (full-resolution diff 2026-11-02: only animating menu-bar pixels
-    /// differed, no cursor) in 39–67 ms instead of 69–92 ms on a 3024×1964
-    /// display. Any size mismatch, e.g. an odd mixed-scale setup, falls back.
-    private static func fastCapture(target: ScreenSnapshotTarget) async -> CGImage? {
-        guard #available(macOS 15.2, *) else { return nil }
-        guard let image = try? await SCScreenshotManager.captureImage(in: target.bounds) else { return nil }
-        let width = Int(ceil(target.bounds.width * target.scale))
-        let height = Int(ceil(target.bounds.height * target.scale))
-        guard image.width == width, image.height == height else {
-            FileLog.write("snapshot fast path size \(image.width)x\(image.height) != \(width)x\(height), falling back")
-            return nil
-        }
-        return image
     }
 
     static func makeStreamConfiguration(
