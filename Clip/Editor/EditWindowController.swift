@@ -3461,7 +3461,10 @@ class ToolButton: NSButton {
             let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .medium, scale: .medium)
             // Keep the text tool's Aa glyph independent of the system language.
             let localizedImage = symbolName == "textformat" ? img.withLocale(Locale(identifier: "en")) : img
-            image = localizedImage.withSymbolConfiguration(config)
+            let symbolImage = localizedImage.withSymbolConfiguration(config)
+            image = symbolImage
+            symbolInkImage = symbolImage
+            symbolInkKey = "\(symbolName)|\(symbolPointSize)"
         }
 
         contentTintColor = normalColor
@@ -3542,7 +3545,7 @@ class ToolButton: NSButton {
         // arrow sits low, a pin sits high), so only the painted pixels tell
         // where the glyph really is. The shift is clamped so an odd glyph can
         // never leave the button.
-        let ink = Self.inkBounds(of: image)
+        let ink = cachedInkBounds(of: image)
         var shiftY = image.size.height / 2 - ink.midY
         var shiftX = image.size.width / 2 - ink.midX
         if ink.isEmpty { shiftY = 0; shiftX = 0 }
@@ -3561,15 +3564,34 @@ class ToolButton: NSButton {
                     respectFlipped: true, hints: nil)
     }
 
-    /// Keyed by identity and holding the image strongly, so a freed image's
-    /// address can never be reused by another glyph and return stale bounds.
-    private static var inkBoundsCache: [ObjectIdentifier: (image: NSImage, rect: NSRect)] = [:]
+    /// Symbol buttons share bounds by name and size; the cache holds only
+    /// rects. It used to hold every button's image, which kept each editor
+    /// session's glyph rasters alive (about 2 MB a session, never freed).
+    private static var symbolInkBoundsCache: [String: NSRect] = [:]
+    private var symbolInkKey: String?
+    private weak var symbolInkImage: NSImage?
+    private var inkCache: (image: NSImage, rect: NSRect)?
+
+    private func cachedInkBounds(of image: NSImage) -> NSRect {
+        if let inkCache, inkCache.image === image { return inkCache.rect }
+        let rect: NSRect
+        if let key = symbolInkKey, image === symbolInkImage {
+            if let cached = Self.symbolInkBoundsCache[key] {
+                rect = cached
+            } else {
+                rect = Self.inkBounds(of: image)
+                Self.symbolInkBoundsCache[key] = rect
+            }
+        } else {
+            rect = Self.inkBounds(of: image)
+        }
+        inkCache = (image, rect)
+        return rect
+    }
 
     /// Bounding box of the painted pixels of `image`, in points, measured on
     /// a 4x raster so faint anti-aliased edges count.
     static func inkBounds(of image: NSImage) -> NSRect {
-        let key = ObjectIdentifier(image)
-        if let cached = inkBoundsCache[key], cached.image === image { return cached.rect }
         let scale = 4
         let w = max(1, Int(image.size.width.rounded(.up))) * scale
         let h = max(1, Int(image.size.height.rounded(.up))) * scale
@@ -3601,7 +3623,6 @@ class ToolButton: NSButton {
             width: CGFloat(maxX - minX + 1) / CGFloat(scale),
             height: CGFloat(maxY - minY + 1) / CGFloat(scale)
         )
-        inkBoundsCache[key] = (image, rect)
         return rect
     }
 }

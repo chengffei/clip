@@ -56,6 +56,9 @@ final class PPOCREngine: @unchecked Sendable {
     }
 
     /// Loads both models off the main thread so the first capture is fast.
+    /// Loading costs about 5 MB. Running costs more: Core ML keeps a CPU
+    /// workspace sized to the largest input seen (100–200 MB) for the life
+    /// of the process, and releasing the models does not return it.
     func warmUp() {
         DispatchQueue.global(qos: .utility).async {
             let start = Date()
@@ -70,7 +73,15 @@ final class PPOCREngine: @unchecked Sendable {
 
     // MARK: Pipeline
 
+    /// Core ML hands back autoreleased tensors. Callers run on Swift
+    /// concurrency or test threads that may not drain a pool between calls,
+    /// so without these pools every request kept its buffers: 10 requests
+    /// grew the process by 800 MB (2026-11-02).
     func recognize(_ image: CGImage) throws -> [RecognizedTextLine] {
+        try autoreleasepool { try recognizeInPool(image) }
+    }
+
+    private func recognizeInPool(_ image: CGImage) throws -> [RecognizedTextLine] {
         let (det, rec, characters) = try models()
         guard var source = RGBImage(image) else { throw PPOCRError.image }
         let originalWidth = source.width, originalHeight = source.height
@@ -97,7 +108,7 @@ final class PPOCREngine: @unchecked Sendable {
         for box in boxes {
             guard let crop = source.cropped(box) else { continue }
             let line = crop.height * 2 >= crop.width * 3 ? crop.rotatedCounterClockwise() : crop
-            guard let (text, score) = try recognizeLine(line, model: rec, characters: characters),
+            guard let (text, score) = try autoreleasepool(invoking: { try recognizeLine(line, model: rec, characters: characters) }),
                   score >= 0.5 else { continue }
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
