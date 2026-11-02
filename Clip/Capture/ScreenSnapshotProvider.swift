@@ -142,6 +142,9 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
         // Do not exclude the whole Clip process here: Settings, pinned
         // images, menus and popovers are valid screenshot targets and must
         // remain in the frozen desktop image.
+        // Not SCScreenshotManager.captureImage(in:): 30 ms faster, but on
+        // macOS 27.2 every returned CGImage leaks with its full-screen
+        // IOSurface (leaks tool, 2026-11-02). This path leaks nothing.
         let filter = SCContentFilter(display: display, excludingWindows: [])
 
         let configuration = Self.makeStreamConfiguration(for: target)
