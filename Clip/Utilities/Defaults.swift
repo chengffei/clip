@@ -359,7 +359,6 @@ enum L10n {
     static var ocrWarmingUp: String { s("ocrWarmingUp") }
     static var scrollCaptureFinish: String { s("scrollCaptureFinish") }
     static var scrollCaptureNothingCaptured: String { s("scrollCaptureNothingCaptured") }
-    static var tipShapePicker: String { s("tipShapePicker") }
     static var settingsTabToolbar: String { s("settingsTabToolbar") }
     static var settingsQuit: String { s("settingsQuit") }
 
@@ -1408,10 +1407,6 @@ struct Defaults {
         set { defaults.set(newValue.rawValue, forKey: "ocr.languageSet") }
     }
 
-    static var lastShapeTool: String? {
-        get { defaults.string(forKey: "lastShapeTool") }
-        set { defaults.set(newValue, forKey: "lastShapeTool") }
-    }
 
     static var lastBeautifyPresetID: String? {
         get { defaults.string(forKey: "lastBeautifyPresetID") }

@@ -3253,7 +3253,6 @@ class ToolbarView: NSView {
     /// One slot per visual position after grouping.
     enum Slot {
         case item(ToolbarItemID)
-        case shapeGroup([ToolbarItemID])
         case more
         case gap
     }
@@ -3281,7 +3280,6 @@ class ToolbarView: NSView {
 
     /// Every button keyed by its id. Shape ids all map to the group button.
     private var buttons: [ToolbarItemID: NSView] = [:]
-    private var shapeGroupButtons: [ShapeGroupButton] = []
     private var moreButton: ToolButton?
     private var separatorXs: [CGFloat] = []
 
@@ -3302,25 +3300,16 @@ class ToolbarView: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     /// Turns the user's ordered item list into slots. Dividers become gaps
-    /// (collapsed when adjacent, dropped at either end); each run of two or
-    /// more adjacent shape tools collapses into one button, a lone shape stays
-    /// its own button, matching the settings grid; "more" sits wherever the
-    /// user put it, and is dropped when the overflow menu is empty.
+    /// (collapsed when adjacent, dropped at either end); every tool is its
+    /// own button, shapes included (2026-11-02: a merged shape button hid
+    /// tools); "more" sits wherever the user put it, and is dropped when the
+    /// overflow menu is empty.
     static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
         var out: [Slot] = []
         var index = 0
         while index < items.count {
             let id = items[index]
             index += 1
-            if shapeFamily.contains(id) {
-                var run = [id]
-                while index < items.count, shapeFamily.contains(items[index]) {
-                    run.append(items[index])
-                    index += 1
-                }
-                out.append(run.count >= 2 ? .shapeGroup(run) : .item(id))
-                continue
-            }
             if id.isDivider {
                 if let last = out.last, case .gap = last { continue }
                 if !out.isEmpty { out.append(.gap) }
@@ -3338,14 +3327,13 @@ class ToolbarView: NSView {
 
     func updateSelection(tool: EditTool) {
         for (id, view) in buttons {
-            guard id.kind == .toggleTool, let btn = view as? ToolButton, !(btn is ShapeGroupButton) else { continue }
+            guard id.kind == .toggleTool, let btn = view as? ToolButton else { continue }
             btn.isSelected = (id.editTool == tool)
         }
-        shapeGroupButtons.forEach { $0.update(selectedTool: tool) }
     }
 
     func setActive(_ active: Bool, for id: ToolbarItemID) {
-        guard let btn = buttons[id] as? ToolButton, !(btn is ShapeGroupButton) else { return }
+        guard let btn = buttons[id] as? ToolButton else { return }
         btn.isSelected = active
     }
 
@@ -3388,16 +3376,6 @@ class ToolbarView: NSView {
                 let view = makeButton(for: id, frame: frame)
                 buttons[id] = view
                 addSubview(view)
-            case .shapeGroup(let shapes):
-                let btn = ShapeGroupButton(frame: frame, shapes: shapes)
-                btn.onPick = { [weak self] id in self?.onItemTriggered?(id) }
-                btn.onPickerRequested = { [weak self, weak btn] in
-                    guard let self, let btn else { return }
-                    self.showMenu(for: shapes, from: btn)
-                }
-                shapeGroupButtons.append(btn)
-                for id in shapes { buttons[id] = btn }
-                addSubview(btn)
             case .more:
                 let btn = ToolButton(
                     frame: frame, symbolName: "ellipsis",
@@ -3492,113 +3470,6 @@ class ToolbarView: NSView {
     @objc private func menuItemChosen(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String, let id = ToolbarItemID(rawValue: raw) else { return }
         onItemTriggered?(id)
-    }
-}
-
-/// One button standing in for the whole shape family. Shows the shape in
-/// use; click selects it, click again (or long-press) opens the picker.
-final class ShapeGroupButton: ToolButton {
-    let shapes: [ToolbarItemID]
-    private(set) var current: ToolbarItemID
-    var onPick: ((ToolbarItemID) -> Void)?
-    var onPickerRequested: (() -> Void)?
-    private var longPressTimer: Timer?
-    private var pickerOpenedFromPress = false
-
-    init(frame: NSRect, shapes: [ToolbarItemID]) {
-        self.shapes = shapes
-        let remembered = Defaults.lastShapeTool.flatMap(ToolbarItemID.init(rawValue:))
-        self.current = (remembered.flatMap { shapes.contains($0) ? $0 : nil }) ?? shapes[0]
-        super.init(
-            frame: frame, symbolName: current.symbolName,
-            normalColor: current.normalColor, selectedColor: current.selectedColor,
-            symbolPointSize: ToolbarView.symbolPointSize,
-            iconImage: current.iconImage(pointSize: ToolbarView.symbolPointSize)
-        )
-        refreshTip()
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    func update(selectedTool: EditTool) {
-        if let match = shapes.first(where: { $0.editTool == selectedTool }) {
-            current = match
-            Defaults.lastShapeTool = match.rawValue
-            image = match.iconImage(pointSize: ToolbarView.symbolPointSize)
-            isSelected = true
-            refreshTip()
-        } else {
-            isSelected = false
-        }
-        needsDisplay = true
-    }
-
-    private func refreshTip() {
-        hoverTip = "\(current.tooltip) · \(L10n.tipShapePicker)"
-        setAccessibilityLabel(current.tooltip)
-    }
-
-    /// Right-hand strip under the chevron: a click there opens the picker
-    /// straight away, like a split button.
-    private var chevronZone: NSRect {
-        NSRect(x: bounds.maxX - 12, y: bounds.minY, width: 12, height: bounds.height)
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        ToolTipWindow.hide()
-        if chevronZone.contains(convert(event.locationInWindow, from: nil)) {
-            onPickerRequested?()
-            return
-        }
-        pickerOpenedFromPress = false
-        longPressTimer?.invalidate()
-        // The press is tracked with nextEvent below, which spins the run loop
-        // in event-tracking mode; a default-mode timer would never fire there.
-        let timer = Timer(timeInterval: 0.35, repeats: false) { [weak self] _ in
-            guard let self else { return }
-            self.pickerOpenedFromPress = true
-            self.onPickerRequested?()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        longPressTimer = timer
-        // Track the press ourselves so a long press can open the picker.
-        isHighlighted = true
-        var isInside = true
-        while let next = window?.nextEvent(matching: [.leftMouseUp, .leftMouseDragged]) {
-            let p = convert(next.locationInWindow, from: nil)
-            isInside = bounds.contains(p)
-            isHighlighted = isInside
-            if next.type == .leftMouseUp { break }
-        }
-        isHighlighted = false
-        longPressTimer?.invalidate()
-        longPressTimer = nil
-        guard !pickerOpenedFromPress, isInside else { return }
-        // The glyph always means "use this shape"; the controller toggles it
-        // off when it is already active, like every other tool button.
-        onPick?(current)
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        onPickerRequested?()
-    }
-
-    /// A small chevron in the corner says "this one holds more shapes",
-    /// the way Pixpin and the Finder toolbar signal a drop-down.
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-        let color = (isSelected ? selectedColor : normalColor).withAlphaComponent(0.75)
-        let path = NSBezierPath()
-        // The button draws flipped, so the tip of the chevron is the larger y.
-        let x = bounds.maxX - 7, y = bounds.maxY - 9
-        path.move(to: NSPoint(x: x - 4, y: y))
-        path.line(to: NSPoint(x: x - 1.5, y: y + 2.5))
-        path.line(to: NSPoint(x: x + 1, y: y))
-        path.lineWidth = 1.4
-        path.lineCapStyle = .round
-        path.lineJoinStyle = .round
-        color.setStroke()
-        path.stroke()
     }
 }
 

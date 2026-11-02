@@ -226,7 +226,6 @@
 "ocrLanguageSetChineseEnglish" = "中文与英文";
 "ocrLanguageSetEastAsian" = "中、英、日、韩、繁体";
 "ocrWarmingUp" = "首次识别正在加载模型，之后会快";
-"tipShapePicker" = "点右下角箭头或长按换形状";
 "settingsTabToolbar" = "工具栏";
 "settingsQuit" = "退出应用";
 

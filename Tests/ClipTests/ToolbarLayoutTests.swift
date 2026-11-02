@@ -77,14 +77,13 @@ final class ToolbarDividerTests: XCTestCase {
             case .item(let id): picture.append(id.rawValue)
             case .gap: picture.append("|")
             case .more: picture.append("more")
-            case .shapeGroup: picture.append("shapes")
             }
         }
         XCTAssertEqual(picture, ["close", "|", "more", "|", "pen", "text"])
         XCTAssertEqual(ToolbarView.buildSlots(items: [.close, .divider1, .more], hasOverflow: false).count, 1)
     }
 
-    func testOnlyAdjacentShapesShareAButton() {
+    func testEveryShapeIsItsOwnButton() {
         let slots = ToolbarView.buildSlots(
             items: [.close, .rectangle, .ellipse, .line, .pen, .arrow, .text],
             hasOverflow: false
@@ -95,10 +94,9 @@ final class ToolbarDividerTests: XCTestCase {
             case .item(let id): picture.append(id.rawValue)
             case .gap: picture.append("|")
             case .more: picture.append("more")
-            case .shapeGroup(let ids): picture.append(ids.map(\.rawValue).joined(separator: "+"))
             }
         }
-        XCTAssertEqual(picture, ["close", "rectangle+ellipse+line", "pen", "arrow", "text"])
+        XCTAssertEqual(picture, ["close", "rectangle", "ellipse", "line", "pen", "arrow", "text"])
     }
 
     func testMoreIsPinnedToPrimaryAndAddedOnceForOldLayouts() {

@@ -226,7 +226,6 @@
 "ocrLanguageSetChineseEnglish" = "Chinese and English";
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
 "ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
-"tipShapePicker" = "chevron or long-press for other shapes";
 "settingsTabToolbar" = "Toolbar";
 "settingsQuit" = "Quit App";
 

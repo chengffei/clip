@@ -387,47 +387,6 @@ final class ToolbarSlotGridView: NSView {
     }
 
     /// Frame of the slot at a flow index (flipped: row 0 sits at the top).
-    /// On the bar, each run of two or more adjacent shape tools collapses
-    /// into one button (ToolbarView.buildSlots). Tint those runs so the grid
-    /// says so; a lone shape stays a plain tile, as it is a plain button.
-    private func drawShapeGroupBackdrop() {
-        guard section == .primary else { return }
-        var runs: [NSRect] = []
-        var run: [Int] = []
-        func flush() {
-            defer { run.removeAll() }
-            guard run.count >= 2 else { return }
-            // One backdrop per grid row the run spans.
-            var rowRect: NSRect?
-            for index in run {
-                let rect = slotFrame(at: index).insetBy(dx: -3, dy: -3)
-                if let current = rowRect, abs(current.midY - rect.midY) < 1 {
-                    rowRect = current.union(rect)
-                } else {
-                    if let current = rowRect { runs.append(current) }
-                    rowRect = rect
-                }
-            }
-            if let rowRect { runs.append(rowRect) }
-        }
-        for (index, tile) in tiles.enumerated() {
-            if ToolbarLayout.shapeFamily.contains(tile.itemID) {
-                run.append(index)
-            } else {
-                flush()
-            }
-        }
-        flush()
-        Brand.accentFill.withAlphaComponent(0.10).setFill()
-        Brand.accent.withAlphaComponent(0.35).setStroke()
-        for run in runs {
-            let path = NSBezierPath(roundedRect: run, xRadius: 11, yRadius: 11)
-            path.fill()
-            path.lineWidth = 1
-            path.stroke()
-        }
-    }
-
     func slotFrame(at index: Int) -> NSRect {
         let cols = max(1, columns)
         let col = index % cols
@@ -451,7 +410,6 @@ final class ToolbarSlotGridView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawShapeGroupBackdrop()
         // Empty placeholder slots out to the displayed row count.
         let total = displayRows * columns
         if items.count < total {
@@ -881,13 +839,6 @@ private final class ToolbarPreviewStripView: NSView {
                 x += gapWidth
             case .item(let id):
                 if let icon = tintedToolbarIcon(id, pointSize: 9, color: tint(for: id)) {
-                    drawCentered(icon, in: NSRect(x: x, y: miniPad, width: miniButton, height: miniButton))
-                }
-                x += miniButton + miniGap
-            case .shapeGroup(let shapes):
-                let remembered = Defaults.lastShapeTool.flatMap(ToolbarItemID.init(rawValue:))
-                let shown = remembered.flatMap { shapes.contains($0) ? $0 : nil } ?? shapes.first ?? .rectangle
-                if let icon = tintedToolbarIcon(shown, pointSize: 9, color: tint(for: shown)) {
                     drawCentered(icon, in: NSRect(x: x, y: miniPad, width: miniButton, height: miniButton))
                 }
                 x += miniButton + miniGap
