@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg"><b>下载</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg"><b>下载</b></a> ·
   <a href="https://chengffei.github.io/clip/">官网</a> ·
   <a href="#从源码构建">从源码构建</a>
 </p>
@@ -35,7 +35,7 @@
 
 - **随手标注**：形状、箭头、画笔、马赛克、序号和文字，每个标注都能再改
 - **录下选区**：同一个框，录成 MP4 或 GIF
-- **长截图**：边滚边拼，顶部和底部的固定栏只出现一次
+- **长截图**：边滚边拼，顶部和底部的固定栏只出现一次；拼好后可调大小、铺满屏幕看细节
 - **贴图与取色**：让截图浮在所有窗口上方，吸取屏幕上任意颜色
 - **吸附窗口**：点一下窗口就框住，精确到像素，多显示器都行
 - **工具栏随你摆**：每个工具都能放在栏上、「更多」里或隐藏，分隔线随处加
@@ -47,7 +47,7 @@ Shottr 很小，但不能录屏。CleanShot X 功能最全，售价 35 美元。
 
 ## 安装
 
-1. 下载 [Clip-0.5.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg)，把 Clip 拖进「应用程序」。
+1. 下载 [Clip-0.6.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg)，把 Clip 拖进「应用程序」。
 2. Clip 已签名但未经 Apple 公证，首次打开会被 macOS 拦下。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。也可以在「终端」里运行一次下面的命令，之后正常打开即可：
 
    ```sh

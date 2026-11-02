@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg"><b>ダウンロード</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg"><b>ダウンロード</b></a> ·
   <a href="https://chengffei.github.io/clip/">ウェブサイト</a> ·
   <a href="#ソースからビルド">ソースからビルド</a>
 </p>
@@ -35,7 +35,7 @@
 
 - **書き込み**：図形、矢印、ペン、モザイク、番号、テキスト。どれもあとから編集できます
 - **範囲を録画**：同じ枠のまま、MP4またはGIFで
-- **縦に長く**：スクロールしながらつなぎ合わせ、上下の固定バーは一度だけ
+- **縦に長く**：スクロールしながらつなぎ合わせ、上下の固定バーは一度だけ。仕上がりはサイズ変更や全画面表示で細部まで確認
 - **ピン留めと色の抽出**：キャプチャをすべてのウインドウの上に浮かべ、画面上の色を拾えます
 - **ウインドウに吸着**：クリックひとつで枠に。ピクセル単位で、どのディスプレイでも
 - **ツールバーは好みのままに**：どのツールもバー、More、非表示に置け、区切り線もどこにでも
@@ -47,7 +47,7 @@ Shottrは小さいけれど録画できません。CleanShot Xはいちばん多
 
 ## インストール
 
-1. [Clip-0.5.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
+1. [Clip-0.6.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
 2. Clipは署名済みですがAppleの公証を受けていないため、初回起動時にmacOSにブロックされます。一度開いて警告を閉じたあと、「システム設定 › プライバシーとセキュリティ」で「このまま開く」をクリックしてください。または「ターミナル」で次のコマンドを一度実行すれば、そのまま開けます。
 
    ```sh

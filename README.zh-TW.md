@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg"><b>下載</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg"><b>下載</b></a> ·
   <a href="https://chengffei.github.io/clip/">網站</a> ·
   <a href="#從原始碼建置">從原始碼建置</a>
 </p>
@@ -35,7 +35,7 @@
 
 - **隨手標註**：形狀、箭頭、畫筆、馬賽克、編號和文字，每個標註都能再修改
 - **錄下選取範圍**：同一個框，錄成 MP4 或 GIF
-- **捲動截圖**：邊捲邊拼接，頂部和底部的固定列只出現一次
+- **捲動截圖**：邊捲邊拼接，頂部和底部的固定列只出現一次；拼好後可調大小、鋪滿螢幕看細節
 - **釘選與取色**：讓截圖浮在所有視窗上方，吸取螢幕上任何顏色
 - **貼齊視窗**：點一下視窗就框住，精確到像素，多部顯示器都行
 - **工具列隨你擺**：每個工具都能放在列上、「更多」裡或隱藏，分隔線隨處加
@@ -47,7 +47,7 @@ Shottr 很小，但不能錄影。CleanShot X 功能最完整，售價 35 美元
 
 ## 安裝
 
-1. 下載 [Clip-0.5.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg)，把 Clip 拖進「應用程式」。
+1. 下載 [Clip-0.6.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg)，把 Clip 拖進「應用程式」。
 2. Clip 已簽署但未經 Apple 公證，首次開啟會被 macOS 擋下。先開啟一次並關閉提示，再到「系統設定 › 隱私權與安全性」按「強制打開」。也可以在「終端機」裡執行一次下面的指令，之後正常開啟即可：
 
    ```sh

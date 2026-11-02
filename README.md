@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg"><b>Download</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg"><b>Download</b></a> ·
   <a href="https://chengffei.github.io/clip/">Website</a> ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -36,7 +36,7 @@
 
 - **Mark it up:** shapes, arrows, pen, mosaic, numbers and text; every mark stays editable
 - **Record the region:** the same frame, to MP4 or GIF
-- **Go long:** scroll and Clip stitches as you go; fixed headers and footers appear once
+- **Go long:** scroll and Clip stitches as you go; fixed headers and footers appear once; resize the result or fill the screen to check detail
 - **Pin and pick:** float a capture above your windows, pick any color on screen
 - **Snap to windows:** click a window to frame it, pixel-precise on every display
 - **Your toolbar, your way:** any tool on the bar, in More or out of sight, with dividers anywhere
@@ -48,7 +48,7 @@ Shottr is tiny but can't record. CleanShot X does the most and costs $35. PixPin
 
 ## Install
 
-1. Download [Clip-0.5.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.5.1.dmg) and drag Clip into Applications.
+1. Download [Clip-0.6.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.6.0.dmg) and drag Clip into Applications.
 2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*. Or run this once in Terminal and open Clip as usual:
 
    ```sh
