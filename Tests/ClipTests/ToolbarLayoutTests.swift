@@ -84,6 +84,23 @@ final class ToolbarDividerTests: XCTestCase {
         XCTAssertEqual(ToolbarView.buildSlots(items: [.close, .divider1, .more], hasOverflow: false).count, 1)
     }
 
+    func testOnlyAdjacentShapesShareAButton() {
+        let slots = ToolbarView.buildSlots(
+            items: [.close, .rectangle, .ellipse, .line, .pen, .arrow, .text],
+            hasOverflow: false
+        )
+        var picture: [String] = []
+        for slot in slots {
+            switch slot {
+            case .item(let id): picture.append(id.rawValue)
+            case .gap: picture.append("|")
+            case .more: picture.append("more")
+            case .shapeGroup(let ids): picture.append(ids.map(\.rawValue).joined(separator: "+"))
+            }
+        }
+        XCTAssertEqual(picture, ["close", "rectangle+ellipse+line", "pen", "arrow", "text"])
+    }
+
     func testMoreIsPinnedToPrimaryAndAddedOnceForOldLayouts() {
         let old = ToolbarLayout(primary: [.close, .divider1, .pen], side: [.ocr], hidden: []).normalized()
         XCTAssertEqual(Array(old.primary.suffix(2)), [.divider2, .more])

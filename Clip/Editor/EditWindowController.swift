@@ -3281,7 +3281,7 @@ class ToolbarView: NSView {
 
     /// Every button keyed by its id. Shape ids all map to the group button.
     private var buttons: [ToolbarItemID: NSView] = [:]
-    private var shapeGroupButton: ShapeGroupButton?
+    private var shapeGroupButtons: [ShapeGroupButton] = []
     private var moreButton: ToolButton?
     private var separatorXs: [CGFloat] = []
 
@@ -3302,14 +3302,25 @@ class ToolbarView: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     /// Turns the user's ordered item list into slots. Dividers become gaps
-    /// (collapsed when adjacent, dropped at either end); the shape family
-    /// collapses into one button at the first shape's position; "more" sits
-    /// wherever the user put it, and is dropped when the overflow menu is empty.
+    /// (collapsed when adjacent, dropped at either end); each run of two or
+    /// more adjacent shape tools collapses into one button, a lone shape stays
+    /// its own button, matching the settings grid; "more" sits wherever the
+    /// user put it, and is dropped when the overflow menu is empty.
     static func buildSlots(items: [ToolbarItemID], hasOverflow: Bool) -> [Slot] {
         var out: [Slot] = []
-        let shapesPresent = items.filter { shapeFamily.contains($0) }
-        var shapeGroupPlaced = false
-        for id in items {
+        var index = 0
+        while index < items.count {
+            let id = items[index]
+            index += 1
+            if shapeFamily.contains(id) {
+                var run = [id]
+                while index < items.count, shapeFamily.contains(items[index]) {
+                    run.append(items[index])
+                    index += 1
+                }
+                out.append(run.count >= 2 ? .shapeGroup(run) : .item(id))
+                continue
+            }
             if id.isDivider {
                 if let last = out.last, case .gap = last { continue }
                 if !out.isEmpty { out.append(.gap) }
@@ -3317,13 +3328,6 @@ class ToolbarView: NSView {
             }
             if id == .more {
                 if hasOverflow { out.append(.more) }
-                continue
-            }
-            if shapeFamily.contains(id), shapesPresent.count >= 2 {
-                if !shapeGroupPlaced {
-                    out.append(.shapeGroup(shapeFamily.filter { shapesPresent.contains($0) }))
-                    shapeGroupPlaced = true
-                }
                 continue
             }
             out.append(.item(id))
@@ -3334,14 +3338,14 @@ class ToolbarView: NSView {
 
     func updateSelection(tool: EditTool) {
         for (id, view) in buttons {
-            guard id.kind == .toggleTool, let btn = view as? ToolButton, btn !== shapeGroupButton else { continue }
+            guard id.kind == .toggleTool, let btn = view as? ToolButton, !(btn is ShapeGroupButton) else { continue }
             btn.isSelected = (id.editTool == tool)
         }
-        shapeGroupButton?.update(selectedTool: tool)
+        shapeGroupButtons.forEach { $0.update(selectedTool: tool) }
     }
 
     func setActive(_ active: Bool, for id: ToolbarItemID) {
-        guard let btn = buttons[id] as? ToolButton, btn !== shapeGroupButton else { return }
+        guard let btn = buttons[id] as? ToolButton, !(btn is ShapeGroupButton) else { return }
         btn.isSelected = active
     }
 
@@ -3391,7 +3395,7 @@ class ToolbarView: NSView {
                     guard let self, let btn else { return }
                     self.showMenu(for: shapes, from: btn)
                 }
-                shapeGroupButton = btn
+                shapeGroupButtons.append(btn)
                 for id in shapes { buttons[id] = btn }
                 addSubview(btn)
             case .more:

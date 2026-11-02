@@ -387,22 +387,37 @@ final class ToolbarSlotGridView: NSView {
     }
 
     /// Frame of the slot at a flow index (flipped: row 0 sits at the top).
-    /// On the bar, two or more shape tools collapse into one button. Tint
-    /// their tiles and join neighbours so the grid says so before the user
-    /// wonders where the other shapes went.
+    /// On the bar, each run of two or more adjacent shape tools collapses
+    /// into one button (ToolbarView.buildSlots). Tint those runs so the grid
+    /// says so; a lone shape stays a plain tile, as it is a plain button.
     private func drawShapeGroupBackdrop() {
         guard section == .primary else { return }
-        let shapeTiles = tiles.filter { ToolbarLayout.shapeFamily.contains($0.itemID) }
-        guard shapeTiles.count >= 2 else { return }
         var runs: [NSRect] = []
-        for tile in shapeTiles {
-            let rect = tile.frame.insetBy(dx: -3, dy: -3)
-            if let last = runs.last, abs(last.midY - rect.midY) < 1, rect.minX - last.maxX < Self.gap + 7 {
-                runs[runs.count - 1] = last.union(rect)
+        var run: [Int] = []
+        func flush() {
+            defer { run.removeAll() }
+            guard run.count >= 2 else { return }
+            // One backdrop per grid row the run spans.
+            var rowRect: NSRect?
+            for index in run {
+                let rect = slotFrame(at: index).insetBy(dx: -3, dy: -3)
+                if let current = rowRect, abs(current.midY - rect.midY) < 1 {
+                    rowRect = current.union(rect)
+                } else {
+                    if let current = rowRect { runs.append(current) }
+                    rowRect = rect
+                }
+            }
+            if let rowRect { runs.append(rowRect) }
+        }
+        for (index, tile) in tiles.enumerated() {
+            if ToolbarLayout.shapeFamily.contains(tile.itemID) {
+                run.append(index)
             } else {
-                runs.append(rect)
+                flush()
             }
         }
+        flush()
         Brand.accentFill.withAlphaComponent(0.10).setFill()
         Brand.accent.withAlphaComponent(0.35).setStroke()
         for run in runs {
