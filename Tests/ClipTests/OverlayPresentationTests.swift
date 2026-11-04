@@ -47,9 +47,41 @@ final class OverlayPresentationTests: XCTestCase {
         }
     }
 
+    override func setUp() {
+        super.setUp()
+        // Most tests check focus right after activate(); the snapshot wait
+        // has its own test below.
+        OverlayWindowController.focusClaimDelayLimit = 0
+    }
+
     override func tearDown() {
         ToastWindow.dismiss()
+        OverlayWindowController.focusClaimDelayLimit = 0.5
         super.tearDown()
+    }
+
+    /// Taking key focus closes other apps' transient popovers, so Clip waits
+    /// for the frozen snapshot of the screen under the pointer first; the
+    /// popover is then in the capture (2026-11-04).
+    func testKeyFocusWaitsForSnapshotOfPointerScreen() throws {
+        _ = NSApplication.shared
+        OverlayWindowController.focusClaimDelayLimit = 5
+        let provider = ControlledScreenSnapshotProvider()
+        let controller = OverlayWindowController(snapshotProvider: provider, onComplete: { _ in })
+        defer { controller.cancel() }
+        controller.activate()
+        XCTAssertTrue(controller.isOverlayPresented)
+        XCTAssertFalse(controller.activeSelectionViews.contains { $0.window?.isKeyWindow == true },
+                       "focus must wait for the snapshot")
+
+        let pointer = NSEvent.mouseLocation
+        let screen = try XCTUnwrap(NSScreen.screens.first { $0.frame.contains(pointer) } ?? NSScreen.main)
+        let displayID = try XCTUnwrap(screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID)
+        provider.emit(.image(displayID: displayID, image: makeImage()))
+        drainMainRunLoop()
+        let focused = controller.activeSelectionViews.filter { $0.window?.isKeyWindow == true }
+        XCTAssertEqual(focused.count, 1)
+        XCTAssertTrue(focused.first?.window?.firstResponder === focused.first)
     }
 
     func testScrollCaptureExcludesSelectionOverlayAndHintThroughoutFinalization() {

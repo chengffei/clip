@@ -119,6 +119,8 @@ class OverlayWindowController {
     private var presentationGeneration = 0
     private var sessionEnded = false
     private var deferredPresentationBlocker: PresentationBlocker?
+    /// Set while the overlay waits for its snapshot before taking focus.
+    private var pendingFocusClaimGeneration: Int?
     private var firstFrameReported = false
     private var firstFrameTargetDisplayID: CGDirectDisplayID?
 
@@ -508,6 +510,9 @@ class OverlayWindowController {
                 displayID: displayID,
                 generation: generation
             )
+            if displayID == firstFrameTargetDisplayID {
+                claimCaptureFocus(generation: generation)
+            }
         case .failure(let displayID, _):
             failedSnapshotDisplayIDs.insert(displayID)
             selectionViewsByDisplayID[displayID]?.awaitsBackgroundSnapshot = false
@@ -518,6 +523,9 @@ class OverlayWindowController {
                 displayID: displayID,
                 generation: generation
             )
+            if displayID == firstFrameTargetDisplayID {
+                claimCaptureFocus(generation: generation)
+            }
         case .finished:
             snapshotDeadline?.cancel()
             snapshotDeadline = nil
@@ -533,6 +541,7 @@ class OverlayWindowController {
                 generation: generation,
                 force: true
             )
+            claimCaptureFocus(generation: generation)
         }
     }
 
@@ -789,15 +798,21 @@ class OverlayWindowController {
         if presetImage == nil, suspendedDraft == nil {
             NSCursor.crosshair.push()
             cursorWasPushed = true
-            claimSelectionKeyboardFocus()
-            refreshSelectionCursor()
-            NSCursor.crosshair.set()
-            // Activate Clip so NSCursor APIs and cursor rects take effect.
-            // Without activation, cursor changes from an LSUIElement background
-            // app are ignored by WindowServer. The caller (AppDelegate) captures
-            // the previous frontmost app before this point and restores focus
-            // via onRequestFocusReturn when the capture session ends.
-            NSApp.activate(ignoringOtherApps: true)
+            // Taking key focus and activating Clip closes other apps' transient
+            // popovers and menus (a menu bar app's panel, for one) before the
+            // frozen snapshot is taken, so they vanish from the capture
+            // (2026-11-04). Wait for the snapshot of the screen under the
+            // pointer, or at most `focusClaimDelayLimit`, then take focus.
+            pendingFocusClaimGeneration = generation
+            let waitsForSnapshot = shouldCaptureSnapshots && !snapshotCaptureFinished
+                && firstFrameTargetDisplayID.map { screenSnapshots[$0] == nil } ?? false
+            if waitsForSnapshot, Self.focusClaimDelayLimit > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.focusClaimDelayLimit) { [weak self] in
+                    self?.claimCaptureFocus(generation: generation)
+                }
+            } else {
+                claimCaptureFocus(generation: generation)
+            }
         } else {
             // Skip cursor push so tearDown's pop doesn't strip an unrelated cursor.
             cursorPopped = true
@@ -810,6 +825,28 @@ class OverlayWindowController {
                 enterPresetSelection()
             }
         }
+    }
+
+    /// Longest wait for the frozen snapshot before Clip takes focus anyway.
+    /// A double-⌘ capture's snapshot lands in about 170 ms; keys pressed in
+    /// that window still reach the previous app. 0 takes focus at once (tests).
+    static var focusClaimDelayLimit: TimeInterval = 0.5
+
+    /// Takes keyboard focus and activates Clip, once per overlay session.
+    private func claimCaptureFocus(generation: Int) {
+        guard pendingFocusClaimGeneration == generation,
+              generation == presentationGeneration,
+              !sessionEnded else { return }
+        pendingFocusClaimGeneration = nil
+        claimSelectionKeyboardFocus()
+        refreshSelectionCursor()
+        NSCursor.crosshair.set()
+        // Activate Clip so NSCursor APIs and cursor rects take effect.
+        // Without activation, cursor changes from an LSUIElement background
+        // app are ignored by WindowServer. The caller (AppDelegate) captures
+        // the previous frontmost app before this point and restores focus
+        // via onRequestFocusReturn when the capture session ends.
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     /// Make the nonactivating selection panel own key events before Clip is
