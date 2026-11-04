@@ -55,6 +55,28 @@ final class ScrollStitchTerminalTests: XCTestCase {
         XCTAssertEqual(rowMismatches(stitched, expected), 0)
     }
 
+    /// A modal's fixed Cancel / Save row was stitched into every band when
+    /// frames came through the motion tracker (2026-11-04). The footer must
+    /// appear once, at the end.
+    func testTrackedFramesKeepStickyFooterOnce() throws {
+        let footerHeight = 160
+        let shifts = [180, 182, 178, 180, 184, 180]
+        let pageHeight = frameHeight + shifts.reduce(0, +)
+        let page = makePage(height: pageHeight)
+        var tops = [0]
+        for shift in shifts { tops.append(tops.last! + shift) }
+        let frames = tops.map { slice(page, top: $0, footerHeight: footerHeight) }
+
+        let result = ScrollCapturer.stitchForTesting(frames, tracking: true)
+        XCTAssertEqual(result.accepted, frames.count)
+        let stitched = try XCTUnwrap(result.image?.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        let contentHeight = pageHeight - footerHeight
+        XCTAssertEqual(stitched.height, pageHeight)
+        let content = try XCTUnwrap(stitched.cropping(to: CGRect(x: 0, y: 0, width: width, height: contentHeight)))
+        let expected = try XCTUnwrap(page.cropping(to: CGRect(x: 0, y: 0, width: width, height: contentHeight)))
+        XCTAssertEqual(rowMismatches(content, expected), 0, "footer leaked into the stitched content")
+    }
+
     // MARK: - Fixtures
 
     private func makePage(height: Int) -> CGImage {
@@ -90,9 +112,23 @@ final class ScrollStitchTerminalTests: XCTestCase {
         return rep.cgImage!
     }
 
-    private func slice(_ page: CGImage, top: Int) -> NSImage {
+    private func slice(_ page: CGImage, top: Int, footerHeight: Int = 0) -> NSImage {
         let cg = page.cropping(to: CGRect(x: 0, y: top, width: width, height: frameHeight))!
-        return NSImage(cgImage: cg, size: NSSize(width: width / 2, height: frameHeight / 2))
+        let size = NSSize(width: width / 2, height: frameHeight / 2)
+        guard footerHeight > 0 else { return NSImage(cgImage: cg, size: size) }
+        let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: frameHeight,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        NSGraphicsContext.current!.cgContext.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: frameHeight))
+        NSColor.white.setFill()
+        NSRect(x: 0, y: 0, width: width, height: footerHeight).fill()
+        NSColor(srgbRed: 0.4, green: 0.4, blue: 0.85, alpha: 1).setFill()
+        NSRect(x: width - 220, y: 40, width: 180, height: 80).fill()
+        NSGraphicsContext.restoreGraphicsState()
+        return NSImage(cgImage: rep.cgImage!, size: size)
     }
 
     private func rgba(_ image: CGImage) -> [UInt8] {

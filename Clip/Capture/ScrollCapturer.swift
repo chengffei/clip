@@ -129,8 +129,10 @@ final class ScrollCapturer {
 
     /// Test hook: runs the accept and stitch logic over prepared frames
     /// without touching the screen.
-    static func stitchForTesting(_ images: [NSImage]) -> (accepted: Int, image: NSImage?) {
-        let capturer = ScrollCapturer(replaying: images)
+    /// `tracking` feeds the frames through the live stream's motion
+    /// tracker instead of the per-poll overlap search.
+    static func stitchForTesting(_ images: [NSImage], tracking: Bool = false) -> (accepted: Int, image: NSImage?) {
+        let capturer = ScrollCapturer(replaying: images, tracking: tracking)
         return capturer.captureQueue.sync {
             let image = capturer.frames.count > 1 ? capturer.stitchAcceptedFrames() : capturer.frames.first?.image
             return (capturer.frames.count, image)
@@ -139,11 +141,17 @@ final class ScrollCapturer {
 
     deinit { stream?.stop() }
 
-    private init(replaying images: [NSImage]) {
+    private init(replaying images: [NSImage], tracking: Bool) {
         captureRect = .zero
         screen = NSScreen.main ?? NSScreen.screens[0]
         excludedWindowNumbers = []
-        for image in images { _ = consider(image) }
+        for image in images {
+            if tracking, let bitmap = bitmapData(from: image) {
+                _ = track(CapturedFrame(image: image, bitmap: bitmap), minimumNewRows: 8)
+            } else {
+                _ = consider(image)
+            }
+        }
     }
 
     static func pixelAligned(_ rect: CGRect, scale: CGFloat) -> CGRect {
@@ -500,6 +508,12 @@ final class ScrollCapturer {
         guard let any = pick(order), any.score <= 10 else {
             FileLog.write("scroll capture track miss: predicted \(predicted)")
             return nil
+        }
+        // Learn the sticky footer here too, as findOverlap does. Without it a
+        // fixed bottom bar (a modal's Cancel / Save row) was stitched into
+        // every appended band (2026-11-04).
+        if any.shift != 0, bottom == height - bands.bottom {
+            stickyFooterPx = min(stickyFooterPx ?? bands.bottom, bands.bottom)
         }
         return any.shift
     }
