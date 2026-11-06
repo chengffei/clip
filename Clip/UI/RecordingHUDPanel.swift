@@ -10,9 +10,11 @@ final class RecordingHUDPanel: NSPanel {
     var onSelectMicrophoneDevice: ((String?) -> Void)?
 
     private let containerView = RecordingHUDContainerView()
-    private let stopButton = NSButton()
+    /// Liquid Glass capsule; every control lives in `glass.contentView`.
+    private let glass = GlassChromeView()
+    private let stopButton = RecordingStopButton()
     private let pauseButton = NSButton()
-    private let recordDot = NSTextField(labelWithString: "●")
+    private let recordDot = NSImageView()
     private let timeLabel = NSTextField(labelWithString: "00:00")
     private let systemAudioButton = NSButton()
     private let microphoneButton = AudioDeviceMenuButton()
@@ -57,11 +59,12 @@ final class RecordingHUDPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         containerView.panel = self
-        containerView.wantsLayer = true
-        containerView.layer?.cornerRadius = FloatingControlChrome.cornerRadius
-        containerView.layer?.borderWidth = FloatingControlChrome.borderWidth
-        containerView.applyAppearance()
         contentView = containerView
+        // Size the glass after the container has its real frame, so
+        // autoresizing starts from matching sizes.
+        glass.frame = containerView.bounds
+        glass.autoresizingMask = [.width, .height]
+        containerView.addSubview(glass)
 
         setupControls()
         layoutControls()
@@ -78,7 +81,8 @@ final class RecordingHUDPanel: NSPanel {
 
     func setPaused(_ paused: Bool) {
         isPaused = paused
-        recordDot.textColor = paused ? Brand.accent : Brand.alert
+        // Red dot while capturing; a neutral dot while paused (no extra accent).
+        recordDot.contentTintColor = paused ? .tertiaryLabelColor : Brand.alert
         pauseButton.toolTip = paused ? L10n.recordingResume : L10n.recordingPause
         updatePauseIcon()
     }
@@ -92,8 +96,8 @@ final class RecordingHUDPanel: NSPanel {
     func configureAudioButtons(systemAudio: Bool, microphone: Bool) {
         systemAudioEnabled = systemAudio
         microphoneEnabled = microphone
-        updateAudioButtonAppearance(systemAudioButton, enabled: systemAudio, onTooltip: L10n.recordingSystemAudioTooltipOn, offTooltip: L10n.recordingSystemAudioTooltipOff)
-        updateAudioButtonAppearance(microphoneButton, enabled: microphone, onTooltip: microphoneTooltip(enabled: true), offTooltip: microphoneTooltip(enabled: false))
+        updateSystemAudioButton()
+        updateMicrophoneButton()
     }
 
     func positionOnScreen(relativeTo screenRect: NSRect, screen: NSScreen?) {
@@ -105,108 +109,122 @@ final class RecordingHUDPanel: NSPanel {
     }
 
     private func setupControls() {
-        stopButton.bezelStyle = .regularSquare
-        stopButton.isBordered = false
-        stopButton.imageScaling = .scaleProportionallyDown
-        stopButton.image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: L10n.recordingStop)?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold))
-        stopButton.contentTintColor = .labelColor
+        let host = glass.contentView
+
         stopButton.toolTip = L10n.recordingStop
+        stopButton.setAccessibilityLabel(L10n.recordingStop)
         stopButton.target = self
         stopButton.action = #selector(stopClicked)
-        containerView.addSubview(stopButton)
+        host.addSubview(stopButton)
 
-        pauseButton.bezelStyle = .regularSquare
-        pauseButton.isBordered = false
-        pauseButton.imageScaling = .scaleProportionallyDown
-        pauseButton.contentTintColor = .labelColor
+        configureGlyphButton(pauseButton)
         pauseButton.target = self
         pauseButton.action = #selector(pauseClicked)
-        containerView.addSubview(pauseButton)
+        host.addSubview(pauseButton)
         updatePauseIcon()
 
-        recordDot.font = .systemFont(ofSize: 11, weight: .bold)
-        recordDot.textColor = Brand.alert
-        recordDot.isBezeled = false
-        recordDot.drawsBackground = false
-        recordDot.isEditable = false
-        containerView.addSubview(recordDot)
+        recordDot.image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 7, weight: .regular))
+        recordDot.contentTintColor = Brand.alert
+        recordDot.imageScaling = .scaleNone
+        recordDot.setAccessibilityElement(false)
+        host.addSubview(recordDot)
 
-        timeLabel.font = Brand.mono(13, weight: .semibold)
+        // SF Pro with monospaced digits so the timer never jitters as it ticks.
+        timeLabel.font = Brand.monoDigits(13, weight: .medium)
         timeLabel.textColor = .labelColor
         timeLabel.isBezeled = false
         timeLabel.drawsBackground = false
         timeLabel.isEditable = false
-        containerView.addSubview(timeLabel)
+        host.addSubview(timeLabel)
 
-        setupAudioButton(
-            systemAudioButton,
-            symbol: "speaker.wave.2.fill",
-            action: #selector(systemAudioClicked)
-        )
-        setupAudioButton(
-            microphoneButton,
-            symbol: "mic.fill",
-            action: #selector(microphoneClicked)
-        )
+        configureGlyphButton(systemAudioButton)
+        systemAudioButton.target = self
+        systemAudioButton.action = #selector(systemAudioClicked)
+        host.addSubview(systemAudioButton)
+
+        configureGlyphButton(microphoneButton)
+        microphoneButton.target = self
+        microphoneButton.action = #selector(microphoneClicked)
+        host.addSubview(microphoneButton)
         microphoneButton.deviceMenuProvider = { [weak self] in
             self?.makeMicrophoneDeviceMenu() ?? NSMenu()
         }
+        updateSystemAudioButton()
+        updateMicrophoneButton()
 
         dragHandle.image = NSImage(systemSymbolName: "line.3.horizontal", accessibilityDescription: nil)?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .medium))
-        dragHandle.contentTintColor = .secondaryLabelColor
-        dragHandle.imageScaling = .scaleProportionallyDown
-        containerView.addSubview(dragHandle)
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 11, weight: .regular))
+        dragHandle.contentTintColor = .tertiaryLabelColor
+        dragHandle.imageScaling = .scaleNone
+        host.addSubview(dragHandle)
     }
 
-    private func setupAudioButton(_ button: NSButton, symbol: String, action: Selector) {
+    private func configureGlyphButton(_ button: NSButton) {
         button.bezelStyle = .regularSquare
         button.isBordered = false
-        button.imageScaling = .scaleProportionallyDown
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold))
-        button.contentTintColor = .tertiaryLabelColor
-        button.target = self
-        button.action = action
-        containerView.addSubview(button)
+        button.imagePosition = .imageOnly
+        button.imageScaling = .scaleNone
+        button.contentTintColor = .labelColor
     }
 
-    private func updateAudioButtonAppearance(
-        _ button: NSButton,
-        enabled: Bool,
-        onTooltip: String,
-        offTooltip: String
-    ) {
-        button.contentTintColor = enabled ? Brand.accent : .tertiaryLabelColor
-        button.toolTip = enabled ? onTooltip : offTooltip
-        button.alphaValue = enabled ? 1.0 : 0.55   // dim when off
+    private static func glyph(_ symbol: String, _ description: String?) -> NSImage? {
+        NSImage(systemSymbolName: symbol, accessibilityDescription: description)?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(
+                pointSize: Brand.glassControlSymbolSize,
+                weight: Brand.glassControlSymbolWeight
+            ))
+    }
+
+    /// On/off is carried by the symbol variant (slash when off) and label vs
+    /// secondary-label color, not by an accent tint.
+    private func updateSystemAudioButton() {
+        let on = systemAudioEnabled
+        let tooltip = on ? L10n.recordingSystemAudioTooltipOn : L10n.recordingSystemAudioTooltipOff
+        systemAudioButton.image = Self.glyph(on ? "speaker.wave.2.fill" : "speaker.slash.fill", tooltip)
+        systemAudioButton.contentTintColor = on ? .labelColor : .secondaryLabelColor
+        systemAudioButton.toolTip = tooltip
+        systemAudioButton.setAccessibilityLabel(tooltip)
+    }
+
+    private func updateMicrophoneButton() {
+        let on = microphoneEnabled
+        let tooltip = microphoneTooltip(enabled: on)
+        let label = on ? L10n.recordingMicrophoneTooltipOn : L10n.recordingMicrophoneTooltipOff
+        microphoneButton.image = Self.glyph(on ? "mic.fill" : "mic.slash.fill", label)
+        microphoneButton.contentTintColor = on ? .labelColor : .secondaryLabelColor
+        microphoneButton.toolTip = tooltip
+        microphoneButton.setAccessibilityLabel(label)
     }
 
     private func layoutControls() {
         let buttonSize = FloatingControlChrome.buttonSide
-        let padding: CGFloat = 6
         let height = hudSize.height
+        let buttonY = (height - buttonSize) / 2
+        // Inset so the round stop button sits concentric with the capsule end.
+        let padding = (height - buttonSize) / 2
 
-        stopButton.frame = NSRect(x: padding, y: (height - buttonSize) / 2, width: buttonSize, height: buttonSize)
-        pauseButton.frame = NSRect(x: stopButton.frame.maxX + 2, y: (height - buttonSize) / 2, width: buttonSize, height: buttonSize)
+        stopButton.frame = NSRect(x: padding, y: buttonY, width: buttonSize, height: buttonSize)
+        pauseButton.frame = NSRect(x: stopButton.frame.maxX + 4, y: buttonY, width: buttonSize, height: buttonSize)
 
-        recordDot.sizeToFit()
         timeLabel.sizeToFit()
-        recordDot.frame.origin = NSPoint(x: pauseButton.frame.maxX + 6, y: (height - recordDot.frame.height) / 2)
-        timeLabel.frame.origin = NSPoint(x: recordDot.frame.maxX + 3, y: (height - timeLabel.frame.height) / 2)
+        recordDot.frame = NSRect(x: pauseButton.frame.maxX + 6, y: (height - 10) / 2, width: 10, height: 10)
+        timeLabel.frame.origin = NSPoint(
+            x: recordDot.frame.maxX + 4,
+            y: ((height - timeLabel.frame.height) / 2).rounded()
+        )
 
         let firstAudioX = timeLabel.frame.maxX + 8
-        systemAudioButton.frame = NSRect(x: firstAudioX, y: (height - buttonSize) / 2, width: buttonSize, height: buttonSize)
-        microphoneButton.frame = NSRect(x: systemAudioButton.frame.maxX + audioButtonGap, y: (height - buttonSize) / 2, width: buttonSize, height: buttonSize)
+        systemAudioButton.frame = NSRect(x: firstAudioX, y: buttonY, width: buttonSize, height: buttonSize)
+        microphoneButton.frame = NSRect(x: systemAudioButton.frame.maxX + audioButtonGap, y: buttonY, width: buttonSize, height: buttonSize)
 
-        dragHandle.frame = NSRect(x: hudSize.width - 26, y: (height - 16) / 2, width: 20, height: 16)
+        dragHandle.frame = NSRect(x: hudSize.width - 30, y: (height - 16) / 2, width: 20, height: 16)
     }
 
     private func updatePauseIcon() {
-        let symbol = isPaused ? "play.fill" : "pause.fill"
-        pauseButton.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold))
+        let title = isPaused ? L10n.recordingResume : L10n.recordingPause
+        pauseButton.image = Self.glyph(isPaused ? "play.fill" : "pause.fill", title)
+        pauseButton.setAccessibilityLabel(title)
     }
 
     @objc private func stopClicked() {
@@ -223,24 +241,43 @@ final class RecordingHUDPanel: NSPanel {
 
     @objc private func systemAudioClicked() {
         systemAudioEnabled.toggle()
-        updateAudioButtonAppearance(
-            systemAudioButton,
-            enabled: systemAudioEnabled,
-            onTooltip: L10n.recordingSystemAudioTooltipOn,
-            offTooltip: L10n.recordingSystemAudioTooltipOff
-        )
+        updateSystemAudioButton()
         onToggleSystemAudio?(systemAudioEnabled)
     }
 
     @objc private func microphoneClicked() {
         microphoneEnabled.toggle()
-        updateAudioButtonAppearance(
-            microphoneButton,
-            enabled: microphoneEnabled,
-            onTooltip: microphoneTooltip(enabled: true),
-            offTooltip: microphoneTooltip(enabled: false)
-        )
+        updateMicrophoneButton()
         onToggleMicrophone?(microphoneEnabled)
+    }
+
+    /// Right-click on the HUD: every HUD control is also a menu command.
+    func makeContextMenu() -> NSMenu {
+        let menu = NSMenu()
+        let pause = NSMenuItem(
+            title: isPaused ? L10n.recordingResume : L10n.recordingPause,
+            action: #selector(pauseClicked),
+            keyEquivalent: ""
+        )
+        pause.target = self
+        menu.addItem(pause)
+        let stop = NSMenuItem(title: L10n.recordingStop, action: #selector(stopClicked), keyEquivalent: "")
+        stop.target = self
+        menu.addItem(stop)
+        menu.addItem(.separator())
+
+        let systemAudio = NSMenuItem(title: L10n.hudMenuSystemAudio, action: #selector(systemAudioClicked), keyEquivalent: "")
+        systemAudio.target = self
+        systemAudio.state = systemAudioEnabled ? .on : .off
+        menu.addItem(systemAudio)
+        let microphone = NSMenuItem(title: L10n.hudMenuMicrophone, action: #selector(microphoneClicked), keyEquivalent: "")
+        microphone.target = self
+        microphone.state = microphoneEnabled ? .on : .off
+        menu.addItem(microphone)
+        let input = NSMenuItem(title: L10n.hudMenuMicrophoneInput, action: nil, keyEquivalent: "")
+        input.submenu = makeMicrophoneDeviceMenu()
+        menu.addItem(input)
+        return menu
     }
 
     /// Built fresh on every right-click so hot-plugged devices appear. The
@@ -293,20 +330,8 @@ private final class RecordingHUDContainerView: NSView {
     private var isDragging = false
     private var trackingArea: NSTrackingArea?
 
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        applyAppearance()
-    }
-
-    func applyAppearance() {
-        layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.floatingBackground,
-            for: effectiveAppearance
-        )
-        layer?.borderColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.border,
-            for: effectiveAppearance
-        )
+    override func menu(for event: NSEvent) -> NSMenu? {
+        panel?.makeContextMenu()
     }
 
     override func updateTrackingAreas() {
@@ -353,5 +378,36 @@ private final class RecordingHUDContainerView: NSView {
 
     private func isInDragZone(_ point: NSPoint) -> Bool {
         point.x >= bounds.maxX - 32
+    }
+}
+
+/// The HUD's primary action: a filled red circle carrying the white
+/// `stop.fill` symbol, the same record/stop semantics the system recording
+/// controls use. Darkens while pressed so the click registers visually.
+private final class RecordingStopButton: NSButton {
+    init() {
+        super.init(frame: .zero)
+        title = ""
+        isBordered = false
+        bezelStyle = .regularSquare
+        setButtonType(.momentaryChange)
+        imagePosition = .imageOnly
+        imageScaling = .scaleNone
+        image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: L10n.recordingStop)?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .bold))
+        contentTintColor = Brand.onAccent
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let fill = isHighlighted
+            ? (Brand.alert.blended(withFraction: 0.2, of: .black) ?? Brand.alert)
+            : Brand.alert
+        fill.setFill()
+        NSBezierPath(ovalIn: bounds.insetBy(dx: 1, dy: 1)).fill()
+        super.draw(dirtyRect)
     }
 }

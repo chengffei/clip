@@ -12,10 +12,10 @@ final class SettingsSnapshotTests: XCTestCase {
         if let lang = env["CLIP_SNAPSHOT_LANG"], let language = AppLanguage(rawValue: lang) {
             Defaults.language = language
         }
-        let view = SettingsView(frame: NSRect(x: 0, y: 0, width: 820, height: 600), isStartup: false)
+        let view = SettingsView(frame: NSRect(x: 0, y: 0, width: SettingsWindowController.contentWidth, height: 600), isStartup: false)
         let window = NSWindow(contentRect: view.frame, styleMask: [.titled, .fullSizeContentView],
                               backing: .buffered, defer: false)
-        window.backgroundColor = Brand.sidebar
+        window.backgroundColor = Brand.canvas
         window.contentView = view
         view.setStartupMode(false)
         if let lang = env["CLIP_SNAPSHOT_SWITCH_LANG"], let language = AppLanguage(rawValue: lang) {

@@ -110,6 +110,12 @@ enum L10n {
     static var pinToolbarDrag: String { s("pinToolbarDrag") }
     static var pinToolbarEdit: String { s("pinToolbarEdit") }
     static var pinToolbarEditText: String { s("pinToolbarEditText") }
+    static var pinMenuCopy: String { s("pinMenuCopy") }
+    static var pinMenuEdit: String { s("pinMenuEdit") }
+    static var pinMenuRecognizeText: String { s("pinMenuRecognizeText") }
+    static var pinMenuActualSize: String { s("pinMenuActualSize") }
+    static var pinMenuClose: String { s("pinMenuClose") }
+    static var pinMenuCloseClearClipboard: String { s("pinMenuCloseClearClipboard") }
 
     static var textRecognitionShortcutHeader: String { s("textRecognitionShortcutHeader") }
     static var textRecognitionShortcutDefaultDisplay: String { s("textRecognitionShortcutDefaultDisplay") }
@@ -228,6 +234,9 @@ enum L10n {
     static var recordingStop: String { s("recordingStop") }
     static var recordingPause: String { s("recordingPause") }
     static var recordingResume: String { s("recordingResume") }
+    static var hudMenuSystemAudio: String { s("hudMenuSystemAudio") }
+    static var hudMenuMicrophone: String { s("hudMenuMicrophone") }
+    static var hudMenuMicrophoneInput: String { s("hudMenuMicrophoneInput") }
     static func recordingFailed(_ message: String) -> String {
         String(format: s("recordingFailed"), message)
     }

@@ -22,37 +22,60 @@ class SettingsWindowController: NSWindowController {
     private var settingsView: SettingsView!
     private var isStartup = true
 
+    /// Content width; panes lay out their grouped rows to this.
+    static let contentWidth: CGFloat = 680
+
+    /// A standard settings window (Apple HIG, Settings): a non-customizable
+    /// toolbar switches panes and always shows the active one, the title is
+    /// the pane's name, minimize and zoom stay dimmed, and the height follows
+    /// the pane.
     private init() {
         let window = SettingsWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            contentRect: NSRect(x: 0, y: 0, width: Self.contentWidth, height: 520),
+            styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         window.title = L10n.settingsTitle
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
+        window.toolbarStyle = .preference
         window.appearance = NSAppearance(named: .aqua)
-        window.backgroundColor = Brand.sidebar
-        window.isMovableByWindowBackground = true
+        window.backgroundColor = Brand.canvas
         window.center()
         window.isReleasedWhenClosed = false
         window.level = .normal
 
         super.init(window: window)
 
+        let toolbar = NSToolbar(identifier: "ClipSettingsToolbar")
+        toolbar.delegate = self
+        toolbar.displayMode = .iconAndLabel
+        toolbar.allowsUserCustomization = false
+        window.toolbar = toolbar
+
         NotificationCenter.default.addObserver(forName: .languageDidChange, object: nil, queue: .main) { [weak self] _ in
-            self?.window?.title = L10n.settingsTitle
+            guard let self else { return }
+            for item in self.window?.toolbar?.items ?? [] {
+                if let tab = SettingsTab(rawValue: item.itemIdentifier.rawValue) {
+                    item.label = tab.title
+                    item.toolTip = tab.title
+                }
+            }
+            self.window?.title = self.settingsView.currentTab.title
         }
 
-        settingsView = SettingsView(frame: NSRect(x: 0, y: 0, width: 820, height: 600), isStartup: true)
+        settingsView = SettingsView(frame: NSRect(x: 0, y: 0, width: Self.contentWidth, height: 520), isStartup: true)
+        settingsView.onTabChange = { [weak self] tab in
+            guard let self, let window = self.window else { return }
+            window.toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier(tab.rawValue)
+            window.title = tab.title
+            self.fitWindowToPane(animate: window.isVisible)
+        }
         settingsView.onMenuBarToggle = { [weak self] visible in
             self?.onMenuBarToggle?(visible)
         }
         settingsView.onLaunch = { [weak self] in
             self?.isStartup = false
             self?.settingsView.setStartupMode(false)
-            self?.resizeWindow(height: 600)
             self?.window?.close()
             self?.onLaunch?()
         }
@@ -71,7 +94,7 @@ class SettingsWindowController: NSWindowController {
         }
         isStartup = true
         settingsView.setStartupMode(true)
-        resizeWindow(height: 640)
+        fitWindowToPane(animate: false)
         window?.center()
         resetInitialFocus()
         showWindow(nil)
@@ -86,7 +109,7 @@ class SettingsWindowController: NSWindowController {
         if shouldFocusPermissions {
             settingsView.showPermissionsTab()
         }
-        resizeWindow(height: 600)
+        fitWindowToPane(animate: false)
         resetInitialFocus()
         showWindow(nil)
         resetInitialFocus()
@@ -99,13 +122,17 @@ class SettingsWindowController: NSWindowController {
         window?.makeFirstResponder(settingsView)
     }
 
-    private func resizeWindow(height: CGFloat) {
-        guard let window = window else { return }
-        var frame = window.frame
-        let delta = height - frame.size.height
-        frame.size.height = height
-        frame.origin.y -= delta
-        window.setFrame(frame, display: true, animate: false)
+    /// Grows or shrinks the window to the current pane, keeping its top edge
+    /// put; tall panes (shortcuts, toolbar) scroll past 640 pt.
+    private func fitWindowToPane(animate: Bool) {
+        guard let window else { return }
+        let height = min(max(settingsView.preferredPaneHeight, 220), 640)
+        let content = NSRect(x: 0, y: 0, width: Self.contentWidth, height: height)
+        var frame = window.frameRect(forContentRect: content)
+        frame.origin.x = window.frame.minX
+        frame.origin.y = window.frame.maxY - frame.height
+        guard abs(frame.height - window.frame.height) > 0.5 || abs(frame.width - window.frame.width) > 0.5 else { return }
+        window.setFrame(frame, display: true, animate: animate && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
     }
 }
 
@@ -126,5 +153,32 @@ extension SettingsWindowController: NSWindowDelegate {
         // performs a clean launch. (The Launch path clears isStartup first,
         // so it never reaches here.)
         NSApp.terminate(nil)
+    }
+}
+
+extension SettingsWindowController: NSToolbarDelegate {
+    private var tabIdentifiers: [NSToolbarItem.Identifier] {
+        SettingsTab.allCases.map { NSToolbarItem.Identifier($0.rawValue) }
+    }
+
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { tabIdentifiers }
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { tabIdentifiers }
+    func toolbarSelectableItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] { tabIdentifiers }
+
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
+                 willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        guard let tab = SettingsTab(rawValue: id.rawValue) else { return nil }
+        let item = NSToolbarItem(itemIdentifier: id)
+        item.label = tab.title
+        item.toolTip = tab.title
+        item.image = NSImage(systemSymbolName: tab.iconName, accessibilityDescription: tab.title)
+        item.target = self
+        item.action = #selector(toolbarTabClicked(_:))
+        return item
+    }
+
+    @objc private func toolbarTabClicked(_ sender: NSToolbarItem) {
+        guard let tab = SettingsTab(rawValue: sender.itemIdentifier.rawValue) else { return }
+        settingsView.selectTab(tab)
     }
 }

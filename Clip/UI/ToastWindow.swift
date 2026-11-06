@@ -109,11 +109,8 @@ class ToastWindow: NSPanel {
 
     private init(message: String) {
         // Measure text to size the chip
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: Brand.mono(12, weight: .medium)
-        ]
-        let textSize = message.size(withAttributes: attrs)
-        let size = NSSize(width: textSize.width + 24, height: 32)
+        let textSize = message.size(withAttributes: [.font: ToastContentView.font])
+        let size = NSSize(width: ceil(textSize.width) + 32, height: 32)
 
         super.init(
             contentRect: NSRect(origin: .zero, size: size),
@@ -131,11 +128,16 @@ class ToastWindow: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         let toastView = ToastContentView(frame: NSRect(origin: .zero, size: size), message: message)
-        contentView = toastView
+        // Same chip family as the tooltip: a glass capsule, or the opaque
+        // plate when Reduce Transparency is on.
+        contentView = CaptureChrome.chipContentView(content: toastView, cornerRadius: size.height / 2)
     }
 }
 
 private class ToastContentView: NSView {
+    /// System text with tabular digits, so counts and sizes in a message
+    /// (e.g. "760 × 3526") still line up.
+    static let font = Brand.monoDigits(Brand.chipFontSize + 1, weight: .medium)
     private let message: String
 
     init(frame: NSRect, message: String) {
@@ -148,17 +150,11 @@ private class ToastContentView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.floatingBackground.setFill()
-        path.fill()
-
-        AdaptiveChrome.border.setStroke()
-        path.lineWidth = 0.5
-        path.stroke()
+        CaptureChrome.drawChipPlateIfNeeded(for: self, cornerRadius: bounds.height / 2)
 
         let attrs: [NSAttributedString.Key: Any] = [
             .foregroundColor: NSColor.labelColor,
-            .font: Brand.mono(12, weight: .medium)
+            .font: Self.font
         ]
         let size = message.size(withAttributes: attrs)
         let textRect = NSRect(

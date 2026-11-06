@@ -1381,8 +1381,69 @@ final class PinContentView: NSView, NSDraggingSource {
         if handleOCRKeyEquivalent(event) {
             return true
         }
+        if handleStandardKeyEquivalent(event) {
+            return true
+        }
         return super.performKeyEquivalent(with: event)
     }
+
+    /// Standard window shortcuts for a pin: ⌘W closes it, ⌘0 returns to
+    /// actual size. ⌘C reaches `copy(_:)` through the Edit menu.
+    private func handleStandardKeyEquivalent(_ event: NSEvent) -> Bool {
+        guard window?.isKeyWindow == true,
+              event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+        else { return false }
+        switch event.charactersIgnoringModifiers {
+        case "w":
+            pinWindow?.dismiss()
+            return true
+        case "0":
+            resetZoomTo100Percent()
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Edit > Copy (⌘C) copies the pinned image unless OCR text selection
+    /// already handled the shortcut.
+    @objc func copy(_ sender: Any?) {
+        copyPinnedImage()
+    }
+
+    /// Right-click menu: the hover toolbar's commands (plus the keyboard-only
+    /// "close and clear clipboard") so none of them depend on hovering.
+    /// Shortcuts are not shown here, per HIG context-menu guidance.
+    override func menu(for event: NSEvent) -> NSMenu? {
+        guard image != nil, !usesLowResolutionPreview else { return nil }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        func add(_ title: String, _ action: Selector, state: NSControl.StateValue = .off) {
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+            item.target = self
+            item.state = state
+            menu.addItem(item)
+        }
+        add(L10n.pinMenuCopy, #selector(contextCopy))
+        add(L10n.pinMenuEdit, #selector(contextEdit))
+        add(L10n.pinMenuRecognizeText, #selector(contextRecognizeText), state: isOCRSelectionEnabled ? .on : .off)
+        if abs(zoomScale - 1) > 0.001 {
+            add(L10n.pinMenuActualSize, #selector(contextActualSize))
+        }
+        menu.addItem(.separator())
+        add(L10n.pinMenuClose, #selector(contextClose))
+        if pinWindow?.pinSource == .clipboard || pinWindow?.pinSource == .clipboardText {
+            add(L10n.pinMenuCloseClearClipboard, #selector(contextCloseClearingSource))
+        }
+        return menu
+    }
+
+    @objc private func contextCopy() { copyPinnedImage() }
+    @objc private func contextEdit() { editPinnedImage() }
+    @objc private func contextRecognizeText() { toggleOCRSelection() }
+    @objc private func contextActualSize() { resetZoomTo100Percent() }
+    @objc private func contextClose() { pinWindow?.dismiss() }
+    @objc private func contextCloseClearingSource() { pinWindow?.dismissClearingSource() }
 
     /// Let the activation click reach `mouseDown` so a PIN window can be
     /// dragged immediately after the pointer returns from another app.
@@ -1961,30 +2022,32 @@ final class PinToolbarView: NSView {
     private let editButton = PinToolbarIconButton(
         symbolName: "pencil",
         accessibilityLabel: L10n.pinToolbarEdit,
-        symbolPointSize: 14
+        symbolPointSize: Brand.glassControlSymbolSize
     )
     private let ocrButton = PinToolbarIconButton(
         symbolName: "text.viewfinder",
         accessibilityLabel: L10n.tipOCR,
-        symbolPointSize: 14
+        symbolPointSize: Brand.glassControlSymbolSize
     )
     private let copyButton = PinToolbarIconButton(
         symbolName: "doc.on.doc",
         accessibilityLabel: L10n.pinToolbarCopy,
-        symbolPointSize: 14
+        symbolPointSize: Brand.glassControlSymbolSize
     )
     private let dragButton = PinToolbarDragButton(
         symbolName: "cursorarrow.motionlines",
         accessibilityLabel: L10n.pinToolbarDrag,
-        symbolPointSize: 14
+        symbolPointSize: Brand.glassControlSymbolSize
     )
     private let zoomLabel = PinToolbarZoomButton()
     private let closeButton = PinToolbarIconButton(
         symbolName: "xmark",
         accessibilityLabel: L10n.pinToolbarClose,
-        style: .destructive,
-        symbolPointSize: 14
+        symbolPointSize: Brand.glassControlSymbolSize
     )
+    /// Controls float over the pinned image (content), so they sit on glass;
+    /// the image itself never gets a material.
+    private let glass = GlassChromeView()
     private var trackingArea: NSTrackingArea?
 
     override init(frame frameRect: NSRect) {
@@ -1999,14 +2062,9 @@ final class PinToolbarView: NSView {
     private func setup() {
         wantsLayer = true
         layer?.masksToBounds = false
-        layer?.cornerCurve = .continuous
-        layer?.cornerRadius = FloatingControlChrome.cornerRadius
-        layer?.borderWidth = FloatingControlChrome.borderWidth
-        layer?.shadowColor = NSColor.black.cgColor
-        layer?.shadowOpacity = 0.24
-        layer?.shadowRadius = 5
-        layer?.shadowOffset = NSSize(width: 0, height: -1)
-        applyAppearance()
+        glass.autoresizingMask = [.width, .height]
+        glass.frame = bounds
+        addSubview(glass)
 
         editButton.toolTip = L10n.pinToolbarEdit
         editButton.target = self
@@ -2032,16 +2090,18 @@ final class PinToolbarView: NSView {
 
         zoomLabel.alignment = .center
 
-        addSubview(closeButton)
-        addSubview(dragButton)
-        addSubview(editButton)
-        addSubview(ocrButton)
-        addSubview(copyButton)
-        addSubview(zoomLabel)
+        let host = glass.contentView
+        host.addSubview(closeButton)
+        host.addSubview(dragButton)
+        host.addSubview(editButton)
+        host.addSubview(ocrButton)
+        host.addSubview(copyButton)
+        host.addSubview(zoomLabel)
     }
 
     override func layout() {
         super.layout()
+        glass.frame = bounds
 
         let optionalButtons = [dragButton, editButton, ocrButton, copyButton]
         var hiddenButtonCount = 0
@@ -2087,22 +2147,6 @@ final class PinToolbarView: NSView {
             + CGFloat(iconCount) * iconButtonSide
             + CGFloat(gapCount) * itemGap
             + zoomMinimumWidth
-    }
-
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        applyAppearance()
-    }
-
-    private func applyAppearance() {
-        layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.floatingBackground,
-            for: effectiveAppearance
-        )
-        layer?.borderColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.border,
-            for: effectiveAppearance
-        )
     }
 
     override func updateTrackingAreas() {
@@ -2254,7 +2298,7 @@ private class PinToolbarIconButton: NSButton {
         setAccessibilityLabel(accessibilityLabel)
 
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityLabel) {
-            let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .semibold)
+            let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: Brand.glassControlSymbolWeight)
             self.image = image.withSymbolConfiguration(config)
         }
         updateAppearance()
@@ -2291,11 +2335,11 @@ private class PinToolbarIconButton: NSButton {
     private func updateAppearance() {
         switch style {
         case .standard:
-            contentTintColor = isActive ? .white : .labelColor
-            layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(
-                isActive ? toolbarAccent.withAlphaComponent(0.86) : .clear,
-                for: effectiveAppearance
-            )
+            // Same selected state as the editor toolbar: grey well, accent glyph.
+            contentTintColor = isActive ? toolbarAccent : .labelColor
+            layer?.backgroundColor = isActive
+                ? AdaptiveChrome.resolvedCGColor(AdaptiveChrome.selectedFill, for: effectiveAppearance)
+                : NSColor.clear.cgColor
         case .destructive:
             contentTintColor = .systemRed
             layer?.backgroundColor = NSColor.clear.cgColor

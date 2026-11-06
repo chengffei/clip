@@ -50,4 +50,18 @@ enum Brand {
         .monospacedSystemFont(ofSize: size, weight: weight)
     }
 
+    // Capture chrome chips (size label, tooltip, toast)
+    /// SF Pro with tabular digits: numbers stay aligned while they change,
+    /// the rest of the text keeps the system typeface.
+    static func monoDigits(_ size: CGFloat, weight: NSFont.Weight = .medium) -> NSFont {
+        .monospacedDigitSystemFont(ofSize: size, weight: weight)
+    }
+    static let chipFontSize: CGFloat = 12
+    static let labelBackgroundHighContrast = NSColor(srgbRed: 0.114, green: 0.114, blue: 0.122, alpha: 1)
+    static let toolbarSeparatorHeight: CGFloat = 16
+
+    // Floating controls on glass (recording HUD, pin hover toolbar)
+    static let glassControlSymbolSize: CGFloat = 13
+    static let glassControlSymbolWeight: NSFont.Weight = .medium
+
 }

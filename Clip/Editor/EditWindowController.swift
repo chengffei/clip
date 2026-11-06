@@ -3120,6 +3120,12 @@ class EditWindowController {
 
     private func styleFloatingHUD(_ view: NSView) {
         view.wantsLayer = true
+        // Glass carries its own depth; a layer shadow on top would double it.
+        let radius = (view as? ToolbarView)?.plateCornerRadius ?? 8
+        if CaptureChrome.installGlassBackground(in: view, cornerRadius: radius) {
+            view.layer?.shadowOpacity = 0
+            return
+        }
         view.layer?.shadowColor = NSColor.black.cgColor
         view.layer?.shadowOpacity = Brand.shadowOpacity
         view.layer?.shadowRadius = Brand.shadowRadius
@@ -3241,6 +3247,18 @@ class ToolbarView: NSView {
     static let endPadding: CGFloat = 8
     static let crossPadding: CGFloat = 6
 
+    /// The plate is a capsule, like a system glass toolbar. Button highlights
+    /// are concentric with it: the plate radius minus their distance from the
+    /// plate edge, which makes a 28pt circle inside a 32pt button.
+    var plateCornerRadius: CGFloat {
+        (Self.buttonSize + Self.crossPadding * 2) / 2 - CaptureChrome.plateInset
+    }
+    static let highlightInset: CGFloat = 2
+    var highlightCornerRadius: CGFloat {
+        let gap = Self.crossPadding - CaptureChrome.plateInset + Self.highlightInset
+        return max(Brand.radius, plateCornerRadius - gap)
+    }
+
     /// Drawing tools that collapse into one "shape" button when two or more
     /// of them are on the bar. The button shows the current shape; a second
     /// click or a long press opens the picker.
@@ -3281,7 +3299,6 @@ class ToolbarView: NSView {
     /// Every button keyed by its id. Shape ids all map to the group button.
     private var buttons: [ToolbarItemID: NSView] = [:]
     private var moreButton: ToolButton?
-    private var separatorXs: [CGFloat] = []
 
     init(items: [ToolbarItemID], overflow: [ToolbarItemID] = [], orientation: Orientation = .horizontal) {
         self.items = items
@@ -3359,10 +3376,16 @@ class ToolbarView: NSView {
         let size = Self.buttonSize
         var x = Self.endPadding
         var first = true
-        separatorXs = []
         for slot in slots {
             if case .gap = slot {
-                separatorXs.append(x + Self.zoneGap / 2)
+                // A subview, not drawn in draw(_:), so it sits above the glass.
+                let height = Brand.toolbarSeparatorHeight
+                addSubview(ToolbarGroupSeparator(frame: NSRect(
+                    x: x + Self.zoneGap / 2 - 0.5,
+                    y: (bounds.midY - height / 2).rounded(),
+                    width: 1,
+                    height: height
+                )))
                 x += Self.zoneGap
                 first = true
                 continue
@@ -3383,6 +3406,7 @@ class ToolbarView: NSView {
                     symbolPointSize: Self.symbolPointSize
                 )
                 btn.hoverTip = L10n.tipMore
+                btn.highlightCornerRadius = highlightCornerRadius
                 btn.setAccessibilityLabel(L10n.tipMore)
                 btn.target = self
                 btn.action = #selector(moreTapped(_:))
@@ -3397,7 +3421,12 @@ class ToolbarView: NSView {
     private func makeButton(for id: ToolbarItemID, frame: NSRect) -> NSView {
         if id.kind == .dragHandle {
             let handle = MoveSelectionDragHandle(frame: frame)
-            handle.hoverTip = id.tooltip
+            handle.hoverTip = id.localizedTitle
+            handle.hoverShortcut = id.editorShortcutDisplay
+            handle.highlightCornerRadius = highlightCornerRadius
+            handle.setAccessibilityLabel(id.localizedTitle)
+            handle.setAccessibilityHelp(id.tooltip)
+            handle.setAccessibilityIdentifier("clip.toolbar.\(id.rawValue)")
             handle.onDragStart = { [weak self] in self?.onMoveSelectionStart?() }
             handle.onDrag = { [weak self] delta in self?.onMoveSelectionDrag?(delta) }
             handle.onDragEnd = { [weak self] in self?.onMoveSelectionEnd?() }
@@ -3413,8 +3442,13 @@ class ToolbarView: NSView {
             iconImage: id.iconImage(pointSize: Self.symbolPointSize)
         )
         btn.isProminent = (id == .confirm)
-        btn.hoverTip = id.tooltip
-        btn.setAccessibilityLabel(id.tooltip)
+        btn.highlightCornerRadius = highlightCornerRadius
+        // The tip names the action and shows its shortcut as secondary text;
+        // VoiceOver gets the bare name as the label, the shortcut as help.
+        btn.hoverTip = id.localizedTitle
+        btn.hoverShortcut = id.editorShortcutDisplay
+        btn.setAccessibilityLabel(id.localizedTitle)
+        btn.setAccessibilityHelp(id.tooltip)
         btn.setAccessibilityIdentifier("clip.toolbar.\(id.rawValue)")
         btn.target = self
         btn.action = #selector(buttonTapped(_:))
@@ -3423,16 +3457,8 @@ class ToolbarView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
-        Brand.line.setStroke()
-        path.lineWidth = Brand.hairline
-        path.stroke()
-        Brand.lineStrong.setFill()
-        for x in separatorXs {
-            NSRect(x: x - 0.5, y: bounds.midY - 9, width: 1, height: 18).fill()
-        }
+        let inset = CaptureChrome.plateInset
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: inset, dy: inset), cornerRadius: plateCornerRadius)
     }
 
     @objc private func buttonTapped(_ sender: ToolButton) {
@@ -3473,6 +3499,16 @@ class ToolbarView: NSView {
     }
 }
 
+/// Group divider on the capture toolbar: the system separator color, which
+/// follows Increase Contrast, at glyph height so groups read without boxes.
+private final class ToolbarGroupSeparator: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    override func draw(_ dirtyRect: NSRect) {
+        (CaptureChrome.increasesContrast ? Brand.lineStrong : NSColor.separatorColor).setFill()
+        bounds.fill()
+    }
+}
+
 // MARK: - Tool Button
 
 class ToolButton: NSButton {
@@ -3489,8 +3525,15 @@ class ToolButton: NSButton {
         didSet { needsDisplay = true }
     }
 
-    /// Text shown by the dark hover tooltip. nil = no tip.
+    /// Text shown by the hover tooltip. nil = no tip.
     var hoverTip: String?
+    /// Keyboard shortcut shown after the tip as secondary text.
+    var hoverShortcut: String?
+    /// Corner radius of the selected / prominent highlight. The capture
+    /// toolbar sets it concentric with its capsule plate.
+    var highlightCornerRadius: CGFloat = Brand.radius {
+        didSet { needsDisplay = true }
+    }
 
     let normalColor: NSColor
     let selectedColor: NSColor
@@ -3547,7 +3590,7 @@ class ToolButton: NSButton {
         guard let tip = hoverTip, let window else { return }
         let frameInWindow = convert(bounds, to: nil)
         let frameOnScreen = window.convertToScreen(frameInWindow)
-        ToolTipWindow.show(text: tip, anchor: frameOnScreen)
+        ToolTipWindow.show(text: tip, shortcut: hoverShortcut, anchor: frameOnScreen)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -3566,14 +3609,18 @@ class ToolButton: NSButton {
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        let highlightRect = bounds.insetBy(dx: ToolbarView.highlightInset, dy: ToolbarView.highlightInset)
+        let radius = min(highlightCornerRadius, highlightRect.height / 2)
         if isProminent {
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 3, dy: 3), xRadius: Brand.radiusLarge, yRadius: Brand.radiusLarge)
-            Brand.accent.withAlphaComponent(isHighlighted ? 0.26 : 0.14).setFill()
+            // The bar's one primary action: filled accent, white glyph.
+            let bgPath = NSBezierPath(roundedRect: highlightRect, xRadius: radius, yRadius: radius)
+            let fill = isHighlighted ? (Brand.accent.blended(withFraction: 0.18, of: .black) ?? Brand.accent) : Brand.accent
+            fill.withAlphaComponent(isEnabled ? 1 : 0.4).setFill()
             bgPath.fill()
         } else if isSelected {
             contentTintColor = selectedColor
-            let bgPath = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radius, yRadius: Brand.radius)
-            AdaptiveChrome.selectedFill.setFill()
+            let bgPath = NSBezierPath(roundedRect: highlightRect, xRadius: radius, yRadius: radius)
+            (CaptureChrome.increasesContrast ? Brand.lineStrong : AdaptiveChrome.selectedFill).setFill()
             bgPath.fill()
         } else {
             contentTintColor = normalColor
@@ -3583,7 +3630,7 @@ class ToolButton: NSButton {
         // those parts on a different backing scale. Draw the full symbol in
         // points and let NSImage rasterize for the current graphics context.
         guard let image else { return }
-        let color = isSelected ? selectedColor : normalColor
+        let color = isProminent ? Brand.onAccent : (isSelected ? selectedColor : normalColor)
         let tinted = NSImage(size: image.size, flipped: false) { rect in
             image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
             color.setFill()
@@ -3689,6 +3736,8 @@ final class MoveSelectionDragHandle: NSView {
     var onDrag: ((CGSize) -> Void)?
     var onDragEnd: (() -> Void)?
     var hoverTip: String?
+    var hoverShortcut: String?
+    var highlightCornerRadius: CGFloat = Brand.radius
 
     private var pressStartLocation: NSPoint?
     private var isPressed: Bool = false {
@@ -3699,6 +3748,8 @@ final class MoveSelectionDragHandle: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
+        setAccessibilityElement(true)
+        setAccessibilityRole(.button)
     }
 
     required init?(coder: NSCoder) {
@@ -3733,7 +3784,7 @@ final class MoveSelectionDragHandle: NSView {
         guard let tip = hoverTip, let window else { return }
         let frameInWindow = convert(bounds, to: nil)
         let frameOnScreen = window.convertToScreen(frameInWindow)
-        ToolTipWindow.show(text: tip, anchor: frameOnScreen)
+        ToolTipWindow.show(text: tip, shortcut: hoverShortcut, anchor: frameOnScreen)
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -3772,13 +3823,16 @@ final class MoveSelectionDragHandle: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         if isPressed {
-            let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: Brand.radius, yRadius: Brand.radius)
+            let rect = bounds.insetBy(dx: ToolbarView.highlightInset, dy: ToolbarView.highlightInset)
+            let radius = min(highlightCornerRadius, rect.height / 2)
+            let bg = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
             AdaptiveChrome.selectedFill.setFill()
             bg.fill()
         }
 
         let symbolName = "arrow.up.and.down.and.arrow.left.and.right"
-        let config = NSImage.SymbolConfiguration(pointSize: ToolbarView.symbolPointSize, weight: .medium)
+        // Same point size, weight and scale as every other toolbar glyph.
+        let config = NSImage.SymbolConfiguration(pointSize: ToolbarView.symbolPointSize, weight: .medium, scale: .medium)
         guard let img = NSImage(
             systemSymbolName: symbolName,
             accessibilityDescription: "Move selection"
@@ -3786,7 +3840,7 @@ final class MoveSelectionDragHandle: NSView {
 
         let tint = NSImage(size: img.size, flipped: false) { rect in
             img.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
-            NSColor.labelColor.set()
+            ToolbarItemID.moveSelection.normalColor.set()
             rect.fill(using: .sourceAtop)
             return true
         }
@@ -3984,9 +4038,7 @@ private final class RotationSubToolbar: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 
     @objc private func rotateLeft() { onRotate?(false) }
@@ -4175,9 +4227,7 @@ private final class EmojiSubToolbar: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 }
 
@@ -4767,9 +4817,7 @@ private class ColorSizeSubToolbar: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 }
 
@@ -4899,9 +4947,7 @@ private class MosaicSubToolbar: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 }
 
@@ -5205,9 +5251,7 @@ private class TextSubToolbar: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 }
 
@@ -6527,9 +6571,7 @@ private class BeautifySubToolbar: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 2, dy: 2), xRadius: 8, yRadius: 8)
-        AdaptiveChrome.toolbarBackground.setFill()
-        path.fill()
+        CaptureChrome.drawPlate(for: self, in: bounds.insetBy(dx: CaptureChrome.plateInset, dy: CaptureChrome.plateInset), cornerRadius: 8)
     }
 }
 

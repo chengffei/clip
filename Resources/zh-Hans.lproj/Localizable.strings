@@ -9,7 +9,7 @@
 "microphonePermission" = "麦克风";
 "microphoneDescription" = "可选；用于在录屏时录制你的声音";
 "launchApp" = "启动应用";
-"launchAtLogin" = "开机自动启动";
+"launchAtLogin" = "登录时打开";
 "pinAcrossSpaces" = "贴图跨桌面显示";
 "pinAcrossSpacesHint" = "开启后新贴图会出现在所有桌面与全屏空间";
 "windowShadowToggleLabel" = "窗口截图阴影";
@@ -34,6 +34,12 @@
 "pinToolbarDrag" = "拖拽钉图";
 "pinToolbarEdit" = "编辑钉图";
 "pinToolbarEditText" = "编辑文字";
+"pinMenuCopy" = "复制";
+"pinMenuEdit" = "编辑";
+"pinMenuRecognizeText" = "识别文字";
+"pinMenuActualSize" = "实际大小";
+"pinMenuClose" = "关闭";
+"pinMenuCloseClearClipboard" = "关闭并清空剪贴板";
 
 /* Image-edit shortcuts */
 "textRecognitionShortcutHeader" = "文字识别";
@@ -114,6 +120,9 @@
 "recordingStop" = "停止录制";
 "recordingPause" = "暂停";
 "recordingResume" = "继续";
+"hudMenuSystemAudio" = "录制系统音频";
+"hudMenuMicrophone" = "录制麦克风";
+"hudMenuMicrophoneInput" = "麦克风输入";
 "colorCopied" = "已复制颜色 %@";
 "qrCodeCopied" = "已复制二维码内容";
 "qrCodeNotFound" = "未识别到二维码";
@@ -228,7 +237,7 @@
 "ocrLanguageSetEastAsian" = "中、英、日、韩、繁体";
 "ocrWarmingUp" = "首次识别正在加载模型，之后会快";
 "settingsTabToolbar" = "工具栏";
-"settingsQuit" = "退出应用";
+"settingsQuit" = "退出 Clip";
 
 "toolbarSettingsPrimaryTitle" = "工具栏";
 "toolbarSettingsPrimaryHint" = "贴在选区下沿的一条栏。格子顺序就是栏上顺序；拖「分隔线」进来就分段，相邻的会合并；「更多」按钮也能拖到栏上任意位置";

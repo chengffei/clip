@@ -1,17 +1,19 @@
 import AppKit
 
 /// Single-instance hover tooltip used by the editor toolbar
-/// Self-drawn to match the adaptive toolbar / cursor chip aesthetic
+/// A capsule chip on the same material as the toolbar (Liquid Glass, or the
+/// opaque plate with Reduce Transparency). It names the action and, when one
+/// is given, shows the keyboard shortcut after it in secondary text.
 final class ToolTipWindow: NSPanel {
     private static var current: ToolTipWindow?
     private static var pendingWorkItem: DispatchWorkItem?
 
     /// `anchor` is the screen-space rect of the hovered control. The tip
     /// pops above it, horizontally centered.
-    static func show(text: String, anchor: NSRect, delay: TimeInterval = 0.35) {
+    static func show(text: String, shortcut: String? = nil, anchor: NSRect, delay: TimeInterval = 0.35) {
         cancelPending()
         let work = DispatchWorkItem {
-            present(text: text, anchor: anchor)
+            present(text: text, shortcut: shortcut, anchor: anchor)
         }
         pendingWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
@@ -28,10 +30,10 @@ final class ToolTipWindow: NSPanel {
         pendingWorkItem = nil
     }
 
-    private static func present(text: String, anchor: NSRect) {
+    private static func present(text: String, shortcut: String?, anchor: NSRect) {
         current?.orderOut(nil)
 
-        let tip = ToolTipWindow(text: text)
+        let tip = ToolTipWindow(text: text, shortcut: shortcut)
         current = tip
 
         let gap: CGFloat = 6
@@ -47,14 +49,11 @@ final class ToolTipWindow: NSPanel {
         }
     }
 
-    private init(text: String) {
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 11, weight: .medium)
-        ]
-        let textSize = text.size(withAttributes: attrs)
+    private init(text: String, shortcut: String?) {
+        let label = ToolTipContentView.attributedText(text: text, shortcut: shortcut)
         let size = NSSize(
-            width: ceil(textSize.width) + 16,
-            height: 22
+            width: ceil(label.size().width) + ToolTipContentView.horizontalPadding * 2,
+            height: ToolTipContentView.height
         )
 
         super.init(
@@ -71,15 +70,34 @@ final class ToolTipWindow: NSPanel {
         ignoresMouseEvents = true
         collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
 
-        contentView = ToolTipContentView(frame: NSRect(origin: .zero, size: size), text: text)
+        let content = ToolTipContentView(frame: NSRect(origin: .zero, size: size), label: label)
+        contentView = CaptureChrome.chipContentView(content: content, cornerRadius: size.height / 2)
     }
 }
 
 private final class ToolTipContentView: NSView {
-    private let text: String
+    static let height: CGFloat = 22
+    static let horizontalPadding: CGFloat = 9
 
-    init(frame: NSRect, text: String) {
-        self.text = text
+    static func attributedText(text: String, shortcut: String?) -> NSAttributedString {
+        let font = NSFont.systemFont(ofSize: 11, weight: .medium)
+        let out = NSMutableAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.labelColor,
+        ])
+        if let shortcut, !shortcut.isEmpty {
+            out.append(NSAttributedString(string: "  " + shortcut, attributes: [
+                .font: Brand.monoDigits(11, weight: .regular),
+                .foregroundColor: NSColor.secondaryLabelColor,
+            ]))
+        }
+        return out
+    }
+
+    private let label: NSAttributedString
+
+    init(frame: NSRect, label: NSAttributedString) {
+        self.label = label
         super.init(frame: frame)
     }
 
@@ -88,24 +106,11 @@ private final class ToolTipContentView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 6, yRadius: 6)
-        AdaptiveChrome.floatingBackground.setFill()
-        path.fill()
-        AdaptiveChrome.border.setStroke()
-        path.lineWidth = 0.5
-        path.stroke()
-
-        let attrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: NSColor.labelColor,
-            .font: NSFont.systemFont(ofSize: 11, weight: .medium)
-        ]
-        let size = text.size(withAttributes: attrs)
-        let textRect = NSRect(
-            x: (bounds.width - size.width) / 2,
-            y: (bounds.height - size.height) / 2,
-            width: size.width,
-            height: size.height
-        )
-        text.draw(in: textRect, withAttributes: attrs)
+        CaptureChrome.drawChipPlateIfNeeded(for: self, cornerRadius: bounds.height / 2)
+        let size = label.size()
+        label.draw(at: NSPoint(
+            x: ((bounds.width - size.width) / 2).rounded(),
+            y: ((bounds.height - size.height) / 2).rounded()
+        ))
     }
 }

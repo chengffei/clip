@@ -25,6 +25,11 @@ final class ToolbarSnapshotTests: XCTestCase {
         window.appearance = NSAppearance(named: .aqua)
         window.contentView = host
         bar.updateSelection(tool: .rectangle)
+        if env["CLIP_SNAPSHOT_GLASS"] == "1" {
+            // Liquid Glass backdrop as installed by the editor. Offscreen
+            // caching may not composite real glass; see the PNG.
+            CaptureChrome.installGlassBackground(in: bar, cornerRadius: bar.plateCornerRadius)
+        }
         if env["CLIP_SNAPSHOT_DISABLED"] == "1" {
             bar.setScrollCaptureEnabled(false)
             bar.setRecordingEnabled(false)
@@ -46,6 +51,6 @@ final class ToolbarSnapshotTests: XCTestCase {
         let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
         host.cacheDisplay(in: host.bounds, to: rep)
         let data = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
-        try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent("toolbar.png"))
+        try data.write(to: URL(fileURLWithPath: dir).appendingPathComponent(env["CLIP_SNAPSHOT_GLASS"] == "1" ? "toolbar-glass.png" : "toolbar.png"))
     }
 }

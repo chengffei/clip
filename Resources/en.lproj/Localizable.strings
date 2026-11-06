@@ -9,7 +9,7 @@
 "microphonePermission" = "Microphone";
 "microphoneDescription" = "Optional; needed to record your voice with screen recordings";
 "launchApp" = "Launch App";
-"launchAtLogin" = "Launch at Login";
+"launchAtLogin" = "Open at Login";
 "pinAcrossSpaces" = "Show Pins Across Desktops";
 "pinAcrossSpacesHint" = "New pinned images appear on every desktop and full-screen Space";
 "windowShadowToggleLabel" = "Window Capture Shadow";
@@ -34,6 +34,12 @@
 "pinToolbarDrag" = "Drag pinned image";
 "pinToolbarEdit" = "Edit pinned image";
 "pinToolbarEditText" = "Edit text";
+"pinMenuCopy" = "Copy";
+"pinMenuEdit" = "Edit";
+"pinMenuRecognizeText" = "Recognize Text";
+"pinMenuActualSize" = "Actual Size";
+"pinMenuClose" = "Close";
+"pinMenuCloseClearClipboard" = "Close and Clear Clipboard";
 
 /* Image-edit shortcuts */
 "textRecognitionShortcutHeader" = "Text Recognition";
@@ -114,6 +120,9 @@
 "recordingStop" = "Stop Recording";
 "recordingPause" = "Pause";
 "recordingResume" = "Resume";
+"hudMenuSystemAudio" = "Record System Audio";
+"hudMenuMicrophone" = "Record Microphone";
+"hudMenuMicrophoneInput" = "Microphone Input";
 "colorCopied" = "Copied color %@";
 "qrCodeCopied" = "QR code content copied";
 "qrCodeNotFound" = "No QR code found";
@@ -228,7 +237,7 @@
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
 "ocrWarmingUp" = "Loading recognition models for the first time, later runs are fast";
 "settingsTabToolbar" = "Toolbar";
-"settingsQuit" = "Quit App";
+"settingsQuit" = "Quit Clip";
 
 "toolbarSettingsPrimaryTitle" = "Toolbar";
 "toolbarSettingsPrimaryHint" = "One bar under the selection. Tile order is bar order; drag a divider in to split it into zones (adjacent ones merge); the More button can sit anywhere on the bar";

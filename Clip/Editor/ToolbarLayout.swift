@@ -242,12 +242,13 @@ extension ToolbarItemID {
         return EditorShortcutRegistry.displayString(for: .toolbar(self))
     }
 
-    /// Icon tint in the resting state.
+    /// Icon tint in the resting state. Full-strength ink: on glass, partly
+    /// transparent glyphs take on the backdrop and lose contrast (2026-11-06).
     var normalColor: NSColor {
         switch self {
-        case .close, .more: return Brand.text.withAlphaComponent(0.55)
+        case .close, .more: return Brand.text.withAlphaComponent(0.75)
         case .confirm: return Brand.accent
-        default:       return Brand.text.withAlphaComponent(0.85)
+        default:       return Brand.text
         }
     }
 

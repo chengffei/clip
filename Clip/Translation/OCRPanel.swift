@@ -39,6 +39,7 @@ private final class FlippedView: NSView {
 
 final class OCRPreviewView: NSView, ImageAnalysisOverlayViewDelegate {
     private let image: NSImage
+    private let showsChrome: Bool
     private let imageView = NSImageView()
     private let lineOverlay: OCRLineSelectionOverlayView
     private var liveTextOverlay: ImageAnalysisOverlayView?
@@ -59,15 +60,15 @@ final class OCRPreviewView: NSView, ImageAnalysisOverlayViewDelegate {
 
     init(image: NSImage, showsChrome: Bool = true) {
         self.image = image
+        self.showsChrome = showsChrome
         self.lineOverlay = OCRLineSelectionOverlayView(imageSize: image.size)
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.cornerRadius = showsChrome ? 8 : 0
+        layer?.cornerRadius = showsChrome ? Brand.radius : 0
         layer?.cornerCurve = .continuous
         layer?.masksToBounds = true
-        layer?.backgroundColor = showsChrome ? NSColor.black.withAlphaComponent(0.26).cgColor : nil
-        layer?.borderWidth = showsChrome ? 1 : 0
+        layer?.borderWidth = showsChrome ? Brand.hairline : 0
         applyAppearance()
 
         imageView.image = image
@@ -100,7 +101,14 @@ final class OCRPreviewView: NSView, ImageAnalysisOverlayViewDelegate {
         applyAppearance()
     }
 
+    /// Light well behind the letterboxed screenshot: a quiet standard fill and
+    /// hairline instead of a dark band, so the image reads as content.
     private func applyAppearance() {
+        guard showsChrome else { return }
+        layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(
+            AdaptiveChrome.subtleFill,
+            for: effectiveAppearance
+        )
         layer?.borderColor = AdaptiveChrome.resolvedCGColor(
             AdaptiveChrome.border,
             for: effectiveAppearance
@@ -708,25 +716,18 @@ final class OCRLineSelectionOverlayView: NSView {
     }
 }
 
+/// Title-bar pin toggle: a borderless SF Symbol button like other title-bar
+/// accessories. The filled glyph carries the pinned state, not a color fill.
 private final class PanelPinButton: NSButton {
-    private var pinned = false
-    private let pinSymbolConfiguration = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+    private let pinSymbolConfiguration = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         title = ""
         imagePosition = .imageOnly
-        imageScaling = .scaleProportionallyDown
+        imageScaling = .scaleNone
         isBordered = false
         bezelStyle = .regularSquare
-        focusRingType = .none
-        wantsLayer = true
-        layer?.masksToBounds = false
-        layer?.borderWidth = 1.2
-        layer?.shadowColor = NSColor.black.cgColor
-        layer?.shadowOpacity = 0.28
-        layer?.shadowRadius = 3
-        layer?.shadowOffset = NSSize(width: 0, height: -1)
         setPinned(false)
     }
 
@@ -734,38 +735,15 @@ private final class PanelPinButton: NSButton {
 
     override var acceptsFirstResponder: Bool { false }
 
-    override func layout() {
-        super.layout()
-        layer?.cornerRadius = min(bounds.width, bounds.height) / 2
-        layer?.shadowPath = CGPath(ellipseIn: bounds, transform: nil)
-    }
-
     func setPinned(_ pinned: Bool) {
-        self.pinned = pinned
         let label = pinned ? "Unpin dialog" : "Pin dialog"
         let symbolName = pinned ? "pin.fill" : "pin"
         image = NSImage(systemSymbolName: symbolName, accessibilityDescription: label)?
             .withSymbolConfiguration(pinSymbolConfiguration)
-        updateAppearance()
+        contentTintColor = pinned ? .labelColor : .secondaryLabelColor
         toolTip = label
         setAccessibilityLabel(label)
-    }
-
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        updateAppearance()
-    }
-
-    private func updateAppearance() {
-        contentTintColor = pinned ? .white : .labelColor
-        let background = pinned
-            ? toolbarAccent.withAlphaComponent(0.96)
-            : AdaptiveChrome.floatingBackground
-        layer?.backgroundColor = AdaptiveChrome.resolvedCGColor(background, for: effectiveAppearance)
-        layer?.borderColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.border,
-            for: effectiveAppearance
-        )
+        setAccessibilityValue(pinned)
     }
 }
 
@@ -783,7 +761,8 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
     private let anchorScreen: NSScreen
     private let panelWidth: CGFloat
 
-    private let padding: CGFloat = 14
+    /// Standard macOS window margin around the content.
+    private let padding: CGFloat = 20
     private var panelWidthConstraint: NSLayoutConstraint?
     private var documentWidthConstraint: NSLayoutConstraint?
     private var contentStack: NSStackView!
@@ -793,6 +772,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
 
     private var ocrTextView: PanelTextView?
     private var ocrCopyButton: NSButton?
+    private var ocrProgress: NSProgressIndicator?
     private var pinButton: PanelPinButton?
 
     private var keyMonitor: Any?
@@ -821,22 +801,25 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         panel.runOCR(initialResult: initialResult)
     }
 
-    private init(image: NSImage, anchorRect: NSRect, screen: NSScreen) {
+    init(image: NSImage, anchorRect: NSRect, screen: NSScreen) {
         let panelWidth = min(max(anchorRect.width, 360), 500)
         self.screenshot = image
         self.anchorScreen = screen
         self.panelWidth = panelWidth
         let initialFrame = Self.topCenteredFrame(width: panelWidth, height: 320, on: screen)
 
+        // A standard utility panel: system title bar (so it can be moved and
+        // closed like Fonts or Colors), system background, shadow and corners.
         super.init(
             contentRect: initialFrame,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
-        isOpaque = false
-        backgroundColor = .clear
-        hasShadow = true
+        title = L10n.tipOCR
+        // Panels show only the close button; minimize and zoom don't apply.
+        standardWindowButton(.miniaturizeButton)?.isHidden = true
+        standardWindowButton(.zoomButton)?.isHidden = true
         level = .floating
         isMovableByWindowBackground = true
         isReleasedWhenClosed = false
@@ -851,10 +834,16 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
 
+    /// The title-bar close button and ⌘W both land here; route them through
+    /// the same teardown as Esc and outside clicks.
+    override func close() {
+        dismiss()
+    }
+
     // MARK: UI
 
     private func buildUI() {
-        let root = AdaptiveChromeSurfaceView(style: .panel, cornerRadius: Brand.radiusLarge, borderWidth: 1)
+        let root = NSView()
         contentView = root
         let panelWidthConstraint = root.widthAnchor.constraint(equalToConstant: panelWidth)
         panelWidthConstraint.isActive = true
@@ -877,18 +866,11 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         contentStack = NSStackView()
         contentStack.orientation = .vertical
         contentStack.alignment = .leading
-        contentStack.spacing = 12
+        contentStack.spacing = 8
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         docView.addSubview(contentStack)
         let documentWidthConstraint = docView.widthAnchor.constraint(equalToConstant: panelWidth - padding * 2)
         self.documentWidthConstraint = documentWidthConstraint
-
-        let pinButton = PanelPinButton()
-        pinButton.translatesAutoresizingMaskIntoConstraints = false
-        pinButton.target = self
-        pinButton.action = #selector(pinTapped)
-        self.pinButton = pinButton
-        root.addSubview(pinButton)
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: root.topAnchor, constant: padding),
@@ -903,20 +885,35 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
             contentStack.topAnchor.constraint(equalTo: docView.topAnchor),
             contentStack.leadingAnchor.constraint(equalTo: docView.leadingAnchor),
             contentStack.trailingAnchor.constraint(equalTo: docView.trailingAnchor),
-
-            pinButton.topAnchor.constraint(equalTo: root.topAnchor, constant: 8),
-            pinButton.trailingAnchor.constraint(equalTo: root.trailingAnchor, constant: -8),
-            pinButton.widthAnchor.constraint(equalToConstant: 24),
-            pinButton.heightAnchor.constraint(equalToConstant: 24),
         ])
 
+        buildPinAccessory()
         buildScreenshotCard()
-        buildOCRCard()
+        buildOCRSection()
     }
 
-    private func addStackRow(_ view: NSView) {
+    /// The pin toggle lives in the title bar's trailing edge, the standard
+    /// place for window-level controls, instead of floating over the content.
+    private func buildPinAccessory() {
+        let pinButton = PanelPinButton()
+        pinButton.target = self
+        pinButton.action = #selector(pinTapped)
+        pinButton.frame = NSRect(x: 0, y: 0, width: 24, height: 16)
+        self.pinButton = pinButton
+
+        let accessory = NSTitlebarAccessoryViewController()
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 32, height: 16))
+        pinButton.frame.origin = NSPoint(x: 0, y: 0)
+        container.addSubview(pinButton)
+        accessory.view = container
+        accessory.layoutAttribute = .trailing
+        addTitlebarAccessoryViewController(accessory)
+    }
+
+    private func addStackRow(_ view: NSView, spacingAfter: CGFloat? = nil) {
         contentStack.addArrangedSubview(view)
         view.widthAnchor.constraint(equalTo: contentStack.widthAnchor).isActive = true
+        if let spacingAfter { contentStack.setCustomSpacing(spacingAfter, after: view) }
     }
 
     private func buildScreenshotCard() {
@@ -935,46 +932,63 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         let height = min(max(contentWidth * aspect, 64), 260)
         previewView.heightAnchor.constraint(equalToConstant: height).isActive = true
 
-        addStackRow(previewView)
+        addStackRow(previewView, spacingAfter: 20)
     }
 
-    private func buildOCRCard() {
-        let card = makeCard()
-        let inner = makeCardStack()
-        card.addSubview(inner)
-        pin(inner, to: card, inset: 12)
+    /// Section label, the editable text, then push buttons along the bottom
+    /// trailing edge with the primary action (Copy) rightmost.
+    private func buildOCRSection() {
+        let title = NSTextField(labelWithString: L10n.ocrTextHeader)
+        title.font = .preferredFont(forTextStyle: .headline)
+        title.textColor = .labelColor
+        title.translatesAutoresizingMaskIntoConstraints = false
 
-        let title = makeLabel(L10n.ocrTextHeader, size: 12, weight: .semibold, alpha: 0.92)
-        let copyButton = makeSmallButton(L10n.ocrCopy, action: #selector(copyOCRTapped))
-        copyButton.target = self
-        copyButton.isEnabled = false
-        ocrCopyButton = copyButton
+        let progress = NSProgressIndicator()
+        progress.style = .spinning
+        progress.controlSize = .small
+        progress.isDisplayedWhenStopped = false
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        progress.startAnimation(nil)
+        ocrProgress = progress
 
-        let retryButton = makeSmallButton(L10n.ocrRetry, action: #selector(retryOCRTapped))
-        retryButton.target = self
-        let header = NSStackView(views: [title, flexSpacer(), retryButton, copyButton])
+        let header = NSStackView(views: [title, progress, flexSpacer()])
         header.orientation = .horizontal
         header.alignment = .centerY
+        header.spacing = 8
         header.translatesAutoresizingMaskIntoConstraints = false
-        inner.addArrangedSubview(header)
-        header.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+        addStackRow(header)
 
-        let (scroll, textView) = makeTextScroll(editable: false, height: 116)
+        let (scroll, textView) = makeTextScroll(editable: false, height: 120)
         textView.delegate = self
         textView.string = L10n.ocrRecognizing
         textView.textColor = .secondaryLabelColor
         ocrTextView = textView
-        inner.addArrangedSubview(scroll)
-        scroll.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
+        addStackRow(scroll, spacingAfter: 20)
 
-        addStackRow(card)
+        let retryButton = makePushButton(L10n.ocrRetry, action: #selector(retryOCRTapped))
+        retryButton.target = self
+
+        let copyButton = makePushButton(L10n.ocrCopy, action: #selector(copyOCRTapped))
+        copyButton.target = self
+        copyButton.isEnabled = false
+        // Primary action: accent-filled like a default button. Return stays
+        // with the editable text view so it can still insert line breaks.
+        copyButton.bezelColor = .controlAccentColor
+        ocrCopyButton = copyButton
+
+        let buttons = NSStackView(views: [flexSpacer(), retryButton, copyButton])
+        buttons.orientation = .horizontal
+        buttons.alignment = .centerY
+        buttons.spacing = 12
+        buttons.translatesAutoresizingMaskIntoConstraints = false
+        addStackRow(buttons)
     }
 
     // MARK: OCR
 
     @objc private func retryOCRTapped() { runOCR() }
 
-    private func runOCR(initialResult: OCRResult? = nil) {
+    func runOCR(initialResult: OCRResult? = nil) {
         ocrTask?.cancel()
         liveTextTask?.cancel()
         ocrReady = false
@@ -983,6 +997,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         ocrTextView?.string = L10n.ocrRecognizing
         ocrTextView?.textColor = .secondaryLabelColor
         ocrCopyButton?.isEnabled = false
+        ocrProgress?.startAnimation(nil)
         let screenshot = screenshot
         ocrTask = Task { @MainActor [weak self] in
             let result: OCRResult
@@ -996,6 +1011,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
                 guard !Task.isCancelled, let self else { return }
                 self.ocrTask = nil
                 self.ocrReady = true
+                self.ocrProgress?.stopAnimation(nil)
                 self.ocrTextView?.string = error.localizedDescription
                 self.ocrTextView?.textColor = Brand.alert
                 self.refreshHeight()
@@ -1004,6 +1020,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
 
             guard !Task.isCancelled, let self else { return }
             self.ocrTask = nil
+            self.ocrProgress?.stopAnimation(nil)
             self.applyOCRResult(text: result.text, lines: result.lines, liveTextAnalysis: nil)
             self.ocrReady = true
             self.finishTextRecognition()
@@ -1045,7 +1062,7 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
             copyButton.isEnabled = false
         } else {
             textView.string = recognizedText
-            textView.textColor = .labelColor
+            textView.textColor = .textColor
             textView.isEditable = true
             copyButton.isEnabled = true
         }
@@ -1127,8 +1144,10 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         let contentHeight = contentStack.fittingSize.height
         let desired = contentHeight + padding * 2
         let visible = anchorScreen.visibleFrame
+        // Heights are for the whole window, so include the title bar.
+        let titleBarHeight = frameRect(forContentRect: NSRect(x: 0, y: 0, width: panelWidth, height: 100)).height - 100
         let maxHeight = min(700, visible.height - Self.topMargin - 16)
-        let height = max(180, min(desired, maxHeight))
+        let height = max(180, min(desired + titleBarHeight, maxHeight))
 
         setFrame(Self.topCenteredFrame(width: panelWidth, height: height, on: anchorScreen),
                  display: true, animate: false)
@@ -1178,6 +1197,11 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
                 self.dismiss()
                 return nil
             }
+            if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+               event.charactersIgnoringModifiers == "w" {
+                self.performClose(nil)
+                return nil
+            }
             if self.handleOCRImageKeyEquivalent(event) {
                 return nil
             }
@@ -1224,9 +1248,13 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         case "a":
             return previewView.selectAllOverlayText() || previewView.selectAllLiveText()
         case "c":
+            // With nothing selected in the image, ⌘C does what the Copy
+            // button does: copy all recognized text.
             guard previewView.copySelectedOverlayTextToClipboard()
                     || previewView.copySelectedLiveTextToClipboard() else {
-                return false
+                guard ocrCopyButton?.isEnabled == true else { return false }
+                copyOCRTapped()
+                return true
             }
             if let button = ocrCopyButton {
                 flashButton(button, to: L10n.ocrCopied, restore: L10n.ocrCopy)
@@ -1255,34 +1283,9 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
         orderOut(nil)
         if OCRPanel.current === self { OCRPanel.current = nil }
     }
-
-    // MARK: Shared builders
-
-    private func makeCard() -> NSView {
-        let v = AdaptiveChromeSurfaceView(style: .card, cornerRadius: Brand.radiusLarge, borderWidth: 1)
-        v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }
-
-    private func makeCardStack() -> NSStackView {
-        let s = NSStackView()
-        s.orientation = .vertical
-        s.alignment = .leading
-        s.spacing = 8
-        s.translatesAutoresizingMaskIntoConstraints = false
-        return s
-    }
 }
 
 // MARK: - Free-standing builders
-
-func makeLabel(_ text: String, size: CGFloat, weight: NSFont.Weight, alpha: CGFloat) -> NSTextField {
-    let l = NSTextField(labelWithString: text)
-    l.font = NSFont.systemFont(ofSize: size, weight: weight)
-    l.textColor = NSColor.labelColor.withAlphaComponent(alpha)
-    l.translatesAutoresizingMaskIntoConstraints = false
-    return l
-}
 
 func flexSpacer() -> NSView {
     let v = NSView()
@@ -1292,50 +1295,41 @@ func flexSpacer() -> NSView {
     return v
 }
 
-func makeSmallButton(_ title: String, action: Selector) -> NSButton {
+/// A regular-size push button with the system font, the standard macOS
+/// button for actions in a window. A minimum width keeps short titles from
+/// resizing the row when the title briefly flips to "Copied".
+func makePushButton(_ title: String, action: Selector) -> NSButton {
     let b = NSButton(title: title, target: nil, action: action)
-    b.bezelStyle = .rounded
-    b.controlSize = .small
-    b.font = NSFont.systemFont(ofSize: 11)
+    b.bezelStyle = .push
+    b.controlSize = .regular
     b.translatesAutoresizingMaskIntoConstraints = false
+    b.widthAnchor.constraint(greaterThanOrEqualToConstant: 76).isActive = true
     return b
 }
 
-
-func pin(_ child: NSView, to parent: NSView, inset: CGFloat) {
-    NSLayoutConstraint.activate([
-        child.topAnchor.constraint(equalTo: parent.topAnchor, constant: inset),
-        child.leadingAnchor.constraint(equalTo: parent.leadingAnchor, constant: inset),
-        child.trailingAnchor.constraint(equalTo: parent.trailingAnchor, constant: -inset),
-        child.bottomAnchor.constraint(equalTo: parent.bottomAnchor, constant: -inset),
-    ])
-}
-
-
-/// A bordered scroll view wrapping a `PanelTextView` of fixed height.
+/// A standard bordered text area: `NSTextView` in a bezel-bordered scroll
+/// view on the system text background, body-size system font, and a
+/// scroller that appears when the text overflows.
 func makeTextScroll(editable: Bool, height: CGFloat) -> (NSScrollView, PanelTextView) {
     let scroll = AdaptiveTextScrollView()
     scroll.translatesAutoresizingMaskIntoConstraints = false
-    scroll.hasVerticalScroller = false
+    scroll.hasVerticalScroller = true
     scroll.hasHorizontalScroller = false
     scroll.autohidesScrollers = true
     scroll.drawsBackground = true
-    scroll.backgroundColor = AdaptiveChrome.cardBackground
-    scroll.borderType = .noBorder
-    scroll.wantsLayer = true
-    scroll.layer?.cornerRadius = 6
-    scroll.layer?.cornerCurve = .continuous
-    scroll.layer?.masksToBounds = true
+    scroll.backgroundColor = .textBackgroundColor
+    scroll.borderType = .bezelBorder
     scroll.heightAnchor.constraint(equalToConstant: height).isActive = true
 
     let textView = PanelTextView()
     textView.isEditable = editable
     textView.isSelectable = true
     textView.isRichText = false
-    textView.drawsBackground = false
-    textView.font = NSFont.systemFont(ofSize: 12)
-    textView.textColor = .labelColor
-    textView.textContainerInset = NSSize(width: 6, height: 6)
+    textView.drawsBackground = true
+    textView.backgroundColor = .textBackgroundColor
+    textView.font = .systemFont(ofSize: NSFont.systemFontSize)
+    textView.textColor = .textColor
+    textView.textContainerInset = NSSize(width: 4, height: 6)
     textView.isVerticallyResizable = true
     textView.isHorizontallyResizable = false
     textView.autoresizingMask = [.width]
@@ -1371,25 +1365,6 @@ private final class AdaptiveTextScrollView: NSScrollView {
         if abs(container.containerSize.width - textWidth) > 0.5 {
             container.containerSize = NSSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude)
         }
-    }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        applyAppearance()
-    }
-
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        applyAppearance()
-    }
-
-    private func applyAppearance() {
-        backgroundColor = AdaptiveChrome.cardBackground
-        layer?.borderWidth = 1
-        layer?.borderColor = AdaptiveChrome.resolvedCGColor(
-            AdaptiveChrome.border,
-            for: effectiveAppearance
-        )
     }
 }
 

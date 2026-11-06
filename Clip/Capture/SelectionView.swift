@@ -757,10 +757,13 @@ class SelectionView: NSView {
 
     static func drawSizeLabel(context: CGContext, rect: NSRect, text: String? = nil, origin: NSPoint? = nil) {
         let size = text ?? "\(Int(rect.width)) × \(Int(rect.height))"
-        let font = Brand.mono(11, weight: .medium)
+        // System font with tabular digits: the numbers stop jittering while
+        // the selection is dragged, and "×" matches system typography.
+        let font = Brand.monoDigits(11, weight: .medium)
+        let highContrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
         var parts: [(String, NSColor)] = []
         if let origin {
-            parts.append(("\(Int(origin.x)), \(Int(origin.y))", Brand.onLabel.withAlphaComponent(0.62)))
+            parts.append(("\(Int(origin.x)), \(Int(origin.y))", Brand.onLabel.withAlphaComponent(highContrast ? 0.85 : 0.62)))
         }
         parts.append((size, Brand.onLabel))
         let attributed = NSMutableAttributedString()
@@ -776,10 +779,16 @@ class SelectionView: NSView {
             width: ceil(textSize.width) + padX * 2,
             height: ceil(textSize.height) + padY * 2
         )
-        context.setFillColor(Brand.labelBackground.cgColor)
+        context.setFillColor((highContrast ? Brand.labelBackgroundHighContrast : Brand.labelBackground).cgColor)
         let bgPath = CGPath(roundedRect: labelRect, cornerWidth: labelRect.height / 2, cornerHeight: labelRect.height / 2, transform: nil)
         context.addPath(bgPath)
         context.fillPath()
+        // Hairline rim so the dark chip still separates from dark content.
+        let rimRect = labelRect.insetBy(dx: 0.5, dy: 0.5)
+        context.addPath(CGPath(roundedRect: rimRect, cornerWidth: rimRect.height / 2, cornerHeight: rimRect.height / 2, transform: nil))
+        context.setStrokeColor(Brand.onLabel.withAlphaComponent(highContrast ? 0.4 : 0.16).cgColor)
+        context.setLineWidth(Brand.hairline)
+        context.strokePath()
         attributed.draw(at: NSPoint(x: labelRect.origin.x + padX, y: labelRect.origin.y + padY))
     }
 
