@@ -15,6 +15,8 @@ final class GIFEncoder {
     private var inputFrameCount = 0
     private var frameCount = 0
     private let lock = NSLock()
+    /// Longest side of an exported GIF frame, in pixels.
+    static let maxLongEdge = 1600
 
     init(url: URL, fps: Int, sourceFPS: Int) {
         self.url = url
@@ -83,16 +85,24 @@ final class GIFEncoder {
             return
         }
 
+        // ImageIO keeps every GIF frame in memory until finalize, so a long
+        // Retina recording at native pixels ran into gigabytes. Cap the long
+        // edge; GIFs are a preview format and do not need 2× pixels.
+        let longEdge = max(width, height)
+        let outputScale = longEdge > Self.maxLongEdge ? CGFloat(Self.maxLongEdge) / CGFloat(longEdge) : 1
+        let outputWidth = max(1, Int((CGFloat(width) * outputScale).rounded()))
+        let outputHeight = max(1, Int((CGFloat(height) * outputScale).rounded()))
         guard let ownedContext = CGContext(
             data: nil,
-            width: width,
-            height: height,
+            width: outputWidth,
+            height: outputHeight,
             bitsPerComponent: 8,
-            bytesPerRow: width * 4,
+            bytesPerRow: outputWidth * 4,
             space: colorSpace,
             bitmapInfo: bitmapInfo
         ) else { return }
-        ownedContext.draw(sourceImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        ownedContext.interpolationQuality = .high
+        ownedContext.draw(sourceImage, in: CGRect(x: 0, y: 0, width: outputWidth, height: outputHeight))
         guard let ownedImage = ownedContext.makeImage() else { return }
 
         CGImageDestinationAddImage(destination, ownedImage, frameProperties as CFDictionary)

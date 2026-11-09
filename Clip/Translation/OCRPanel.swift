@@ -1025,7 +1025,9 @@ final class OCRPanel: NSPanel, NSTextViewDelegate {
             self.ocrReady = true
             self.finishTextRecognition()
             self.refreshHeight()
-            if !result.text.isEmpty {
+            // The Live Text overlay is hidden whenever line boxes are shown,
+            // so only analyse when there are no lines to show.
+            if result.lines.isEmpty, !result.text.isEmpty {
                 self.startLiveTextAnalysis()
             }
         }

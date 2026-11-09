@@ -2,6 +2,10 @@ import AppKit
 
 class ToastWindow: NSPanel {
     private static var current: ToastWindow?
+    /// Pending auto-dismissal of `current`; cancelled when a new toast
+    /// replaces it so the old panel is released at once instead of living
+    /// for the whole duration (callers pass up to 600 s).
+    private static var dismissal: DispatchWorkItem?
 
     /// Off the main thread this returns the last value the main thread saw.
     /// It used to `main.sync`, which deadlocked long screenshots: the capture
@@ -35,6 +39,7 @@ class ToastWindow: NSPanel {
         duration: TimeInterval = 1.5
     ) {
         current?.orderOut(nil)
+        dismissal?.cancel()
 
         let toast = ToastWindow(message: message)
         current = toast
@@ -62,7 +67,8 @@ class ToastWindow: NSPanel {
             toast.animator().alphaValue = 1.0
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+        let work = DispatchWorkItem { [weak toast] in
+            guard let toast else { return }
             NSAnimationContext.runAnimationGroup({ ctx in
                 ctx.duration = 0.3
                 toast.animator().alphaValue = 0.0
@@ -72,6 +78,8 @@ class ToastWindow: NSPanel {
                 refreshExcludedCache()
             })
         }
+        dismissal = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
     }
 
     /// Immediately hides any visible toast. Safe to call when none is showing.
@@ -98,6 +106,8 @@ class ToastWindow: NSPanel {
     }
 
     private static func dismissForCaptureIfNeededOnMain() -> Bool {
+        dismissal?.cancel()
+        dismissal = nil
         guard let window = current, window.isVisible else {
             current = nil
             return false

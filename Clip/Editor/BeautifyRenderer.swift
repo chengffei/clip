@@ -96,6 +96,9 @@ enum BeautifyRenderer {
 
     private static func storeWallpaper(_ image: NSImage, url: URL) {
         wallpaperCacheLock.lock()
+        // Only the current wallpaper is ever drawn; keep one 2560 px bitmap
+        // instead of one per wallpaper the user has had since launch.
+        wallpaperCache.removeAll()
         wallpaperCache[url.path] = image
         wallpaperCacheLock.unlock()
     }
@@ -199,29 +202,27 @@ enum BeautifyRenderer {
     /// and rounded corners stay visible. Never baked into exported images.
     static func drawCheckerboard(in rect: CGRect, square: CGFloat = 14) {
         guard square > 0, rect.width > 0, rect.height > 0 else { return }
-        var y = rect.minY
-        var row = 0
-        while y < rect.maxY {
-            var x = rect.minX
-            var column = 0
-            while x < rect.maxX {
-                let isLight = (row + column).isMultiple(of: 2)
-                (isLight
-                    ? NSColor(calibratedWhite: 0.88, alpha: 1)
-                    : NSColor(calibratedWhite: 0.72, alpha: 1)
-                ).setFill()
-                NSRect(
-                    x: x,
-                    y: y,
-                    width: min(square, rect.maxX - x),
-                    height: min(square, rect.maxY - y)
-                ).fill()
-                x += square
-                column += 1
-            }
-            y += square
-            row += 1
+        // One 2×2 tile as a pattern colour: filling cell by cell allocated an
+        // NSColor and issued a fill per 14 pt square, thousands per redraw.
+        checkerboardPattern(square: square).setFill()
+        rect.fill()
+    }
+
+    private static var checkerboardPatterns: [CGFloat: NSColor] = [:]
+
+    private static func checkerboardPattern(square: CGFloat) -> NSColor {
+        if let cached = checkerboardPatterns[square] { return cached }
+        let tile = NSImage(size: NSSize(width: square * 2, height: square * 2), flipped: false) { _ in
+            NSColor(calibratedWhite: 0.88, alpha: 1).setFill()
+            NSRect(x: 0, y: 0, width: square * 2, height: square * 2).fill()
+            NSColor(calibratedWhite: 0.72, alpha: 1).setFill()
+            NSRect(x: square, y: 0, width: square, height: square).fill()
+            NSRect(x: 0, y: square, width: square, height: square).fill()
+            return true
         }
+        let pattern = NSColor(patternImage: tile)
+        checkerboardPatterns[square] = pattern
+        return pattern
     }
 
     /// Draws a wallpaper image as background, aspect-fill centered in `outerRect`.

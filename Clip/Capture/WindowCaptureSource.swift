@@ -4,8 +4,22 @@ import ScreenCaptureKit
 /// Fresh enumeration for one frozen capture session, shared by hover requests.
 /// Unlike the display cache, this never reuses windows from an earlier session.
 final class WindowCaptureSource: @unchecked Sendable {
-    private let contentTask = Task.detached(priority: .userInitiated) {
-        try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+    private let lock = NSLock()
+    private var startedContentTask: Task<SCShareableContent, Error>?
+
+    /// Started on the first window request, not when the overlay session is
+    /// created: an eager enumeration ran alongside the frozen snapshot and
+    /// the window list during the latency-critical first frames, and most
+    /// sessions never ask for a window image.
+    private var contentTask: Task<SCShareableContent, Error> {
+        lock.withLock {
+            if let startedContentTask { return startedContentTask }
+            let task = Task.detached(priority: .userInitiated) {
+                try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            }
+            startedContentTask = task
+            return task
+        }
     }
 
     static func makeLoader() -> WindowImageLoader {
@@ -23,5 +37,5 @@ final class WindowCaptureSource: @unchecked Sendable {
         }
     }
 
-    deinit { contentTask.cancel() }
+    deinit { startedContentTask?.cancel() }
 }

@@ -838,6 +838,9 @@ class OverlayWindowController {
               generation == presentationGeneration,
               !sessionEnded else { return }
         pendingFocusClaimGeneration = nil
+        for selectionView in selectionViewsByDisplayID.values {
+            selectionView.mayActivateOnMouseMove = true
+        }
         claimSelectionKeyboardFocus()
         refreshSelectionCursor()
         NSCursor.crosshair.set()

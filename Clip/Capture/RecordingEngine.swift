@@ -480,6 +480,10 @@ final class RecordingEngine: NSObject {
             config.channelCount = 2
             config.pixelFormat = kCVPixelFormatType_32BGRA
             config.scalesToFit = false
+            // Frames go to the encoder as the stream's own buffers; a deeper
+            // pool keeps the stream delivering while VideoToolbox still
+            // holds a burst of them.
+            config.queueDepth = 6
             if #available(macOS 14.0, *) {
                 config.colorSpaceName = CGColorSpace.sRGB
             }
@@ -955,11 +959,14 @@ final class RecordingEngine: NSObject {
 
     private func startProgressTimer() {
         progressTimer?.invalidate()
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        // `.common` so the HUD clock keeps ticking while a menu is open.
+        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             self.elapsedSeconds += 1
             self.onProgress?(self.elapsedSeconds)
         }
+        RunLoop.main.add(timer, forMode: .common)
+        progressTimer = timer
     }
 
     private func succeed() {

@@ -353,16 +353,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private var fullScreenCaptureInFlight = false
+
     func handleFullScreenScreenshotTrigger(fromShortcut: Bool = false) {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil, !countdownActive,
+              !fullScreenCaptureInFlight else { return }
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         let cursorPoint = NSEvent.mouseLocation
         let screen = NSScreen.screens.first(where: { $0.frame.contains(cursorPoint) })
             ?? NSScreen.main
             ?? NSScreen.screens.first
         guard let screen,
-              let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID,
-              let image = ScreenCapturer.capture(rect: CGDisplayBounds(displayID), screen: screen),
+              let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+        else {
+            ToastWindow.show(message: L10n.fullScreenScreenshotFailed)
+            return
+        }
+        // The capture enumerates shareable content and takes the screenshot,
+        // 100 to 300 ms; waiting on it here froze the run loop for that long
+        // on every full-screen shot. Capture off the main thread, then open
+        // the editor.
+        fullScreenCaptureInFlight = true
+        let rect = CGDisplayBounds(displayID)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let image = ScreenCapturer.capture(rect: rect, screen: screen)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.fullScreenCaptureInFlight = false
+                self.finishFullScreenScreenshot(image, focusRestorer: focusRestorer)
+            }
+        }
+    }
+
+    private func finishFullScreenScreenshot(_ image: NSImage?, focusRestorer: SourceAppFocusRestorer) {
+        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard let image,
               let controller = ImageEditLauncher.launch(
                 generatedImage: image,
                 source: .fullScreen,

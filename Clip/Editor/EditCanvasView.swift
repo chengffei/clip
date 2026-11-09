@@ -1727,7 +1727,8 @@ class EditCanvasView: NSView {
             path.lineCapStyle = .round
             path.lineJoinStyle = .round
             context.setAlpha(MarkerAnnotation.markerAlpha)
-            context.beginTransparencyLayer(auxiliaryInfo: nil)
+            let layerInset = -path.lineWidth
+            context.beginTransparencyLayer(in: path.controlPointBounds.insetBy(dx: layerInset, dy: layerInset), auxiliaryInfo: nil)
             path.stroke()
             context.endTransparencyLayer()
             context.setAlpha(1.0)

@@ -107,6 +107,10 @@ class SelectionView: NSView {
         didSet { needsDisplay = true }
     }
 
+    /// Set by OverlayWindowController after it has claimed focus for the
+    /// session. Until then pointer motion must not activate Clip.
+    var mayActivateOnMouseMove = false
+
     // MARK: - Pre-captured Snapshot
 
     /// Full-screen snapshot taken before overlays appear, preserving transient menus/popups.
@@ -167,6 +171,32 @@ class SelectionView: NSView {
 
     var currentSelectionRect: NSRect? { selectionRect }
 
+    /// Repaints only the area a selection or hover rect change can touch.
+    /// The view spans the whole display and `draw` repaints the frozen
+    /// snapshot over the dirty area, so invalidating the full bounds on every
+    /// pointer event rasterises the entire backing store per frame (about
+    /// 15 M pixels on a 5K display). Outside the rect only the frame, the
+    /// handles, the size label and, when emphasised, the drop shadow change.
+    /// A transition from no rect to a rect (or back) toggles the dimming over
+    /// the whole view, so that case still repaints everything.
+    private func invalidate(from oldRect: NSRect?, to newRect: NSRect?) {
+        guard let oldRect, let newRect,
+              oldRect.width > 0 || oldRect.height > 0,
+              newRect.width > 0 || newRect.height > 0 else {
+            needsDisplay = true
+            return
+        }
+        let dirty = decoratedRect(oldRect).union(decoratedRect(newRect)).intersection(bounds)
+        guard !dirty.isEmpty else { return }
+        setNeedsDisplay(dirty)
+    }
+
+    private func decoratedRect(_ rect: NSRect) -> NSRect {
+        let outset: CGFloat = emphasizesSelection ? 60 : 16
+        let label = NSRect(x: rect.minX - 4, y: rect.maxY, width: max(rect.width, 360) + 8, height: 44)
+        return rect.insetBy(dx: -outset, dy: -outset).union(label)
+    }
+
     func refreshHoverAtCurrentMouseLocation() {
         guard state == .idle, !selectionLocked else { return }
         updateWindowHover(screenPoint: NSEvent.mouseLocation)
@@ -187,10 +217,11 @@ class SelectionView: NSView {
     func moveByExternalDrag(deltaFromOriginal delta: CGSize, originalRect: NSRect) {
         var newRect = originalRect.offsetBy(dx: delta.width, dy: delta.height)
         newRect = clampedForMove(newRect)
+        let previousRect = selectionRect
         selectionRect = newRect
         state = .selected
         delegate?.selectionDidChange(rect: newRect, inView: self)
-        needsDisplay = true
+        invalidate(from: previousRect, to: newRect)
     }
 
     /// Mirror of `mouseUp`'s `.move` finalize: notify the delegate that the
@@ -212,10 +243,11 @@ class SelectionView: NSView {
             aspectRatio: aspectRatio,
             bounds: selectionAdjustmentBounds ?? bounds
         )
+        let previousRect = selectionRect
         selectionRect = newRect
         state = .selected
         delegate?.selectionDidChange(rect: newRect, inView: self)
-        needsDisplay = true
+        invalidate(from: previousRect, to: newRect)
     }
 
     /// Mirror of `mouseUp`'s `.resize` finalize.
@@ -404,13 +436,14 @@ class SelectionView: NSView {
                 pendingWindowRect = nil
                 pendingWindowID = nil
             }
+            let previousRect = selectionRect
             selectionRect = SelectionView.dragRect(
                 from: selectionOrigin,
                 to: point,
                 aspectRatio: aspectRatio,
                 bounds: bounds
             )
-            needsDisplay = true
+            invalidate(from: previousRect, to: selectionRect)
 
         case .move:
             NSCursor.arrow.set()
@@ -419,9 +452,10 @@ class SelectionView: NSView {
             let dy = point.y - dragStart.y
             var newRect = dragOriginalRect.offsetBy(dx: dx, dy: dy)
             newRect = clampedForMove(newRect)
+            let previousRect = selectionRect
             selectionRect = newRect
             delegate?.selectionDidChange(rect: newRect, inView: self)
-            needsDisplay = true
+            invalidate(from: previousRect, to: newRect)
 
         case .resize(let handle):
             SelectionView.setCursorForHandle(handle)
@@ -432,9 +466,10 @@ class SelectionView: NSView {
                 aspectRatio: aspectRatio,
                 bounds: selectionAdjustmentBounds ?? bounds
             )
+            let previousRect = selectionRect
             selectionRect = newRect
             delegate?.selectionDidChange(rect: newRect, inView: self)
-            needsDisplay = true
+            invalidate(from: previousRect, to: newRect)
 
         case .none:
             break
@@ -510,8 +545,11 @@ class SelectionView: NSView {
         if state == .idle && !selectionLocked {
             // Clip may lose activation over time, which causes WindowServer
             // to ignore the crosshair cursor rect registered in resetCursorRects.
-            // Re-activate on every mouse-move so the cursor stays crosshair.
-            if !NSApp.isActive {
+            // Re-activate on mouse-move so the cursor stays crosshair, but only
+            // once the controller has taken focus itself: activating earlier
+            // closes other apps' popovers before the frozen snapshot is taken
+            // (the delay the controller waits for, 2026-11-04).
+            if !NSApp.isActive, mayActivateOnMouseMove {
                 NSApp.activate(ignoringOtherApps: true)
             }
             NSCursor.crosshair.set()
@@ -589,11 +627,12 @@ class SelectionView: NSView {
             if hoverWindowRect != clamped
                 || hoverWindowFullRect != viewRect
                 || hoverWindowID != detected.windowID {
+                let previousRect = hoverWindowRect
                 hoverWindowRect = clamped
                 hoverWindowFullRect = viewRect
                 hoverWindowID = detected.windowID
                 delegate?.selectionDidHoverWindow(detected)
-                needsDisplay = true
+                invalidate(from: previousRect, to: clamped)
             }
         } else {
             clearHover()

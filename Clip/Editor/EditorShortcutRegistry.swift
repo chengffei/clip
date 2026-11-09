@@ -331,16 +331,27 @@ enum EditorShortcutRegistry {
 extension Defaults {
     private static let editorShortcutConfigurationKey = "editor.shortcutConfiguration.v1"
 
+    /// Decoded once per process. `action(matching:)` consults the
+    /// configuration for every action on every key press, and toolbar
+    /// construction reads it per item; decoding JSON each time cost about
+    /// thirty decoder round trips per keystroke.
+    private static var cachedEditorShortcutConfiguration: EditorShortcutConfiguration?
+
     static var editorShortcutConfiguration: EditorShortcutConfiguration {
         get {
-            guard let data = UserDefaults.standard.data(forKey: editorShortcutConfigurationKey),
-                  let configuration = try? JSONDecoder().decode(EditorShortcutConfiguration.self, from: data)
-            else {
-                return EditorShortcutConfiguration()
+            if let cachedEditorShortcutConfiguration { return cachedEditorShortcutConfiguration }
+            let configuration: EditorShortcutConfiguration
+            if let data = UserDefaults.standard.data(forKey: editorShortcutConfigurationKey),
+               let decoded = try? JSONDecoder().decode(EditorShortcutConfiguration.self, from: data) {
+                configuration = decoded
+            } else {
+                configuration = EditorShortcutConfiguration()
             }
+            cachedEditorShortcutConfiguration = configuration
             return configuration
         }
         set {
+            cachedEditorShortcutConfiguration = newValue
             guard let data = try? JSONEncoder().encode(newValue) else { return }
             UserDefaults.standard.set(data, forKey: editorShortcutConfigurationKey)
         }

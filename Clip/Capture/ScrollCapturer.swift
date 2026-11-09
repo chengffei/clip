@@ -9,9 +9,27 @@ final class ScrollCapturer {
         let colorSpace: CGColorSpace
     }
 
+    /// One captured frame. While it is the newest accepted frame (or still
+    /// being tracked) `bitmap` holds every row; once a later frame is
+    /// accepted it is cut down to the band the final stitch reads, and
+    /// `rowOffset` says where that band sat in the full frame.
     private struct CapturedFrame {
-        let image: NSImage
-        let bitmap: BitmapData
+        var bitmap: BitmapData
+        let pointSize: NSSize
+        var rowOffset = 0
+        /// Height of the full frame in pixels, even after trimming.
+        let fullHeight: Int
+
+        init(bitmap: BitmapData, pointSize: NSSize) {
+            self.bitmap = bitmap
+            self.pointSize = pointSize
+            self.fullHeight = bitmap.height
+        }
+
+        /// The frame as an image. Shares the pixel storage, no copy.
+        var image: NSImage? {
+            bitmap.makeImage(pointSize: pointSize, pixelHeight: bitmap.height)
+        }
     }
 
     /// Result of a single capture attempt, used by auto-scroll to decide
@@ -84,11 +102,17 @@ final class ScrollCapturer {
     private var stickyHeaderDetectionDone: Bool = false
     private var stickyHeaderSamplesTaken: Int = 0
 
-    // Incremental preview state
-    private var previewBitmap: BitmapData?
+    // Incremental preview state. The preview window shows a thumbnail about
+    // 100 pt wide, so the preview is kept as a small downscaled strip; the
+    // full-resolution preview buffer it replaced was copied in full for every
+    // accepted frame (2026-11-09).
+    private var previewThumbnail: PreviewThumbnail?
     private var previewHeightPixels: Int = 0
     private var previewScale: CGFloat = 1
     private var previewPointWidth: CGFloat = 0
+    /// Smallest footer allowance any trimmed frame kept; the final stitch
+    /// cannot use a footer taller than this.
+    private var trimmedFooterAllowance = Int.max
 
     init(
         rect: CGRect,
@@ -107,33 +131,42 @@ final class ScrollCapturer {
 
         // Open with the stream's own first frame, so the user can't scroll
         // away before tracking starts; fall back to a one-shot capture.
+        // The wait runs on the capture queue: every later poll and the stop
+        // are serialised behind it, while the main thread (which used to
+        // block here for up to 4.5 s) goes on building the capture chrome.
         let stream = ScrollFrameStream(rect: rect, screen: screen, excludingWindowNumbers: excludingWindowNumbers)
         self.stream = stream
-        let started = Date()
-        let opening = stream.waitForFirstFrame(timeout: 1.5) ?? ScreenCapturer.capture(
-            rect: rect,
-            screen: screen,
-            excludingWindowNumbers: excludingWindowNumbers,
-            timeout: initialCaptureTimeout
-        )
-        FileLog.write(String(format: "scroll capture opening frame %@ after %.0fms", stream.isRunning ? "from stream" : "one-shot", Date().timeIntervalSince(started) * 1000))
-        if let image = opening, let bitmap = bitmapData(from: image) {
-            let firstFrame = CapturedFrame(image: image, bitmap: bitmap)
-            frames.append(firstFrame)
-            initPreview(from: firstFrame)
-            trackedFrame = firstFrame
+        let timeout = initialCaptureTimeout
+        captureQueue.async { [self] in
+            let started = Date()
+            let opening = stream.waitForFirstFrame(timeout: 1.5) ?? ScreenCapturer.capture(
+                rect: rect,
+                screen: screen,
+                excludingWindowNumbers: excludingWindowNumbers,
+                timeout: timeout
+            )
+            FileLog.write(String(format: "scroll capture opening frame %@ after %.0fms", stream.isRunning ? "from stream" : "one-shot", Date().timeIntervalSince(started) * 1000))
+            if let image = opening, let firstFrame = makeFrame(from: image) {
+                frames.append(firstFrame)
+                initPreview(from: firstFrame)
+                trackedFrame = firstFrame
+            }
         }
-        // Property observers do not run inside init, so seed the count here.
-        storedFrameCount = frames.count
     }
 
     /// Test hook: runs the accept and stitch logic over prepared frames
     /// without touching the screen.
     /// `tracking` feeds the frames through the live stream's motion
     /// tracker instead of the per-poll overlap search.
-    static func stitchForTesting(_ images: [NSImage], tracking: Bool = false) -> (accepted: Int, image: NSImage?) {
-        let capturer = ScrollCapturer(replaying: images, tracking: tracking)
+    static func stitchForTesting(
+        _ images: [NSImage], tracking: Bool = false, previewSink: ((NSImage) -> Void)? = nil
+    ) -> (accepted: Int, image: NSImage?) {
+        let capturer = ScrollCapturer(replaying: images, tracking: tracking, previewSink: previewSink)
         return capturer.captureQueue.sync {
+            if ProcessInfo.processInfo.environment["CLIP_SCROLL_BENCH"] != nil {
+                let bytes = capturer.frames.reduce(0) { $0 + $1.bitmap.height * $1.bitmap.bytesPerRow }
+                print("BENCH resident frame bytes=\(bytes / 1_048_576)MB frames=\(capturer.frames.count) footer=\(capturer.stickyFooterPx.map(String.init) ?? "nil")")
+            }
             let image = capturer.frames.count > 1 ? capturer.stitchAcceptedFrames() : capturer.frames.first?.image
             return (capturer.frames.count, image)
         }
@@ -141,13 +174,14 @@ final class ScrollCapturer {
 
     deinit { stream?.stop() }
 
-    private init(replaying images: [NSImage], tracking: Bool) {
+    private init(replaying images: [NSImage], tracking: Bool, previewSink: ((NSImage) -> Void)? = nil) {
         captureRect = .zero
         screen = NSScreen.main ?? NSScreen.screens[0]
         excludedWindowNumbers = []
+        onPreviewUpdated = previewSink
         for image in images {
-            if tracking, let bitmap = bitmapData(from: image) {
-                _ = track(CapturedFrame(image: image, bitmap: bitmap), minimumNewRows: 8)
+            if tracking, let frame = makeFrame(from: image) {
+                _ = track(frame, minimumNewRows: 8)
             } else {
                 _ = consider(image)
             }
@@ -309,8 +343,8 @@ final class ScrollCapturer {
             rejectedNoImage += 1
             return .noNewContent
         }
-        if settled, trackedFrame != nil || trackingLost, let bitmap = bitmapData(from: image) {
-            return track(CapturedFrame(image: image, bitmap: bitmap), minimumNewRows: 8)
+        if settled, trackedFrame != nil || trackingLost, let frame = makeFrame(from: image) {
+            return track(frame, minimumNewRows: 8)
         }
         // Polls run every 80ms; keep only frames that add a real step so the
         // frame budget covers long pages. The final settled frame takes any
@@ -341,8 +375,8 @@ final class ScrollCapturer {
         var outcome: FrameOutcome = .noNewContent
         for (index, image) in batch.enumerated() {
             guard frames.count < maxFrames else { return .atFrameLimit }
-            guard let bitmap = bitmapData(from: image) else { continue }
-            let frame = CapturedFrame(image: image, bitmap: bitmap)
+            guard let frame = makeFrame(from: image) else { continue }
+            let bitmap = frame.bitmap
             // The opening frame was a one-shot capture; swap in the stream's
             // own view of the same screen so every seam compares like with like.
             if frames.count == 1, trackedFrame == nil,
@@ -417,7 +451,7 @@ final class ScrollCapturer {
     /// of new content; keep it so the end of the scroll isn't lost.
     private func keepTrackedFrameIfAhead() {
         guard !trackingLost, let frame = trackedFrame, frames.count < maxFrames,
-              frame.image !== frames.last?.image else { return }
+              frame.bitmap !== frames.last?.bitmap else { return }
         let advance = trackedPosition - keptPosition
         let up = scrollsUp ?? (advance < 0)
         let newRows = up ? -advance : advance
@@ -526,7 +560,7 @@ final class ScrollCapturer {
             return .noNewContent
         }
 
-        let candidateFrame = CapturedFrame(image: image, bitmap: bitmap)
+        let candidateFrame = CapturedFrame(bitmap: bitmap, pointSize: image.size)
 
         if let previousFrame = frames.last,
            imagesAreNearlyIdentical(previousFrame.bitmap, candidateFrame.bitmap) {
@@ -565,7 +599,7 @@ final class ScrollCapturer {
                 if rejectedSmallShift == 1 { try? FileManager.default.removeItem(at: dir) }
                 try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                 for (name, frame) in [("prev", previousForDiagnostics), ("cur", candidateFrame)] {
-                    if let data = frame.image.pngDataPreservingBacking() {
+                    if let data = frame.image?.pngDataPreservingBacking() {
                         try? data.write(to: dir.appendingPathComponent("\(rejectedSmallShift)-\(name).png"))
                     }
                 }
@@ -607,42 +641,58 @@ final class ScrollCapturer {
         frames.append(frame)
         overlaps.append(overlap)
         if up {
-            // Growing upward: re-stitch for the thumbnail instead of appending.
-            if let image = stitchAcceptedFrames() {
-                DispatchQueue.main.async { [weak self] in self?.onPreviewUpdated?(image) }
-            }
+            prependToPreview(frame.bitmap, overlapPixels: overlap)
         } else {
             appendToPreview(frame.bitmap, overlapPixels: overlap)
         }
+        trimFrameBeforeLast(up: up)
+    }
+
+    /// Cuts the frame before the newest one down to the rows the final
+    /// stitch reads from it. Each frame used to stay resident in full (and
+    /// twice over, as NSImage plus bitmap), so a long page peaked past a
+    /// gigabyte (2026-11-09). The newest frame stays whole: the tracker
+    /// compares the next frame against it. Scrolling down, the first frame
+    /// stays whole too, since it opens the stitched image.
+    private func trimFrameBeforeLast(up: Bool) {
+        let index = frames.count - 2
+        guard index >= 0, !(index == 0 && !up) else { return }
+        let frame = frames[index]
+        guard frame.rowOffset == 0, frame.bitmap.height == frame.fullHeight else { return }
+        // Scrolling down, a frame contributes its own new rows; scrolling up,
+        // the rows the frame after it (just accepted) revealed.
+        let overlap = up ? overlaps[index] : overlaps[index - 1]
+        let height = frame.fullHeight
+        let newRows = height - overlap
+        // The sticky footer can only shrink from here (it is a running
+        // minimum), but it may still be unknown; leave room for one.
+        let allowance = stickyFooterPx ?? height / 4
+        let start = max(0, height - newRows - allowance)
+        let rows = height - start
+        guard start > 0, rows > 0,
+              let band = makeOutputBitmap(from: frame.bitmap, totalHeightPixels: rows) else { return }
+        copyRows(from: frame.bitmap, sourceStartRow: start, rowCount: rows, to: band, destinationStartRow: 0)
+        frames[index].bitmap = band
+        frames[index].rowOffset = start
+        trimmedFooterAllowance = min(trimmedFooterAllowance, allowance)
     }
 
     // MARK: - Incremental Preview
 
     private func initPreview(from frame: CapturedFrame) {
-        previewScale = CGFloat(frame.bitmap.height) / max(frame.image.size.height, 1)
-        previewPointWidth = frame.image.size.width
-
-        let initialCapacity = frame.bitmap.height * 10
-        guard let output = makeOutputBitmap(
-            from: frame.bitmap,
-            totalHeightPixels: initialCapacity
-        ) else { return }
-
-        copyRows(
-            from: frame.bitmap,
-            sourceStartRow: 0,
-            rowCount: frame.bitmap.height,
-            to: output,
-            destinationStartRow: 0
-        )
-
-        previewBitmap = output
+        previewScale = CGFloat(frame.bitmap.height) / max(frame.pointSize.height, 1)
+        previewPointWidth = frame.pointSize.width
+        previewFooterTrimmed = false
+        guard let thumbnail = PreviewThumbnail(sourceWidth: frame.bitmap.width, sourceHeight: frame.bitmap.height),
+              let image = frame.bitmap.makeCGImage(rows: 0..<frame.bitmap.height) else { return }
+        thumbnail.append(image, sourceRows: frame.bitmap.height)
+        previewThumbnail = thumbnail
         previewHeightPixels = frame.bitmap.height
         emitPreviewImage()
     }
 
     private func appendToPreview(_ bitmap: BitmapData, overlapPixels: Int) {
-        guard var previewBitmap else { return }
+        guard let previewThumbnail else { return }
 
         let newRows = bitmap.height - overlapPixels
         guard newRows > 0 else { return }
@@ -650,53 +700,120 @@ final class ScrollCapturer {
         // drop it from the first frame once and take new rows from above it.
         let footer = min(stickyFooterPx ?? 0, max(0, bitmap.height - newRows))
         if footer > 0, !previewFooterTrimmed {
-            previewHeightPixels = max(0, previewHeightPixels - footer)
+            let trimmed = min(footer, previewHeightPixels)
+            previewThumbnail.removeFromEnd(sourceRows: trimmed)
+            previewHeightPixels -= trimmed
             previewFooterTrimmed = true
         }
         let sourceStart = previewFooterTrimmed ? bitmap.height - footer - newRows : overlapPixels
+        guard let band = bitmap.makeCGImage(rows: sourceStart..<(sourceStart + newRows)) else { return }
+        previewThumbnail.append(band, sourceRows: newRows)
+        previewHeightPixels += newRows
+        emitPreviewImage()
+    }
 
-        let neededHeight = previewHeightPixels + newRows
-        if neededHeight > previewBitmap.height {
-            let newCapacity = neededHeight + bitmap.height * 5
-            guard let grown = makeOutputBitmap(
-                from: bitmap,
-                totalHeightPixels: newCapacity
-            ) else { return }
-            copyRows(
-                from: previewBitmap,
-                sourceStartRow: 0,
-                rowCount: previewHeightPixels,
-                to: grown,
-                destinationStartRow: 0
-            )
-            self.previewBitmap = grown
-            previewBitmap = grown
-        }
-
-        copyRows(
-            from: bitmap,
-            sourceStartRow: sourceStart,
-            rowCount: newRows,
-            to: previewBitmap,
-            destinationStartRow: previewHeightPixels
-        )
-
+    /// Scrolling up, the new frame sits above the page so far: its top rows
+    /// go above the thumbnail.
+    private func prependToPreview(_ bitmap: BitmapData, overlapPixels: Int) {
+        guard let previewThumbnail else { return }
+        let newRows = bitmap.height - overlapPixels
+        guard newRows > 0, let band = bitmap.makeCGImage(rows: 0..<newRows) else { return }
+        previewThumbnail.prepend(band, sourceRows: newRows)
         previewHeightPixels += newRows
         emitPreviewImage()
     }
 
     private func emitPreviewImage() {
-        guard let previewBitmap, previewHeightPixels > 0 else { return }
-
+        guard let previewThumbnail, previewHeightPixels > 0,
+              let cgImage = previewThumbnail.makeImage() else { return }
         let totalHeightPoints = CGFloat(previewHeightPixels) / previewScale
-        guard let image = previewBitmap.makeImage(
-            pointSize: NSSize(width: previewPointWidth, height: totalHeightPoints),
-            pixelHeight: previewHeightPixels
-        ) else { return }
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: previewPointWidth, height: totalHeightPoints))
+        let sink = onPreviewUpdated
+        DispatchQueue.main.async { sink?(image) }
+    }
 
-        DispatchQueue.main.async { [weak self] in
-            guard self != nil else { return }
-            self?.onPreviewUpdated?(image)
+    /// A downscaled strip of the stitched page so far. Bands are drawn in at
+    /// thumbnail scale as they are accepted, so each accept costs one small
+    /// draw instead of a copy of everything captured so far.
+    private final class PreviewThumbnail {
+        static let pixelWidth = 192
+        private let scale: CGFloat
+        private var context: CGContext
+        /// Height of `context` in thumbnail rows.
+        private var capacity: Int
+        /// Thumbnail row where source row 0 (the top of the first frame) sits.
+        private var anchor: Int
+        /// Source rows covered so far; `sourceTop` goes negative when the
+        /// page grows upward.
+        private var sourceTop = 0
+        private var sourceBottom = 0
+
+        init?(sourceWidth: Int, sourceHeight: Int) {
+            guard sourceWidth > 0, sourceHeight > 0 else { return nil }
+            scale = CGFloat(Self.pixelWidth) / CGFloat(sourceWidth)
+            // Room for ten frames below and ten above the first one.
+            let frameRows = max(1, Int((CGFloat(sourceHeight) * scale).rounded(.up)))
+            capacity = frameRows * 21
+            anchor = frameRows * 10
+            guard let context = Self.makeContext(height: capacity) else { return nil }
+            self.context = context
+        }
+
+        private static func makeContext(height: Int) -> CGContext? {
+            let context = CGContext(
+                data: nil, width: pixelWidth, height: height, bitsPerComponent: 8,
+                bytesPerRow: pixelWidth * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+            context?.interpolationQuality = .medium
+            return context
+        }
+
+        private func row(_ source: Int) -> Int {
+            anchor + Int((CGFloat(source) * scale).rounded())
+        }
+
+        private func ensureRoom(top: Int, bottom: Int) {
+            guard top < 0 || bottom > capacity else { return }
+            let grown = capacity * 2 + max(0, -top) + max(0, bottom - capacity)
+            let shift = (grown - capacity) / 2
+            guard let bigger = Self.makeContext(height: grown), let current = context.makeImage() else { return }
+            // Old row r lands on new row r + shift, leaving room both ways.
+            bigger.draw(current, in: CGRect(x: 0, y: CGFloat(grown - shift - capacity),
+                                            width: CGFloat(Self.pixelWidth), height: CGFloat(capacity)))
+            context = bigger
+            capacity = grown
+            anchor += shift
+        }
+
+        private func draw(_ image: CGImage, sourceRange: Range<Int>) {
+            ensureRoom(top: row(sourceRange.lowerBound), bottom: row(sourceRange.upperBound))
+            let top = row(sourceRange.lowerBound)
+            let bottom = row(sourceRange.upperBound)
+            guard bottom > top, top >= 0, bottom <= capacity else { return }
+            context.draw(image, in: CGRect(x: 0, y: CGFloat(capacity - bottom),
+                                           width: CGFloat(Self.pixelWidth), height: CGFloat(bottom - top)))
+        }
+
+        func append(_ image: CGImage, sourceRows rows: Int) {
+            draw(image, sourceRange: sourceBottom..<(sourceBottom + rows))
+            sourceBottom += rows
+        }
+
+        func prepend(_ image: CGImage, sourceRows rows: Int) {
+            draw(image, sourceRange: (sourceTop - rows)..<sourceTop)
+            sourceTop -= rows
+        }
+
+        func removeFromEnd(sourceRows rows: Int) {
+            sourceBottom = max(sourceTop, sourceBottom - rows)
+        }
+
+        func makeImage() -> CGImage? {
+            let top = row(sourceTop)
+            let bottom = row(sourceBottom)
+            guard bottom > top, top >= 0, bottom <= capacity else { return nil }
+            return context.makeImage()?.cropping(to: CGRect(x: 0, y: top, width: Self.pixelWidth, height: bottom - top))
         }
     }
 
@@ -708,13 +825,13 @@ final class ScrollCapturer {
         let overlaps = scrollsUp == true ? Array(self.overlaps.reversed()) : self.overlaps
         guard let firstFrame = frames.first else { return nil }
 
-        let bitmapHeight = firstFrame.bitmap.height
-        let scale = CGFloat(bitmapHeight) / max(firstFrame.image.size.height, 1)
+        let bitmapHeight = firstFrame.fullHeight
+        let scale = CGFloat(bitmapHeight) / max(firstFrame.pointSize.height, 1)
 
         // Content above a sticky footer is stitched; the footer itself is
         // added once, from the last frame, at the very end.
         let newRowsPerFrame = overlaps.map { bitmapHeight - $0 }
-        let footer = min(stickyFooterPx ?? 0, max(0, bitmapHeight - (newRowsPerFrame.max() ?? 0)))
+        let footer = min(stickyFooterPx ?? 0, max(0, bitmapHeight - (newRowsPerFrame.max() ?? 0)), trimmedFooterAllowance)
         let contentHeight = bitmapHeight - footer
         let totalHeightPixels = newRowsPerFrame.reduce(bitmapHeight, +)
         let totalHeightPoints = CGFloat(totalHeightPixels) / scale
@@ -733,7 +850,7 @@ final class ScrollCapturer {
             let rowsToCopy = index == 0 ? contentHeight : newRowsPerFrame[index - 1]
 
             copyRows(
-                from: frames[index].bitmap,
+                from: frames[index],
                 sourceStartRow: sourceStartRow,
                 rowCount: rowsToCopy,
                 to: stitchedBitmap,
@@ -744,7 +861,7 @@ final class ScrollCapturer {
         }
         if footer > 0, let last = frames.last {
             copyRows(
-                from: last.bitmap,
+                from: last,
                 sourceStartRow: contentHeight,
                 rowCount: footer,
                 to: stitchedBitmap,
@@ -753,7 +870,7 @@ final class ScrollCapturer {
         }
 
         return stitchedBitmap.makeImage(
-            pointSize: NSSize(width: firstFrame.image.size.width, height: totalHeightPoints),
+            pointSize: NSSize(width: firstFrame.pointSize.width, height: totalHeightPoints),
             pixelHeight: totalHeightPixels
         )
     }
@@ -1235,29 +1352,45 @@ final class ScrollCapturer {
         abs(Int(lhs.b) - Int(rhs.b))
     }
 
+    /// Wraps a captured image as a frame. Stream frames already hold their
+    /// pixels as plain 32-bit data, so no rendering copy is made; anything
+    /// else (one-shot captures, test images) is rendered once into the
+    /// first frame's pixel layout so every band can be copied byte for byte.
+    private func makeFrame(from image: NSImage) -> CapturedFrame? {
+        guard let bitmap = bitmapData(from: image) else { return nil }
+        return CapturedFrame(bitmap: bitmap, pointSize: image.size)
+    }
+
     private func bitmapData(from image: NSImage) -> BitmapData? {
+        guard let cgImage = image.cgImagePreservingBacking() else { return nil }
+        let target = frames.first?.bitmap.imageFormat
+        if let bitmap = BitmapData(cgImage: cgImage, matching: target) { return bitmap }
         guard let rep = image.bitmapImageRepPreservingBacking() else { return nil }
         return BitmapData(rep: rep)
     }
 
     private func makeOutputBitmap(from source: BitmapData, totalHeightPixels: Int) -> BitmapData? {
-        guard let rep = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: source.width,
-            pixelsHigh: totalHeightPixels,
-            bitsPerSample: source.rep.bitsPerSample,
-            samplesPerPixel: source.rep.samplesPerPixel,
-            hasAlpha: source.rep.hasAlpha,
-            isPlanar: false,
-            colorSpaceName: source.rep.colorSpaceName,
-            bitmapFormat: source.rep.bitmapFormat,
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ) else {
-            return nil
-        }
+        BitmapData(width: source.width, height: totalHeightPixels, format: source.imageFormat)
+    }
 
-        return BitmapData(rep: rep, format: source.imageFormat)
+    private func copyRows(
+        from frame: CapturedFrame,
+        sourceStartRow: Int,
+        rowCount: Int,
+        to destination: BitmapData,
+        destinationStartRow: Int
+    ) {
+        // Trimmed frames keep only a band; translate into it and never read
+        // past what was kept.
+        let localStart = sourceStartRow - frame.rowOffset
+        guard localStart >= 0, localStart < frame.bitmap.height else { return }
+        copyRows(
+            from: frame.bitmap,
+            sourceStartRow: localStart,
+            rowCount: min(rowCount, frame.bitmap.height - localStart),
+            to: destination,
+            destinationStartRow: destinationStartRow
+        )
     }
 
     private func copyRows(
@@ -1283,7 +1416,12 @@ final class ScrollCapturer {
     }
 
     private final class BitmapData {
-        let rep: NSBitmapImageRep
+        /// Keeps the pixel bytes alive: an NSBitmapImageRep, the CFData of a
+        /// captured CGImage, or an NSMutableData allocated here.
+        private let storage: AnyObject
+        /// Set when `data` points into a CFData; CGImages are then built over
+        /// it directly instead of copying the pixels out.
+        private let backingData: CFData?
         let data: UnsafeMutablePointer<UInt8>
         let bytesPerRow: Int
         let width: Int
@@ -1291,36 +1429,77 @@ final class ScrollCapturer {
         let imageFormat: ImageFormat
         private let bytesPerPixel: Int
 
-        init?(rep: NSBitmapImageRep, format: ImageFormat? = nil) {
-            guard let data = rep.bitmapData else { return nil }
-
-            let resolvedFormat: ImageFormat
-            if let format {
-                resolvedFormat = format
-            } else {
-                let cgImage = rep.cgImage
-                guard
-                    let cgImage,
-                    let colorSpace = cgImage.colorSpace
-                else {
-                    return nil
-                }
-
-                resolvedFormat = ImageFormat(
-                    bitsPerComponent: cgImage.bitsPerComponent,
-                    bitsPerPixel: cgImage.bitsPerPixel,
-                    bitmapInfo: cgImage.bitmapInfo,
-                    colorSpace: colorSpace
-                )
-            }
-
-            self.rep = rep
+        /// Rendering fallback for images whose pixels cannot be used as they
+        /// are (unusual depth or layout).
+        init?(rep: NSBitmapImageRep) {
+            guard let data = rep.bitmapData,
+                  let cgImage = rep.cgImage,
+                  let colorSpace = cgImage.colorSpace else { return nil }
+            storage = rep
+            backingData = nil
             self.data = data
-            self.bytesPerRow = rep.bytesPerRow
-            self.width = rep.pixelsWide
-            self.height = rep.pixelsHigh
-            self.imageFormat = resolvedFormat
-            self.bytesPerPixel = max(1, rep.bitsPerPixel / 8)
+            bytesPerRow = rep.bytesPerRow
+            width = rep.pixelsWide
+            height = rep.pixelsHigh
+            imageFormat = ImageFormat(
+                bitsPerComponent: cgImage.bitsPerComponent,
+                bitsPerPixel: cgImage.bitsPerPixel,
+                bitmapInfo: cgImage.bitmapInfo,
+                colorSpace: colorSpace
+            )
+            bytesPerPixel = max(1, rep.bitsPerPixel / 8)
+        }
+
+        /// Takes the pixels of a 32-bit image. When `format` is given and the
+        /// image is laid out differently, it is rendered once into that
+        /// layout so bands from different sources can be copied byte for byte.
+        init?(cgImage: CGImage, matching format: ImageFormat?) {
+            guard cgImage.bitsPerComponent == 8, cgImage.bitsPerPixel == 32,
+                  let colorSpace = cgImage.colorSpace else { return nil }
+            let own = ImageFormat(bitsPerComponent: 8, bitsPerPixel: 32, bitmapInfo: cgImage.bitmapInfo, colorSpace: colorSpace)
+            let target = format ?? own
+            width = cgImage.width
+            height = cgImage.height
+            bytesPerPixel = 4
+            imageFormat = target
+            if target.bitmapInfo == own.bitmapInfo, target.bitsPerPixel == own.bitsPerPixel,
+               let provider = cgImage.dataProvider, let cfData = provider.data,
+               CFDataGetLength(cfData) >= cgImage.bytesPerRow * (height - 1) + width * 4,
+               let bytes = CFDataGetBytePtr(cfData) {
+                storage = cfData
+                backingData = cfData
+                data = UnsafeMutablePointer(mutating: bytes)
+                bytesPerRow = cgImage.bytesPerRow
+                return
+            }
+            let rowBytes = width * 4
+            guard let buffer = NSMutableData(length: rowBytes * height),
+                  let context = CGContext(
+                    data: buffer.mutableBytes, width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: rowBytes, space: target.colorSpace, bitmapInfo: target.bitmapInfo.rawValue
+                  ) else { return nil }
+            context.interpolationQuality = .none
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            storage = buffer
+            backingData = buffer as CFData
+            data = buffer.mutableBytes.assumingMemoryBound(to: UInt8.self)
+            bytesPerRow = rowBytes
+        }
+
+        /// Blank, writable storage in `format`.
+        init?(width: Int, height: Int, format: ImageFormat) {
+            guard width > 0, height > 0 else { return nil }
+            let bytesPerPixel = max(1, format.bitsPerPixel / 8)
+            let rowBytes = width * bytesPerPixel
+            guard let buffer = NSMutableData(length: rowBytes * height) else { return nil }
+            storage = buffer
+            backingData = buffer as CFData
+            data = buffer.mutableBytes.assumingMemoryBound(to: UInt8.self)
+            self.bytesPerRow = rowBytes
+            self.width = width
+            self.height = height
+            imageFormat = format
+            self.bytesPerPixel = bytesPerPixel
         }
 
         func pixel(x: Int, y: Int) -> (r: UInt8, g: UInt8, b: UInt8) {
@@ -1328,6 +1507,9 @@ final class ScrollCapturer {
                 return (0, 0, 0)
             }
 
+            // Labelled r, g, b but stream frames are BGRA; every caller only
+            // takes symmetric differences or an even-weighted gray, so the
+            // order does not matter. Keep it that way.
             let offset = y * bytesPerRow + x * bytesPerPixel
             return (data[offset], data[offset + 1], data[offset + 2])
         }
@@ -1339,15 +1521,21 @@ final class ScrollCapturer {
 
         /// Builds a CGImage covering the top `pixelHeight` rows of this bitmap.
         /// Shared by `makeImage(pointSize:pixelHeight:)` (the preview/output
-        /// pipeline) and by `findOverlap` (Apple Vision input).
+        /// pipeline) and by `findOverlap` (Apple Vision input). No copy when
+        /// the pixels live in a CFData; the image then reads the live buffer,
+        /// so callers must not write rows it covers afterwards.
         func makeCGImage(pixelHeight: Int) -> CGImage? {
             guard pixelHeight > 0, pixelHeight <= height else { return nil }
 
-            let byteCount = pixelHeight * bytesPerRow
-            let buffer = UnsafeBufferPointer(start: data, count: byteCount)
-            let imageData = Data(buffer: buffer)
-
-            guard let provider = CGDataProvider(data: imageData as CFData) else { return nil }
+            let provider: CGDataProvider?
+            if let backingData {
+                provider = CGDataProvider(data: backingData)
+            } else {
+                let byteCount = pixelHeight * bytesPerRow
+                let buffer = UnsafeBufferPointer(start: data, count: byteCount)
+                provider = CGDataProvider(data: Data(buffer: buffer) as CFData)
+            }
+            guard let provider else { return nil }
             return CGImage(
                 width: width,
                 height: pixelHeight,
@@ -1361,6 +1549,14 @@ final class ScrollCapturer {
                 shouldInterpolate: false,
                 intent: .defaultIntent
             )
+        }
+
+        /// A CGImage of the given rows. Cropping shares the pixel storage.
+        func makeCGImage(rows: Range<Int>) -> CGImage? {
+            guard rows.lowerBound >= 0, rows.upperBound <= height, !rows.isEmpty,
+                  let full = makeCGImage(pixelHeight: rows.upperBound) else { return nil }
+            if rows.lowerBound == 0 { return full }
+            return full.cropping(to: CGRect(x: 0, y: rows.lowerBound, width: width, height: rows.count))
         }
 
         var bytesPerPixelValue: Int { bytesPerPixel }

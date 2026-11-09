@@ -254,7 +254,7 @@ class SettingsView: NSView {
         wantsLayer = true
         setupBackground()
         setupUI()
-        startRefreshTimer()
+        refreshPermissionStatus()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(updateLocalization),
@@ -1874,10 +1874,41 @@ class SettingsView: NSView {
 
     // MARK: - Permission polling
 
+    /// Polls TCC only while the settings window is on screen. The view
+    /// lives for the whole process (the window controller is a singleton),
+    /// so a timer started in `init` kept querying three permission services
+    /// every 1.5 s forever once Settings had been opened.
     private func startRefreshTimer() {
+        guard refreshTimer == nil else { return }
+        refreshPermissionStatus()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             self?.refreshPermissionStatus()
         }
+    }
+
+    private func stopRefreshTimer() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
+
+    private var windowObservers: [NSObjectProtocol] = []
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        windowObservers.forEach(NotificationCenter.default.removeObserver)
+        windowObservers.removeAll()
+        guard let window else {
+            stopRefreshTimer()
+            return
+        }
+        let center = NotificationCenter.default
+        windowObservers.append(center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: window, queue: .main) { [weak self] _ in
+            self?.startRefreshTimer()
+        })
+        windowObservers.append(center.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { [weak self] _ in
+            self?.stopRefreshTimer()
+        })
+        if window.isVisible { startRefreshTimer() }
     }
 
     func refreshPermissionStatus() {
@@ -3371,6 +3402,7 @@ final class StatusBadge: NSView {
     }
 
     func configure(granted: Bool) {
+        guard granted != self.granted || label.stringValue.isEmpty else { return }
         self.granted = granted
         refreshTitle()
     }

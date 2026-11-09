@@ -14,6 +14,7 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
     private var deliveredCount = 0
     private var takenCount = 0
     private var stream: SCStream?
+    private var stopped = false
     private let queue = DispatchQueue(label: "clip.scroll-stream", qos: .userInitiated)
     private let pointSize: NSSize
 
@@ -44,7 +45,14 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
                 let stream = SCStream(filter: filter, configuration: config, delegate: nil)
                 try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: self.queue)
                 try await stream.startCapture()
-                self.lock.withLock { self.stream = stream }
+                // `stop()` may have run while the capture was starting; the
+                // stream would otherwise keep delivering frames for good.
+                let stoppedMeanwhile = self.lock.withLock { () -> Bool in
+                    if self.stopped { return true }
+                    self.stream = stream
+                    return false
+                }
+                if stoppedMeanwhile { stream.stopCapture { _ in } }
             } catch {
                 FileLog.write("scroll stream failed: \(error.localizedDescription)")
             }
@@ -75,6 +83,7 @@ final class ScrollFrameStream: NSObject, SCStreamOutput {
         lock.withLock { FileLog.write("scroll stream frames=\(deliveredCount) taken=\(takenCount)") }
         let stream = lock.withLock { () -> SCStream? in
             defer { self.stream = nil }
+            stopped = true
             return self.stream
         }
         stream?.stopCapture { _ in }

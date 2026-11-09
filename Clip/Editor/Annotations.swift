@@ -757,6 +757,8 @@ struct PenAnnotation: Annotation {
 
     func containsPoint(_ point: NSPoint) -> Bool {
         let p = unrotate(point)
+        let tolerance = max(strokeHitTolerance, lineWidth + 4)
+        guard path.controlPointBounds.insetBy(dx: -tolerance, dy: -tolerance).contains(p) else { return false }
         return strokedPathContains(path.cgPath, point: p, lineWidth: lineWidth)
     }
 
@@ -818,8 +820,12 @@ struct MarkerAnnotation: Annotation {
 
         // Paint into a transparency layer at full alpha then flatten the
         // entire layer at marker alpha so overlapping passes don't darken.
+        // Bound the layer to the stroke: an unbounded layer is the size of
+        // the whole clip, i.e. a full-canvas offscreen buffer per marker
+        // stroke per redraw.
+        let width = path.lineWidth
         context.setAlpha(MarkerAnnotation.markerAlpha)
-        context.beginTransparencyLayer(auxiliaryInfo: nil)
+        context.beginTransparencyLayer(in: path.controlPointBounds.insetBy(dx: -width, dy: -width), auxiliaryInfo: nil)
         path.stroke()
         context.endTransparencyLayer()
         context.setAlpha(1.0)
@@ -828,6 +834,8 @@ struct MarkerAnnotation: Annotation {
     func containsPoint(_ point: NSPoint) -> Bool {
         let p = unrotate(point)
         let effectiveWidth = lineWidth * MarkerAnnotation.brushScale
+        let tolerance = max(strokeHitTolerance, effectiveWidth + 4)
+        guard path.controlPointBounds.insetBy(dx: -tolerance, dy: -tolerance).contains(p) else { return false }
         return strokedPathContains(path.cgPath, point: p, lineWidth: effectiveWidth)
     }
 
@@ -2277,7 +2285,20 @@ struct TextAnnotation: Annotation {
     /// font-preview menus. `nil` (or a family that is no longer installed)
     /// resolves to the system bold face the tool has always used. An installed
     /// family prefers its bold variant and falls back to the regular one.
+    /// `NSFontManager.font(withFamily:…)` is a lookup across the installed
+    /// font list; text annotations resolve their font on every redraw and
+    /// hit test, so keep the result per family and size.
+    private static var fontCache: [String: NSFont] = [:]
+
     static func font(named fontName: String?, size: CGFloat) -> NSFont {
+        let key = "\(fontName ?? "")|\(size)"
+        if let cached = fontCache[key] { return cached }
+        let resolved = resolveFont(named: fontName, size: size)
+        fontCache[key] = resolved
+        return resolved
+    }
+
+    private static func resolveFont(named fontName: String?, size: CGFloat) -> NSFont {
         let fallback = NSFont.systemFont(ofSize: size, weight: .bold)
         guard let family = fontName, !family.isEmpty else { return fallback }
         let manager = NSFontManager.shared

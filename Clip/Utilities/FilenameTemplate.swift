@@ -200,10 +200,19 @@ enum FilenameTemplate {
         return CGSize(width: cgImage.width, height: cgImage.height)
     }
 
+    private static let formatterLock = NSLock()
+    private static var formatters: [String: DateFormatter] = [:]
+
+    /// One formatter per pattern: a template renders several tokens and the
+    /// settings preview re-renders on every keystroke.
     private static func formatted(_ date: Date, _ format: String) -> String {
+        formatterLock.lock()
+        defer { formatterLock.unlock() }
+        if let formatter = formatters[format] { return formatter.string(from: date) }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = format
+        formatters[format] = formatter
         return formatter.string(from: date)
     }
 

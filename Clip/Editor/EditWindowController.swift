@@ -1808,18 +1808,17 @@ class EditWindowController {
         toolbars.forEach { $0.setScrollCaptureActive(true) }
         hostSelectionView?.scrollCaptureActive = true
         updateEditorInteractionState()
-        // The first SCK capture runs synchronously on the main thread inside
-        // ScrollCapturer.init, blocking the run loop on a semaphore. Without
+        // The stream starts the moment the capturer is created. Without
         // forcing the view to redraw + commit here, the window backing store
-        // still shows the pre-scroll-capture chrome (green dashed border and
-        // corner handles), which would appear baked into the first frame and
-        // get carried into the stitched output.
+        // still shows the pre-scroll-capture chrome (border and corner
+        // handles), which would appear baked into the first frame and get
+        // carried into the stitched output.
         hostSelectionView?.display()
         CATransaction.flush()
 
         // Show the persistent hint inside the selection *before* the capturer
-        // takes its first (synchronous) frame, then exclude its window from the
-        // capture so it never bleeds into the stitched long screenshot.
+        // takes its first frame, then exclude its window from the capture so
+        // it never bleeds into the stitched long screenshot.
         let hintWindow = ScrollCaptureHintWindow(text: L10n.scrollCaptureManualHint)
         hintWindow.present(in: selectionRect)
         scrollCaptureHintWindow = hintWindow
@@ -1846,7 +1845,7 @@ class EditWindowController {
             self.scrollPreviewWindow?.updatePreview(image, anchorRect: self.selectionRect, screen: self.screen)
         }
         scrollCapturer = capturer
-        FileLog.write("scroll capture first frame=\(capturer.frameCount)")
+        FileLog.write("scroll capture started")
         installScrollCaptureKeyMonitor()
         showScrollCaptureControl()
         toolbars.forEach { $0.isHidden = true }

@@ -27,9 +27,15 @@ enum FontCatalog {
         return list
     }
 
+    /// Whether `family` is installed. Answers from the sorted list when it
+    /// already exists; otherwise asks for that one family only, because
+    /// building the whole list (every family, sorted by localized name) took
+    /// hundreds of milliseconds on the main thread when the editor opened
+    /// and read `Defaults.textFontName`.
     static func isInstalled(_ family: String) -> Bool {
-        _ = families
-        return cachedInstalled?.contains(family) ?? false
+        if let cachedInstalled { return cachedInstalled.contains(family) }
+        guard !family.hasPrefix(".") else { return false }
+        return NSFontManager.shared.availableMembers(ofFontFamily: family)?.isEmpty == false
     }
 
     /// Localized family name, e.g. "PingFang SC" -> "苹方-简" in Chinese.
