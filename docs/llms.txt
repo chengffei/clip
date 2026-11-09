@@ -32,4 +32,4 @@ Checked 30 October 2026.
 - [Website](https://chengffei.github.io/clip/): overview, screenshots, install steps and FAQ
 - [中文介绍页](https://chengffei.github.io/clip/zh/): Chinese version of the website
 - [Source code](https://github.com/chengffei/clip): GitHub repository and README
-- [Download Clip-0.7.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.7.0.dmg): latest release (also a .zip and a .sha256 on the Releases page)
+- [Download Clip-0.7.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.7.1.dmg): latest release (also a .zip and a .sha256 on the Releases page)
