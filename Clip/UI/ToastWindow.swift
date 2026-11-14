@@ -61,6 +61,16 @@ class ToastWindow: NSPanel {
         toast.alphaValue = 0
         toast.orderFrontRegardless()
         refreshExcludedCache()
+        // Status that only appears on screen must also reach VoiceOver
+        // (HIG: Accessibility, VoiceOver announcements).
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: message,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue,
+            ]
+        )
 
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.2

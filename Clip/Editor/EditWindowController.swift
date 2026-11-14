@@ -4375,6 +4375,16 @@ private final class EmojiChoiceView: NSView {
         onSelect?(emoji)
     }
 
+    // VoiceOver speaks the emoji's own name from the label.
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .button }
+    override func accessibilityLabel() -> String? { emoji }
+    override func isAccessibilitySelected() -> Bool { isSelected }
+    override func accessibilityPerformPress() -> Bool {
+        onSelect?(emoji)
+        return true
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         if isSelected || isHovering {
             let bg = NSBezierPath(roundedRect: bounds.insetBy(dx: 1.5, dy: 1.5), xRadius: 7, yRadius: 7)
@@ -5255,11 +5265,30 @@ private class TextSubToolbar: NSView {
 }
 
 /// Shared hover behaviour for the custom-drawn style choices.
+/// Custom-drawn option views take clicks through an `NSClickGestureRecognizer`.
+/// VoiceOver's press runs the same target-action so the option behaves like
+/// the radio button it announces itself as (HIG: Accessibility, custom controls).
+private func performClickGestureAction(of view: NSView) -> Bool {
+    for case let gesture as NSClickGestureRecognizer in view.gestureRecognizers {
+        guard let target = gesture.target, let action = gesture.action else { continue }
+        return NSApp.sendAction(action, to: target, from: gesture)
+    }
+    return false
+}
+
 private class StyleOptionView: NSView {
     var hoverTip: String? {
         didSet { setAccessibilityLabel(hoverTip) }
     }
     private var hoverTrackingArea: NSTrackingArea?
+
+    /// Selection state reported to VoiceOver; subclasses forward their own.
+    var isOptionSelected: Bool { false }
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .radioButton }
+    override func accessibilityValue() -> Any? { NSNumber(value: isOptionSelected) }
+    override func accessibilityPerformPress() -> Bool { performClickGestureAction(of: self) }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -5309,6 +5338,7 @@ private final class ArrowStyleButtonView: StyleOptionView {
     var isSelected: Bool {
         didSet { needsDisplay = true }
     }
+    override var isOptionSelected: Bool { isSelected }
 
     init(frame: NSRect, style: ArrowStyle, isSelected: Bool) {
         self.style = style
@@ -5450,6 +5480,13 @@ private class ColorSwatchView: NSView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    // A drawn dot has no text, so VoiceOver gets the system color name.
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .radioButton }
+    override func accessibilityLabel() -> String? { hoverTip ?? color.accessibilityName }
+    override func accessibilityValue() -> Any? { NSNumber(value: isSelected) }
+    override func accessibilityPerformPress() -> Bool { performClickGestureAction(of: self) }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -5752,9 +5789,10 @@ final class HUDSlider: NSControl {
         onEditingEnded?()
     }
 
+    private var fineStep: Double { max((maxValue - minValue) / 100, 0.1) }
+
     override func keyDown(with event: NSEvent) {
         guard isEnabled else { return }
-        let fineStep = max((maxValue - minValue) / 100, 0.1)
         let coarseStep = max((maxValue - minValue) / 20, fineStep)
         let step = event.modifierFlags.contains(.shift) ? coarseStep : fineStep
         switch Int(event.keyCode) {
@@ -5769,6 +5807,25 @@ final class HUDSlider: NSControl {
         default:
             super.keyDown(with: event)
         }
+    }
+
+    // Drawn without a cell, so the slider describes itself to VoiceOver and
+    // takes its increment/decrement actions (HIG: Accessibility, custom controls).
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .slider }
+    override func accessibilityValue() -> Any? { NSNumber(value: value) }
+    override func accessibilityMinValue() -> Any? { NSNumber(value: minValue) }
+    override func accessibilityMaxValue() -> Any? { NSNumber(value: maxValue) }
+    override func isAccessibilityEnabled() -> Bool { isEnabled }
+    override func accessibilityPerformIncrement() -> Bool { stepForAccessibility(by: fineStep * 5) }
+    override func accessibilityPerformDecrement() -> Bool { stepForAccessibility(by: -fineStep * 5) }
+
+    private func stepForAccessibility(by delta: Double) -> Bool {
+        guard isEnabled else { return false }
+        onEditingBegan?()
+        setValue(value + delta, notify: true)
+        onEditingEnded?()
+        return true
     }
 
     private var normalizedValue: CGFloat {
@@ -5899,6 +5956,28 @@ final class HUDSlider: NSControl {
     }
 }
 
+private final class ShapeFillSegmentAccessibilityElement: NSAccessibilityElement {
+    private weak var control: ShapeFillModeSegmentedControl?
+    private let mode: ShapeFillMode
+
+    init(control: ShapeFillModeSegmentedControl, mode: ShapeFillMode, title: String) {
+        self.control = control
+        self.mode = mode
+        super.init()
+        setAccessibilityRole(.radioButton)
+        setAccessibilityLabel(title)
+    }
+
+    override func accessibilityParent() -> Any? { control }
+    override func accessibilityFrame() -> NSRect { control?.screenFrame(for: mode) ?? .zero }
+    override func accessibilityValue() -> Any? { NSNumber(value: control?.selectedMode == mode) }
+    override func accessibilityPerformPress() -> Bool {
+        guard let control else { return false }
+        control.select(mode)
+        return true
+    }
+}
+
 private final class ShapeFillModeSegmentedControl: NSView {
     static let preferredHeight: CGFloat = 24
     private static let minSegmentWidth: CGFloat = 54
@@ -5936,8 +6015,31 @@ private final class ShapeFillModeSegmentedControl: NSView {
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
         guard let mode = mode(atX: point.x) else { return }
+        select(mode)
+    }
+
+    fileprivate func select(_ mode: ShapeFillMode) {
         selectedMode = mode
         onSelect?(mode)
+    }
+
+    // Drawn segments: expose a radio group with one radio button per
+    // segment so VoiceOver can read and change the fill mode.
+    private lazy var segmentElements: [ShapeFillSegmentAccessibilityElement] = Self.modes.map {
+        ShapeFillSegmentAccessibilityElement(control: self, mode: $0, title: Self.title(for: $0))
+    }
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .radioGroup }
+    override func accessibilityLabel() -> String? { L10n.shapeFillEffect }
+    override func accessibilityChildren() -> [Any]? { segmentElements }
+
+    fileprivate func screenFrame(for mode: ShapeFillMode) -> NSRect {
+        guard let index = Self.modes.firstIndex(of: mode), let window else { return .zero }
+        let widths = Self.segmentWidths()
+        let x = widths.prefix(index).reduce(0, +)
+        let local = NSRect(x: x, y: 0, width: widths[index], height: bounds.height)
+        return window.convertToScreen(convert(local, to: nil))
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -6021,6 +6123,7 @@ private final class ShapeStrokeStyleButtonView: StyleOptionView {
     var isSelected: Bool {
         didSet { needsDisplay = true }
     }
+    override var isOptionSelected: Bool { isSelected }
 
     init(frame: NSRect, style: ShapeStrokeStyle, previewShape: ShapeStrokePreviewShape, isSelected: Bool) {
         self.style = style
@@ -6313,6 +6416,9 @@ private final class HUDCheckboxButton: NSButton {
         bezelStyle = .regularSquare
         isBordered = false
         wantsLayer = true
+        // The title is drawn by hand; give VoiceOver the label and the role.
+        setAccessibilityLabel(title)
+        setAccessibilityRole(.checkBox)
     }
 
     required init?(coder: NSCoder) {
@@ -6700,6 +6806,11 @@ private class BeautifySwatchView: NSView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .radioButton }
+    override func accessibilityValue() -> Any? { NSNumber(value: isSelected) }
+    override func accessibilityPerformPress() -> Bool { performClickGestureAction(of: self) }
 
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
