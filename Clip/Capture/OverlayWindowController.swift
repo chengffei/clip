@@ -1409,7 +1409,7 @@ class OverlayWindowController {
             ClipboardManager.copyColorToClipboard(hex: hex)
         case .rgb:
             value = rgb
-            ClipboardManager.copyToClipboard(text: rgb, skipHistory: true)
+            ClipboardManager.copyToClipboard(text: rgb)
         }
         Defaults.lastPickedColorHex = hex
         let toastScreen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main

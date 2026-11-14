@@ -38,12 +38,6 @@ enum ClipboardImageSource {
         return nil
     }
 
-    /// Empties the clipboard. Used by pin mode so the same source is not
-    /// re-pinned.
-    static func clear() {
-        NSPasteboard.general.clearContents()
-    }
-
     /// Returns all copied image file URLs on the clipboard, preserving the
     /// pasteboard order. This lets multi-image workflows import Finder copies.
     static func currentImageFileURLs() -> [URL] {

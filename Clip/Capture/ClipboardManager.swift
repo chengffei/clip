@@ -1,9 +1,5 @@
 import AppKit
 
-private let skipClipboardHistoryPasteboardType = NSPasteboard.PasteboardType(
-    "com.chengffei.clip.skip-clipboard-text-history"
-)
-
 enum ClipboardColorParser {
     static func normalizedHex(from text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -40,8 +36,8 @@ struct ClipboardManager {
         }
     }
 
-    static func copyToClipboard(text: String, skipHistory: Bool = false) {
-        writeTextToClipboard(text, skipHistory: skipHistory)
+    static func copyToClipboard(text: String) {
+        writeTextToClipboard(text)
     }
 
     static func copyColorToClipboard(hex: String) {
@@ -49,18 +45,13 @@ struct ClipboardManager {
             writeTextToClipboard(hex)
             return
         }
-        writeTextToClipboard(normalizedHex, skipHistory: true)
+        writeTextToClipboard(normalizedHex)
     }
 
-
-
-    private static func writeTextToClipboard(_ text: String, skipHistory: Bool = false) {
+    private static func writeTextToClipboard(_ text: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        if skipHistory {
-            pasteboard.setString("1", forType: skipClipboardHistoryPasteboardType)
-        }
     }
 }
 

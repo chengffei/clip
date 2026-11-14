@@ -109,13 +109,11 @@ enum L10n {
     static var pinToolbarCopy: String { s("pinToolbarCopy") }
     static var pinToolbarDrag: String { s("pinToolbarDrag") }
     static var pinToolbarEdit: String { s("pinToolbarEdit") }
-    static var pinToolbarEditText: String { s("pinToolbarEditText") }
     static var pinMenuCopy: String { s("pinMenuCopy") }
     static var pinMenuEdit: String { s("pinMenuEdit") }
     static var pinMenuRecognizeText: String { s("pinMenuRecognizeText") }
     static var pinMenuActualSize: String { s("pinMenuActualSize") }
     static var pinMenuClose: String { s("pinMenuClose") }
-    static var pinMenuCloseClearClipboard: String { s("pinMenuCloseClearClipboard") }
 
     static var textRecognitionShortcutHeader: String { s("textRecognitionShortcutHeader") }
     static var textRecognitionShortcutDefaultDisplay: String { s("textRecognitionShortcutDefaultDisplay") }
@@ -142,7 +140,6 @@ enum L10n {
     // Copy-to-clipboard shortcut (editor confirm)
     static var clipboardShortcutHeader: String { s("clipboardShortcutHeader") }
     static var clipboardShortcutDefaultDisplay: String { s("clipboardShortcutDefaultDisplay") }
-
 
     // Save-to-file shortcut (editor save)
     static var fileSaveShortcutHeader: String { s("fileSaveShortcutHeader") }
@@ -327,8 +324,6 @@ enum L10n {
     static var settingsTabShortcuts: String { s("settingsTabShortcuts") }
     static var settingsTabPermissions: String { s("settingsTabPermissions") }
     static var settingsTabAbout: String { s("settingsTabAbout") }
-    static var settingsSectionCapture: String { s("settingsSectionCapture") }
-    static var settingsSectionSystem: String { s("settingsSectionSystem") }
     static var tipMore: String { s("tipMore") }
     static var tipDivider: String { s("tipDivider") }
     static var ocrResultBehaviorLabel: String { s("ocrResultBehaviorLabel") }
@@ -395,17 +390,11 @@ enum L10n {
     static var updateLater: String { s("updateLater") }
     static var updateOpenReleasesPage: String { s("updateOpenReleasesPage") }
 
-
-
-
-
-
     // Quit confirmation dialog
     static var quitConfirmTitle: String { s("quitConfirmTitle") }
     static var quitConfirmMessage: String { s("quitConfirmMessage") }
     static var quitConfirmAction: String { s("quitConfirmAction") }
     static var quitConfirmCancel: String { s("quitConfirmCancel") }
-
 
     static var filenameRuleTitle: String { s("filenameRuleTitle") }
     static var filenameRuleSubtitle: String { s("filenameRuleSubtitle") }
@@ -428,11 +417,6 @@ enum L10n {
         String(format: s("filenameRulePreview"), value)
     }
 
-
-
-
-
-
     // Permissions — status label
     static var permissionGranted: String { s("permissionGranted") }
     static var permissionNotGranted: String { s("permissionNotGranted") }
@@ -450,9 +434,6 @@ enum L10n {
     static var copyImageTextCopying: String { s("copyImageTextCopying") }
     static var copyImageTextCopied: String { s("copyImageTextCopied") }
     static var copyImageTextNoText: String { s("copyImageTextNoText") }
-
-
-
 
     // Image Merge workbench
 }
@@ -529,14 +510,8 @@ struct Defaults {
         defaults.removeObject(forKey: "selectionAspectRatio")
     }
 
-    private static func clearLegacyPinHotkey() {
-        defaults.removeObject(forKey: "pinHotkeyKeyCode")
-        defaults.removeObject(forKey: "pinHotkeyModifiers")
-    }
-
-    // Custom pin-image hotkeys. They are global Carbon hotkeys with no
-    // defaults: users opt in from Settings. Quick Pin captures a screen
-    // selection; the other shortcuts read Finder or clipboard content.
+    // Quick Pin hotkey. A global Carbon hotkey with no default: users opt in
+    // from Settings. It captures a screen selection and pins it.
 
     static var quickPinHotkeyKeyCode: Int {
         get { defaults.integer(forKey: "quickPinHotkeyKeyCode") }
@@ -557,76 +532,63 @@ struct Defaults {
         defaults.removeObject(forKey: "quickPinHotkeyModifiers")
     }
 
+    /// Keys of features Clip no longer has. Nothing reads them; dropping them
+    /// at launch keeps old preferences from lingering in the plist.
+    private static let retiredKeys = [
+        "pinHotkeyKeyCode",
+        "pinHotkeyModifiers",
+        "selectedImagePinHotkeyKeyCode",
+        "selectedImagePinHotkeyModifiers",
+        "clipboardImagePinHotkeyKeyCode",
+        "clipboardImagePinHotkeyModifiers",
+        "clipboardTextPinHotkeyKeyCode",
+        "clipboardTextPinHotkeyModifiers",
+        "selectedImageEditHotkeyKeyCode",
+        "selectedImageEditHotkeyModifiers",
+        "clipboardImageEditHotkeyKeyCode",
+        "clipboardImageEditHotkeyModifiers",
+        "screenshotTranslationHotkeyKeyCode",
+        "screenshotTranslationHotkeyModifiers",
+        "imageMergeHotkeyKeyCode",
+        "imageMergeHotkeyModifiers",
+        "finderUploadHotkeyKeyCode",
+        "finderUploadHotkeyModifiers",
+        "previousHistoryImageHotkeyKeyCode",
+        "previousHistoryImageHotkeyModifiers",
+        "nextHistoryImageHotkeyKeyCode",
+        "nextHistoryImageHotkeyModifiers",
+        "historyPanelHotkeyKeyCode",
+        "historyPanelHotkeyModifiers",
+        "recordingSystemAudioEnabled",
+        "recordingMicrophoneEnabled",
+        "recordingMicrophoneDeviceUID",
+        "magnifierLensPanelMagnifiedSize",
+        "magnifierLensPanelCrosshairRed",
+        "magnifierLensPanelCrosshairGreen",
+        "magnifierLensPanelCrosshairBlue",
+        "magnifierLensPanelCrosshairAlpha",
+        "magnifierLensPanelCrosshairWidth",
+    ]
 
-
-
-    static func clearSelectedImagePinHotkey() {
-        defaults.removeObject(forKey: "selectedImagePinHotkeyKeyCode")
-        defaults.removeObject(forKey: "selectedImagePinHotkeyModifiers")
-    }
-
-
-
-
-    static func clearClipboardImagePinHotkey() {
-        defaults.removeObject(forKey: "clipboardImagePinHotkeyKeyCode")
-        defaults.removeObject(forKey: "clipboardImagePinHotkeyModifiers")
-    }
-
-
-
-
-    static func clearClipboardTextPinHotkey() {
-        defaults.removeObject(forKey: "clipboardTextPinHotkeyKeyCode")
-        defaults.removeObject(forKey: "clipboardTextPinHotkeyModifiers")
+    static func removeRetiredKeys() {
+        for key in retiredKeys {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     static func resetShortcutHotkeysToDefaults() {
         clearScreenshotHotkey()
-        clearLegacyPinHotkey()
         clearQuickPinHotkey()
-        clearSelectedImagePinHotkey()
-        clearClipboardImagePinHotkey()
-        clearClipboardTextPinHotkey()
-        clearSelectedImageEditHotkey()
-        clearClipboardImageEditHotkey()
         clearTextRecognitionHotkey()
         clearCopyImageTextHotkey()
-        clearScreenshotTranslationHotkey()
         clearRecordHotkey()
-        clearImageMergeHotkey()
-        clearFinderUploadHotkey()
         clearFullScreenScreenshotHotkey()
         clearColorPickerHotkey()
         clearClipboardHotkey()
         clearFileSaveHotkey()
-        clearPreviousHistoryImageHotkey()
-        clearNextHistoryImageHotkey()
-        clearHistoryPanelHotkey()
     }
 
-    // Custom image-edit hotkeys. They are global Carbon hotkeys with no
-    // defaults: users opt in from Settings. The selected-image shortcut reads
-    // one image selected in Finder; the clipboard-image shortcut reads only
-    // the clipboard image.
-
-
-
-
-    static func clearSelectedImageEditHotkey() {
-        defaults.removeObject(forKey: "selectedImageEditHotkeyKeyCode")
-        defaults.removeObject(forKey: "selectedImageEditHotkeyModifiers")
-    }
-
-
-
-
-    static func clearClipboardImageEditHotkey() {
-        defaults.removeObject(forKey: "clipboardImageEditHotkeyKeyCode")
-        defaults.removeObject(forKey: "clipboardImageEditHotkeyModifiers")
-    }
-
-    // Custom OCR/translation hotkeys. They are global Carbon hotkeys with no
+    // Custom OCR hotkeys. They are global Carbon hotkeys with no
     // defaults: users opt in from Settings, then select a region that is sent
     // straight to the corresponding result panel.
 
@@ -668,14 +630,6 @@ struct Defaults {
         defaults.removeObject(forKey: "copyImageTextHotkeyModifiers")
     }
 
-
-
-
-    static func clearScreenshotTranslationHotkey() {
-        defaults.removeObject(forKey: "screenshotTranslationHotkeyKeyCode")
-        defaults.removeObject(forKey: "screenshotTranslationHotkeyModifiers")
-    }
-
     static var recordHotkeyKeyCode: Int {
         get { defaults.integer(forKey: "recordHotkeyKeyCode") }
         set { defaults.set(newValue, forKey: "recordHotkeyKeyCode") }
@@ -693,20 +647,6 @@ struct Defaults {
     static func clearRecordHotkey() {
         defaults.removeObject(forKey: "recordHotkeyKeyCode")
         defaults.removeObject(forKey: "recordHotkeyModifiers")
-    }
-
-
-    static func clearImageMergeHotkey() {
-        defaults.removeObject(forKey: "imageMergeHotkeyKeyCode")
-        defaults.removeObject(forKey: "imageMergeHotkeyModifiers")
-    }
-
-
-
-
-    static func clearFinderUploadHotkey() {
-        defaults.removeObject(forKey: "finderUploadHotkeyKeyCode")
-        defaults.removeObject(forKey: "finderUploadHotkeyModifiers")
     }
 
     static var fullScreenScreenshotHotkeyKeyCode: Int {
@@ -837,7 +777,6 @@ struct Defaults {
             defaults.set(newValue.standardizedFileURL.path, forKey: "screenshotSaveDirectory")
         }
     }
-
 
     static var screenshotSaveQuality: ScreenshotImageQuality {
         get { screenshotQuality(forKey: "screenshotSaveQuality") }
@@ -1002,40 +941,6 @@ struct Defaults {
         defaults.removeObject(forKey: "fileSaveHotkeyKeyCode")
         defaults.removeObject(forKey: "fileSaveHotkeyModifiers")
     }
-
-    // History navigation hotkeys used inside the editor overlay. Defaults are
-    // comma for previous and period for next. Like clipboard/save editor
-    // hotkeys, bare keys are allowed because matching is local to the editor.
-
-
-
-
-    static func clearPreviousHistoryImageHotkey() {
-        defaults.removeObject(forKey: "previousHistoryImageHotkeyKeyCode")
-        defaults.removeObject(forKey: "previousHistoryImageHotkeyModifiers")
-    }
-
-
-
-
-    static func clearNextHistoryImageHotkey() {
-        defaults.removeObject(forKey: "nextHistoryImageHotkeyKeyCode")
-        defaults.removeObject(forKey: "nextHistoryImageHotkeyModifiers")
-    }
-
-    // History panel shortcut. Defaults to unset; users can opt in from
-    // Settings. The global hotkey opens the dialog mode when enabled, or the
-    // notch mode when dialog mode is disabled.
-
-
-
-
-    static func clearHistoryPanelHotkey() {
-        defaults.removeObject(forKey: "historyPanelHotkeyKeyCode")
-        defaults.removeObject(forKey: "historyPanelHotkeyModifiers")
-    }
-
-
 
     static let editorLineWidthMin: Double = 1
     static let editorLineWidthMax: Double = 16
@@ -1216,7 +1121,6 @@ struct Defaults {
         }
     }
 
-
     static var lastArrowStyle: ArrowStyle {
         get {
             guard let raw = defaults.string(forKey: "lastArrowStyle"),
@@ -1293,15 +1197,6 @@ struct Defaults {
         min(1, max(0, value))
     }
 
-    private static func normalizedMagnifierLensPanelMagnifiedSize(_ value: Int) -> Int {
-        switch value {
-        case 96, 144, 192:
-            return value
-        default:
-            return 144
-        }
-    }
-
     private static func normalizedMagnifierLensPanelMagnification(_ value: Double) -> Double {
         guard value.isFinite else { return 4.0 }
         return min(16.0, max(1.0, value))
@@ -1350,7 +1245,6 @@ struct Defaults {
         get { OCRLanguageSet(rawValue: defaults.string(forKey: "ocr.languageSet") ?? "") ?? .chineseEnglish }
         set { defaults.set(newValue.rawValue, forKey: "ocr.languageSet") }
     }
-
 
     static var lastBeautifyPresetID: String? {
         get { defaults.string(forKey: "lastBeautifyPresetID") }
@@ -1423,8 +1317,6 @@ struct Defaults {
         }
     }
 
-
-
     /// Background color used in dark mode (when `magnifierLensPanelFollowSystemAppearance` is on).
     /// Stored as 0–1 RGBA components. Default: black with 80% alpha.
     static var magnifierLensPanelDarkBackgroundRed: Double {
@@ -1474,19 +1366,6 @@ struct Defaults {
         }
         set {
             defaults.set(newValue, forKey: "magnifierLensPanelFollowSystemAppearance")
-        }
-    }
-
-    /// Side length (in points) of the magnified area. One of 96, 144, 192.
-    static var magnifierLensPanelMagnifiedSize: Int {
-        get {
-            if defaults.object(forKey: "magnifierLensPanelMagnifiedSize") == nil {
-                return 144
-            }
-            return normalizedMagnifierLensPanelMagnifiedSize(defaults.integer(forKey: "magnifierLensPanelMagnifiedSize"))
-        }
-        set {
-            defaults.set(normalizedMagnifierLensPanelMagnifiedSize(newValue), forKey: "magnifierLensPanelMagnifiedSize")
         }
     }
 
@@ -1584,49 +1463,6 @@ struct Defaults {
             defaults.set(newValue.rawValue, forKey: "magnifierLensPanelCoordinateMode")
         }
     }
-
-    /// Crosshair colour — RGBA components stored as 0–1 doubles.
-    /// Default: #A8BDFC at 65% alpha.
-    static var magnifierLensPanelCrosshairRed: Double {
-        get { defaults.object(forKey: "magnifierLensPanelCrosshairRed") == nil ? 0xA8 / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairRed") }
-        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairRed") }
-    }
-    static var magnifierLensPanelCrosshairGreen: Double {
-        get { defaults.object(forKey: "magnifierLensPanelCrosshairGreen") == nil ? 0xBD / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairGreen") }
-        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairGreen") }
-    }
-    static var magnifierLensPanelCrosshairBlue: Double {
-        get { defaults.object(forKey: "magnifierLensPanelCrosshairBlue") == nil ? 0xFC / 255.0 : defaults.double(forKey: "magnifierLensPanelCrosshairBlue") }
-        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairBlue") }
-    }
-    static var magnifierLensPanelCrosshairAlpha: Double {
-        get { defaults.object(forKey: "magnifierLensPanelCrosshairAlpha") == nil ? 0.65 : defaults.double(forKey: "magnifierLensPanelCrosshairAlpha") }
-        set { defaults.set(clampedUnitInterval(newValue), forKey: "magnifierLensPanelCrosshairAlpha") }
-    }
-
-    /// Crosshair line width in points. Default 6, clamped to 1–30.
-    static var magnifierLensPanelCrosshairWidth: Double {
-        get {
-            if defaults.object(forKey: "magnifierLensPanelCrosshairWidth") == nil { return 6 }
-            return defaults.double(forKey: "magnifierLensPanelCrosshairWidth")
-        }
-        set { defaults.set(min(30, max(1, newValue)), forKey: "magnifierLensPanelCrosshairWidth") }
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     static var showMenuBar: Bool {
         get {

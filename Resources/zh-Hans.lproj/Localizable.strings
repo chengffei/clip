@@ -31,13 +31,11 @@
 "pinToolbarCopy" = "复制钉图";
 "pinToolbarDrag" = "拖拽钉图";
 "pinToolbarEdit" = "编辑钉图";
-"pinToolbarEditText" = "编辑文字";
 "pinMenuCopy" = "复制";
 "pinMenuEdit" = "编辑";
 "pinMenuRecognizeText" = "识别文字";
 "pinMenuActualSize" = "实际大小";
 "pinMenuClose" = "关闭";
-"pinMenuCloseClearClipboard" = "关闭并清空剪贴板";
 
 /* Image-edit shortcuts */
 "textRecognitionShortcutHeader" = "文字识别";
@@ -215,8 +213,6 @@
 "settingsTabShortcuts" = "快捷键";
 "settingsTabPermissions" = "权限";
 "settingsTabAbout" = "关于";
-"settingsSectionCapture" = "截图与录制";
-"settingsSectionSystem" = "识别与系统";
 "tipMore" = "更多";
 "tipDivider" = "分隔线";
 "ocrResultBehaviorLabel" = "识别后";

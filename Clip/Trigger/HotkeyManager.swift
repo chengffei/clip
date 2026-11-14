@@ -449,10 +449,6 @@ final class HotkeyManager {
     /// `(keyCode, modifiers)` would collide with, or nil when it is free to
     /// assign. `slot` is the function being edited and is excluded from the
     /// check, so re-recording its own combo is not flagged as a self-conflict.
-    ///
-    /// Assigning the screenshot hotkey also redefines the derived countdown
-    /// hotkey (screenshot + ⌥), so for that slot the ⌥ variant is checked
-    /// against other global hotkeys as well.
     func hotkeyConflictMessage(forKeyCode keyCode: UInt32,
                                modifiers: UInt32,
                                assigningTo slot: HotkeySlot? = nil) -> String? {
@@ -461,69 +457,33 @@ final class HotkeyManager {
                 return L10n.shortcutConflictScreenshot
             }
         }
-        if slot != .quickPin, let (kc, m) = currentQuickPinHotkey(), kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictQuickPin
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictQuickPin
-            }
+        if slot != .quickPin, let (kc, m) = currentQuickPinHotkey(), kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictQuickPin
         }
         if slot != .textRecognition,
            let (kc, m) = currentTextRecognitionHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictTextRecognition
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictTextRecognition
-            }
+           kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictTextRecognition
         }
         if slot != .copyImageText,
            let (kc, m) = currentCopyImageTextHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictCopyImageText
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictCopyImageText
-            }
+           kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictCopyImageText
         }
         if slot != .record,
            let (kc, m) = currentRecordHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictRecord
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictRecord
-            }
+           kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictRecord
         }
         if slot != .fullScreenScreenshot,
            let (kc, m) = currentFullScreenScreenshotHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictFullScreenScreenshot
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictFullScreenScreenshot
-            }
+           kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictFullScreenScreenshot
         }
         if slot != .colorPicker,
            let (kc, m) = currentColorPickerHotkey(),
-           kc == keyCode {
-            if m == modifiers {
-                return L10n.shortcutConflictColorPicker
-            }
-            if slot == .screenshot, modifiers & UInt32(optionKey) == 0,
-               m == modifiers | UInt32(optionKey) {
-                return L10n.shortcutConflictColorPicker
-            }
+           kc == keyCode, m == modifiers {
+            return L10n.shortcutConflictColorPicker
         }
         if slot != .clipboard, let (kc, m) = currentClipboardHotkey(), kc == keyCode, m == modifiers {
             return L10n.shortcutConflictClipboard

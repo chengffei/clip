@@ -14,7 +14,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var recordingCancelLocalMonitor: Any?
     private var recordingCancelGlobalMonitor: Any?
     private var recordingCancelRequested = false
-    private var countdownActive = false
     private var appInitialized = false
     private var suspendedEditDraft: OverlayWindowController.SuspendedEditDraft?
     private var pendingReopenSettingsWorkItem: DispatchWorkItem?
@@ -25,10 +24,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        FileLog.write("launch accessibility=\(AppPermissions.accessibilityGranted) screenRecording=\(AppPermissions.screenRecordingGranted) initialized=\(appInitialized)")
+        FileLog.write("launch accessibility=\(AppPermissions.accessibilityGranted) screenRecording=\(AppPermissions.screenRecordingGranted)")
+        Defaults.removeRetiredKeys()
 
-        if appInitialized {
-        } else if AppPermissions.accessibilityGranted {
+        if AppPermissions.accessibilityGranted {
             // Start as soon as the ⌘⌘ trigger can work. Screen Recording is
             // requested on first capture; surface the permissions tab now if
             // it is still missing so the user is not left with a silent app.
@@ -36,13 +35,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if !AppPermissions.screenRecordingGranted {
                 configuredSettingsController().showAsSettings(focusingPermissions: true)
             }
-        } else if false {
         } else {
             showStartupDialog()
         }
-    }
-
-    func applicationWillTerminate(_ notification: Notification) {
     }
 
     func applicationDidChangeScreenParameters(_ notification: Notification) {
@@ -210,7 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if Defaults.hasCustomFullScreenScreenshotHotkey {
             HotkeyManager.shared.registerFullScreenScreenshot { [weak self] in
-                self?.handleFullScreenScreenshotTrigger(fromShortcut: true)
+                self?.handleFullScreenScreenshotTrigger()
             }
         } else {
             HotkeyManager.shared.unregisterFullScreenScreenshot()
@@ -283,7 +278,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func handleRecordingTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         guard ensureScreenRecordingAccess() else { return }
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         overlayController = OverlayWindowController(
@@ -304,7 +299,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Select a screen region and pin it immediately after capture.
     func handlePinnedImageEditRequest(_ image: NSImage, beforePresent: () -> Void) -> Bool {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return false }
+        guard overlayController == nil, recordingEngine == nil else { return false }
         beforePresent()
 
         guard let controller = ImageEditLauncher.launch(
@@ -327,22 +322,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func handleQuickPinTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         startCapture(postCaptureAction: .quickPin)
     }
 
     func handleTextRecognitionTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         startCapture(postCaptureAction: .textRecognition)
     }
 
     func handleCopyImageTextTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         startCapture(postCaptureAction: .copyImageText)
     }
 
     func handleColorPickerTrigger() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         NSApp.activate(ignoringOtherApps: true)
         let didStart = ColorPickerRunner.shared.run(onFinished: {
@@ -355,8 +350,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var fullScreenCaptureInFlight = false
 
-    func handleFullScreenScreenshotTrigger(fromShortcut: Bool = false) {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive,
+    func handleFullScreenScreenshotTrigger() {
+        guard overlayController == nil, recordingEngine == nil,
               !fullScreenCaptureInFlight else { return }
         let focusRestorer = SourceAppFocusRestorer.captureFrontmostApplication()
         let cursorPoint = NSEvent.mouseLocation
@@ -386,7 +381,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func finishFullScreenScreenshot(_ image: NSImage?, focusRestorer: SourceAppFocusRestorer) {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive else { return }
+        guard overlayController == nil, recordingEngine == nil else { return }
         guard let image,
               let controller = ImageEditLauncher.launch(
                 generatedImage: image,

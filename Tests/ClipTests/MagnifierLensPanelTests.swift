@@ -237,7 +237,6 @@ final class MagnifierLensPanelTests: XCTestCase {
 
     func testDefaultsLensVisualDefaults() {
         let keys = [
-            "magnifierLensPanelMagnifiedSize",
             "magnifierLensPanelMagnification",
             "magnifierLensPanelOffsetX",
             "magnifierLensPanelOffsetY",
@@ -248,11 +247,6 @@ final class MagnifierLensPanelTests: XCTestCase {
             "magnifierLensPanelLightBackgroundAlpha",
             "magnifierLensPanelDarkBackgroundRed",
             "magnifierLensPanelLightBackgroundGreen",
-            "magnifierLensPanelCrosshairRed",
-            "magnifierLensPanelCrosshairGreen",
-            "magnifierLensPanelCrosshairBlue",
-            "magnifierLensPanelCrosshairAlpha",
-            "magnifierLensPanelCrosshairWidth",
         ]
         defer {
             for key in keys {
@@ -260,13 +254,6 @@ final class MagnifierLensPanelTests: XCTestCase {
             }
         }
 
-        // Magnified size defaults to 144.
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelMagnifiedSize")
-        XCTAssertEqual(Defaults.magnifierLensPanelMagnifiedSize, 144)
-        Defaults.magnifierLensPanelMagnifiedSize = 123
-        XCTAssertEqual(Defaults.magnifierLensPanelMagnifiedSize, 144)
-        Defaults.magnifierLensPanelMagnifiedSize = 192
-        XCTAssertEqual(Defaults.magnifierLensPanelMagnifiedSize, 192)
         UserDefaults.standard.removeObject(forKey: "magnifierLensPanelMagnification")
         XCTAssertEqual(Defaults.magnifierLensPanelMagnification, 4.0, accuracy: 0.001)
         Defaults.magnifierLensPanelMagnification = .infinity
@@ -294,16 +281,6 @@ final class MagnifierLensPanelTests: XCTestCase {
         UserDefaults.standard.removeObject(forKey: "magnifierLensPanelLightBackgroundAlpha")
         XCTAssertEqual(Defaults.magnifierLensPanelDarkBackgroundAlpha, 0.8, accuracy: 0.001)
         XCTAssertEqual(Defaults.magnifierLensPanelLightBackgroundAlpha, 0.8, accuracy: 0.001)
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelCrosshairRed")
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelCrosshairGreen")
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelCrosshairBlue")
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelCrosshairAlpha")
-        UserDefaults.standard.removeObject(forKey: "magnifierLensPanelCrosshairWidth")
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairRed, 0xA8 / 255.0, accuracy: 0.001)
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairGreen, 0xBD / 255.0, accuracy: 0.001)
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairBlue, 0xFC / 255.0, accuracy: 0.001)
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairAlpha, 0.65, accuracy: 0.001)
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairWidth, 6.0, accuracy: 0.001)
         // Alpha setter clamps to 0…1.
         Defaults.magnifierLensPanelDarkBackgroundAlpha = 5
         XCTAssertEqual(Defaults.magnifierLensPanelDarkBackgroundAlpha, 1.0, accuracy: 0.001)
@@ -317,9 +294,5 @@ final class MagnifierLensPanelTests: XCTestCase {
         XCTAssertEqual(Defaults.magnifierLensPanelLightBackgroundGreen, 1.0, accuracy: 0.001)
         Defaults.magnifierLensPanelLightBackgroundGreen = -1
         XCTAssertEqual(Defaults.magnifierLensPanelLightBackgroundGreen, 0.0, accuracy: 0.001)
-        Defaults.magnifierLensPanelCrosshairBlue = 5
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairBlue, 1.0, accuracy: 0.001)
-        Defaults.magnifierLensPanelCrosshairBlue = -1
-        XCTAssertEqual(Defaults.magnifierLensPanelCrosshairBlue, 0.0, accuracy: 0.001)
     }
 }

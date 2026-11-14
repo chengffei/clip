@@ -24,7 +24,6 @@ enum Brand {
 
     // Accents
     static let accent = NSColor(srgbRed: 0.0, green: 0.478, blue: 1.0, alpha: 1)            // #007AFF
-    static let accentFill = NSColor(srgbRed: 0.0, green: 0.478, blue: 1.0, alpha: 0.14)
     static let alert = NSColor(srgbRed: 1.0, green: 0.231, blue: 0.188, alpha: 1)           // #FF3B30
     static let onAccent = NSColor.white
 

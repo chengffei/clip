@@ -53,16 +53,12 @@ class SettingsView: NSView {
     var onLaunch: (() -> Void)?
 
     // Switches
-    private var menuBarSwitch: NSSwitch!
-    private var launchAtLoginSwitch: NSSwitch!
     private var pinAcrossSpacesSwitch: NSSwitch!
 
     // Picker & slider
     private var langPicker: NSPopUpButton!
 
-
     // Window-capture shadow card
-    private var windowShadowSwitch: NSSwitch!
     private var windowShadowSlider: NSSlider!
     private var windowShadowSizeValueLabel: NSTextField!
     private var windowShadowPreview: ShadowPreviewView!
@@ -99,16 +95,6 @@ class SettingsView: NSView {
     private var quickPinShortcutRestoreButton: NSButton!
     private var quickPinShortcutRecordingMonitor: Any?
 
-    // Pin selected image shortcut card
-
-    // Pin clipboard image shortcut card
-
-    // Pin clipboard text shortcut card
-
-    // Edit selected image shortcut card
-
-    // Edit clipboard image shortcut card
-
     // Text recognition shortcut card
     private var textRecognitionShortcutTitleLabel: NSTextField!
     private var textRecognitionShortcutField: NSTextField!
@@ -123,18 +109,12 @@ class SettingsView: NSView {
     private var copyImageTextShortcutRestoreButton: NSButton!
     private var copyImageTextShortcutRecordingMonitor: Any?
 
-    // Screenshot translation shortcut card
-
     // Recording shortcut card
     private var recordShortcutTitleLabel: NSTextField!
     private var recordShortcutField: NSTextField!
     private var recordShortcutSetButton: NSButton!
     private var recordShortcutRestoreButton: NSButton!
     private var recordShortcutRecordingMonitor: Any?
-
-    // Image Merge shortcut card
-
-    // File upload shortcut card
 
     // Copy-to-clipboard (editor confirm) shortcut card
     private var clipboardShortcutTitleLabel: NSTextField!
@@ -149,9 +129,6 @@ class SettingsView: NSView {
     private var fileSaveShortcutSetButton: NSButton!
     private var fileSaveShortcutRestoreButton: NSButton!
     private var fileSaveShortcutRecordingMonitor: Any?
-
-    // History navigation shortcut cards
-
 
 
     private var shortcutResetButton: NSButton?
@@ -187,8 +164,6 @@ class SettingsView: NSView {
     private var aboutFeatureRequestTitleLabel: NSTextField?
     private var aboutBugReportTitleLabel: NSTextField?
     private var aboutUpdateTitleLabel: NSTextField?
-
-    // Error log card (About pane) — expandable macOS crash report viewer.
 
     // Sidebar / detail chrome
     private var selectedTab: SettingsTab = .general
@@ -532,7 +507,6 @@ class SettingsView: NSView {
             action: #selector(menuBarSwitchToggled(_:))
         )
         menuBarTitleLabel = menuBar.title
-        menuBarSwitch = menuBar.toggle
         togglesInner.addArrangedSubview(menuBar.row)
         menuBar.row.widthAnchor.constraint(equalTo: togglesInner.widthAnchor).isActive = true
         togglesInner.addArrangedSubview(rowDivider())
@@ -544,7 +518,6 @@ class SettingsView: NSView {
             action: #selector(launchAtLoginToggled(_:))
         )
         launchAtLoginTitleLabel = login.title
-        launchAtLoginSwitch = login.toggle
         togglesInner.addArrangedSubview(login.row)
         login.row.widthAnchor.constraint(equalTo: togglesInner.widthAnchor).isActive = true
 
@@ -617,7 +590,6 @@ class SettingsView: NSView {
         )
         windowShadowTitleLabel = toggle.title
         windowShadowSubtitleLabel = toggle.subtitle
-        windowShadowSwitch = toggle.toggle
         inner.addArrangedSubview(toggle.row)
         toggle.row.widthAnchor.constraint(equalTo: inner.widthAnchor).isActive = true
 
@@ -3011,12 +2983,9 @@ private final class FlippedView: NSView {
     override var isFlipped: Bool { true }
 }
 
-// MARK: - Sidebar / detail panels
-
+// MARK: - Detail panel
 
 private final class DetailPanel: NSView {
-    private var gradientLayer: CAGradientLayer?
-
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         commonInit()
@@ -3027,30 +2996,10 @@ private final class DetailPanel: NSView {
     }
 
     private func commonInit() {
-        // Content canvas: one step below the sidebar, hairline on the left.
         wantsLayer = true
         layer?.backgroundColor = Brand.canvas.cgColor
-        // No sidebar any more, so no hairline on the leading edge.
     }
-
-    override func layout() {
-        super.layout()
-        gradientLayer?.frame = CGRect(x: 0, y: 0, width: 1, height: bounds.height)
-    }
-
 }
-
-
-// MARK: - Sidebar tab button
-
-
-// MARK: - Action button (sidebar bottom row, mirrors TabButton's chrome)
-
-
-// MARK: - Settings tick slider
-
-
-// MARK: - Card view
 
 /// Live preview of the window-capture shadow: a small window-like card
 /// floating on a desktop-like backdrop. The shadow scales with `shadowSize`

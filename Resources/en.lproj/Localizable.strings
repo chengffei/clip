@@ -31,13 +31,11 @@
 "pinToolbarCopy" = "Copy pinned image";
 "pinToolbarDrag" = "Drag pinned image";
 "pinToolbarEdit" = "Edit pinned image";
-"pinToolbarEditText" = "Edit text";
 "pinMenuCopy" = "Copy";
 "pinMenuEdit" = "Edit";
 "pinMenuRecognizeText" = "Recognize Text";
 "pinMenuActualSize" = "Actual Size";
 "pinMenuClose" = "Close";
-"pinMenuCloseClearClipboard" = "Close and Clear Clipboard";
 
 /* Image-edit shortcuts */
 "textRecognitionShortcutHeader" = "Text Recognition";
@@ -215,8 +213,6 @@
 "settingsTabShortcuts" = "Shortcuts";
 "settingsTabPermissions" = "Permissions";
 "settingsTabAbout" = "About";
-"settingsSectionCapture" = "Capture";
-"settingsSectionSystem" = "Recognition & System";
 "tipMore" = "More";
 "tipDivider" = "Divider";
 "ocrResultBehaviorLabel" = "After recognition";

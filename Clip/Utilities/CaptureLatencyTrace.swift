@@ -6,7 +6,6 @@ struct CaptureTriggerContext: @unchecked Sendable {
         case keyboardShortcut = "keyboard-shortcut"
         case doubleCommand = "double-command"
         case menu
-        case countdown
         case programmatic
     }
 

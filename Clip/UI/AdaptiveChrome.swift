@@ -83,8 +83,6 @@ enum AdaptiveChrome {
 enum FloatingControlChrome {
     static let height: CGFloat = 32
     static let buttonSide: CGFloat = 24
-    static let cornerRadius: CGFloat = Brand.radius
-    static let borderWidth: CGFloat = Brand.hairline
     static let gap: CGFloat = 8
     static let screenEdgeInset: CGFloat = 4
 
