@@ -672,6 +672,16 @@ final class HotkeyManager {
         apply(keyCode: kc, modifiers: mods, to: item)
     }
 
+    static func applyCopyImageTextToMenuItem(_ item: NSMenuItem) {
+        item.attributedTitle = nil
+        guard let (kc, mods) = HotkeyManager.shared.currentCopyImageTextHotkey() else {
+            item.keyEquivalent = ""
+            item.keyEquivalentModifierMask = []
+            return
+        }
+        apply(keyCode: kc, modifiers: mods, to: item)
+    }
+
     static func applyColorPickerToMenuItem(_ item: NSMenuItem) {
         item.attributedTitle = nil
         guard let (kc, mods) = HotkeyManager.shared.currentColorPickerHotkey() else {

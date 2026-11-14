@@ -1245,17 +1245,17 @@ class SettingsView: NSView {
         row.addArrangedSubview(valueLabel)
         valueLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 120).isActive = true
 
-        let chooseButton = NSButton(title: L10n.savePathChoose, target: self, action: chooseAction)
+        let chooseButton = NSButton(title: L10n.savePathChooseButton, target: self, action: chooseAction)
         chooseButton.bezelStyle = .rounded
         chooseButton.controlSize = .small
-        chooseButton.font = NSFont.systemFont(ofSize: 11)
+        chooseButton.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: .small))
         chooseButton.setContentHuggingPriority(.required, for: .horizontal)
         row.addArrangedSubview(chooseButton)
 
         let revealButton = NSButton(title: L10n.savePathReveal, target: self, action: revealAction)
         revealButton.bezelStyle = .rounded
         revealButton.controlSize = .small
-        revealButton.font = NSFont.systemFont(ofSize: 11)
+        revealButton.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: .small))
         revealButton.setContentHuggingPriority(.required, for: .horizontal)
         row.addArrangedSubview(revealButton)
 
@@ -1688,7 +1688,7 @@ class SettingsView: NSView {
         let setButton = NSButton(title: L10n.shortcutSet, target: self, action: setAction)
         setButton.bezelStyle = .rounded
         setButton.controlSize = .small
-        setButton.font = NSFont.systemFont(ofSize: 12)
+        setButton.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: .small))
         setButton.translatesAutoresizingMaskIntoConstraints = false
         row.addArrangedSubview(setButton)
 
@@ -3162,9 +3162,9 @@ class SettingsView: NSView {
         recordingMicrophoneDeviceTitleLabel?.stringValue = L10n.recordingMicrophoneDeviceLabel
         refreshMicrophoneDevicePopup()
         screenshotSavePathTitleLabel?.stringValue = L10n.screenshotSavePathLabel
-        recordingSavePathChooseButton?.title = L10n.savePathChoose
+        recordingSavePathChooseButton?.title = L10n.savePathChooseButton
         recordingSavePathRevealButton?.title = L10n.savePathReveal
-        screenshotSavePathChooseButton?.title = L10n.savePathChoose
+        screenshotSavePathChooseButton?.title = L10n.savePathChooseButton
         screenshotSavePathRevealButton?.title = L10n.savePathReveal
         refreshSavePathControls()
         accessibilityNameLabel?.stringValue = L10n.accessibilityPermission
@@ -3360,11 +3360,11 @@ private final class CardView: NSView {
     private func commonInit() {
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.cornerRadius = 10
+        layer?.cornerRadius = Brand.radiusLarge
         layer?.cornerCurve = .continuous
         layer?.backgroundColor = Brand.surfaceRaised.cgColor
-        layer?.borderColor = NSColor.black.withAlphaComponent(0.042).cgColor
-        layer?.borderWidth = 1
+        layer?.borderColor = Brand.cardBorder.cgColor
+        layer?.borderWidth = Brand.hairline
     }
 }
 
