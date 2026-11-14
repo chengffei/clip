@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.0.dmg"><b>Download</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg"><b>Download</b></a> ·
   <a href="https://chengffei.github.io/clip/">Website</a> ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -54,7 +54,7 @@ Shottr is small but can’t record. CleanShot X does the most, for $35. PixPin i
 
 ## Install
 
-1. Download [Clip-0.8.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.0.dmg) and drag Clip into Applications.
+1. Download [Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg) and drag Clip into Applications.
 2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*. Or run this once in Terminal and open Clip as usual:
 
    ```sh
@@ -90,6 +90,10 @@ Trigger diagnostics are written to `~/Library/Logs/Clip/clip.log`. `Clip --diagn
 
 The built-in text recognition model is PP-OCRv6 small from [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) (Apache-2.0), converted to Core ML. See `Resources/OCRModels/NOTICE`.
 
+## Contributing
+
+Contributions are welcome. Code contributions require agreeing to the [Contributor License Agreement](CLA.md).
+
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE). Clip began as a fork of capcap (MIT); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.0.dmg"><b>下载</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg"><b>下载</b></a> ·
   <a href="https://chengffei.github.io/clip/">官网</a> ·
   <a href="#从源码构建">从源码构建</a>
 </p>
@@ -53,7 +53,7 @@ Shottr 小巧，但不能录屏。CleanShot X 功能最全，售价 35 美元。
 
 ## 安装
 
-1. 下载 [Clip-0.8.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.0.dmg)，把 Clip 拖进「应用程序」。
+1. 下载 [Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg)，把 Clip 拖进「应用程序」。
 2. Clip 已签名但未经 Apple 公证，首次打开会被 macOS 拦下。先打开一次并关掉提示，再到「系统设置 › 隐私与安全性」点「仍要打开」。也可以在「终端」里运行一次下面的命令，之后正常打开即可：
 
    ```sh
@@ -89,6 +89,10 @@ swift test                         # 180 多个测试；设置 CLIP_SNAPSHOT_DIR
 
 内置的文字识别模型是 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 PP-OCRv6 small（Apache-2.0），已转换为 Core ML，详见 `Resources/OCRModels/NOTICE`。
 
+## 参与贡献
+
+欢迎贡献。提交代码前需要同意[贡献者许可协议](CLA.md)。
+
 ## 许可
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)。Clip 由 capcap（MIT）分叉而来，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

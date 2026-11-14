@@ -1242,7 +1242,7 @@ class SettingsView: NSView {
         pin(infoInner, to: infoCard, insets: NSEdgeInsets(top: 4, left: 0, bottom: 4, right: 0))
 
 
-        let license = makeInfoRow(title: L10n.aboutLicense, value: "MIT")
+        let license = makeInfoRow(title: L10n.aboutLicense, value: "GPL-3.0")
         aboutLicenseTitleLabel = license.title
         infoInner.addArrangedSubview(license.row)
         license.row.widthAnchor.constraint(equalTo: infoInner.widthAnchor).isActive = true

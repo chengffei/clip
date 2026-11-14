@@ -1,6 +1,6 @@
 # Clip
 
-> Clip is a free, open-source macOS menu bar tool for region screenshots with annotations, region screen recording (MP4 or GIF) and on-device OCR to the clipboard. It wakes on a double-tap of the ⌘ key. Requires macOS 14 or later. MIT License.
+> Clip is a free, open-source macOS menu bar tool for region screenshots with annotations, region screen recording (MP4 or GIF) and on-device OCR to the clipboard. It wakes on a double-tap of the ⌘ key. Requires macOS 14 or later. GPL-3.0 License.
 
 Clip has no upload, no account and no telemetry. Its only network requests are a manual update check when the user chooses Check for Updates: a HEAD request to its GitHub releases page and a lookup of the latest tag on jsDelivr, sent at the same time. It is pure AppKit, built with Swift Package Manager, and ships as a universal binary.
 
@@ -15,7 +15,7 @@ Clip has no upload, no account and no telemetry. Its only network requests are a
 - Network: only the manual update check; nothing is uploaded
 - Download: about 15 MB DMG (the OCR model accounts for most of it)
 - Platform: macOS 14 or later; Apple silicon and Intel
-- Price: free; source code under the MIT License
+- Price: free; source code under the GPL-3.0
 - First launch: not notarized by Apple; allow once in System Settings › Privacy & Security › Open Anyway, then grant Accessibility and Screen Recording
 
 ## How it compares
@@ -25,11 +25,11 @@ Checked 30 October 2026.
 - Shottr: 2.3 MB, pay what you want with purchase reminders; scrolling capture and OCR but no screen recording; checks for updates and collects telemetry that can be turned off.
 - CleanShot X: 48 MB, $35 one-time or $10 a month with Cloud Pro; the most features, with optional cloud uploads.
 - PixPin: 127 MB, free with an optional membership, closed source; scrolling capture, on-device OCR, video and GIF recording.
-- Clip: 15 MB, free and MIT-licensed, goes online only for a manual update check.
+- Clip: 15 MB, free and GPL-3.0-licensed, goes online only for a manual update check.
 
 ## Links
 
 - [Website](https://chengffei.github.io/clip/): overview, screenshots, install steps and FAQ
 - [中文介绍页](https://chengffei.github.io/clip/zh/): Chinese version of the website
 - [Source code](https://github.com/chengffei/clip): GitHub repository and README
-- [Download Clip-0.8.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.0.dmg): latest release (also a .zip and a .sha256 on the Releases page)
+- [Download Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg): latest release (also a .zip and a .sha256 on the Releases page)
