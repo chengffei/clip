@@ -11,8 +11,12 @@ final class ShortcutRecordingTests: XCTestCase {
     }
 
     private func record(_ flags: NSEvent.ModifierFlags) -> (Int, Int) {
+        let hadCustom = Defaults.hasCustomScreenshotHotkey
         let oldCode = Defaults.screenshotHotkeyKeyCode, oldMods = Defaults.screenshotHotkeyModifiers
-        defer { Defaults.screenshotHotkeyKeyCode = oldCode; Defaults.screenshotHotkeyModifiers = oldMods; HotkeyManager.shared.endRecording() }
+        defer {
+            if hadCustom { Defaults.screenshotHotkeyKeyCode = oldCode; Defaults.screenshotHotkeyModifiers = oldMods } else { Defaults.clearScreenshotHotkey() }
+            HotkeyManager.shared.endRecording()
+        }
         Defaults.screenshotHotkeyKeyCode = kVK_F19; Defaults.screenshotHotkeyModifiers = 0
         let view = SettingsView(frame: NSRect(x: 0, y: 0, width: 680, height: 600), isStartup: false)
         let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
@@ -53,8 +57,12 @@ final class ShortcutRecordingTests: XCTestCase {
     }
 
     func testDoubleCommandRestoresDefaultTrigger() {
+        let hadCustom = Defaults.hasCustomScreenshotHotkey
         let oldCode = Defaults.screenshotHotkeyKeyCode, oldMods = Defaults.screenshotHotkeyModifiers
-        defer { Defaults.screenshotHotkeyKeyCode = oldCode; Defaults.screenshotHotkeyModifiers = oldMods; HotkeyManager.shared.endRecording() }
+        defer {
+            if hadCustom { Defaults.screenshotHotkeyKeyCode = oldCode; Defaults.screenshotHotkeyModifiers = oldMods } else { Defaults.clearScreenshotHotkey() }
+            HotkeyManager.shared.endRecording()
+        }
         Defaults.screenshotHotkeyKeyCode = kVK_ANSI_K
         Defaults.screenshotHotkeyModifiers = cmdKey | shiftKey
         XCTAssertTrue(Defaults.hasCustomScreenshotHotkey)
