@@ -42,7 +42,7 @@ enum ImageRotation: Int {
             data: nil,
             width: Int(pixelSize.width), height: Int(pixelSize.height),
             bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: source.outputRGBColorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
 

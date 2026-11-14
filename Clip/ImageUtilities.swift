@@ -2,6 +2,17 @@ import AppKit
 import ImageIO
 import UniformTypeIdentifiers
 
+extension CGImage {
+    /// The RGB space to re-render this image in without changing its colors:
+    /// its own when it is RGB (screen snapshots carry the display's profile,
+    /// Display P3 on recent Macs), sRGB otherwise. Device RGB would clip wide
+    /// gamut colors and write an untagged file.
+    var outputRGBColorSpace: CGColorSpace {
+        if let space = colorSpace, space.model == .rgb { return space }
+        return CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+    }
+}
+
 extension NSImage {
     static func imagePreservingPixelDimensions(from data: Data) -> NSImage? {
         if let rep = NSBitmapImageRep(data: data) {
