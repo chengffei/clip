@@ -37,7 +37,7 @@
 "pinMenuActualSize" = "Actual Size";
 "pinMenuClose" = "Close";
 
-/* Image-edit shortcuts */
+/* Other global shortcuts */
 "textRecognitionShortcutHeader" = "Text Recognition";
 "textRecognitionShortcutDefaultDisplay" = "Not set";
 "copyImageTextShortcutHeader" = "Copy Image Text";
@@ -93,8 +93,6 @@
 "scrollCaptureFinish" = "Done";
 "scrollCaptureNothingCaptured" = "No new content was captured, so no long screenshot was made";
 "scrollCaptureManualHint" = "Scroll inside the selection, then click Done or press any key";
-"finderEditExitHint" = "Editing from Finder. Press X to exit editing";
-"clipboardEditExitHint" = "Editing from clipboard. Press X to exit editing";
 "pinEditExitHint" = "Editing pinned image. Press X to exit editing";
 "fullScreenEditExitHint" = "Editing full-screen screenshot. Press X to exit editing";
 "editSuspendedToast" = "Edit suspended, trigger screenshot again to continue";
@@ -208,7 +206,7 @@
 /* Language */
 "languageHeader" = "Language";
 
-/* Settings sidebar tabs */
+/* Settings tabs */
 "settingsTabGeneral" = "General";
 "settingsTabShortcuts" = "Shortcuts";
 "settingsTabPermissions" = "Permissions";
@@ -236,7 +234,7 @@
 "toolbarSettingsSideHint" = "Behind the More button on the bar, one click away. A divider here becomes a menu separator";
 "toolbarSettingsHiddenTitle" = "Hidden tools";
 "toolbarSettingsHiddenHint" = "Tools dragged here appear nowhere. Drag a divider out to add a zone; drag it back to remove it";
-"toolbarSettingsFootnote" = "Shape tools on the bar (framed in blue) merge into one button: click the icon to use the shape shown, click the small chevron or long-press to pick another. The four-way arrow is the move handle; with no tool active you can also drag the selection itself";
+"toolbarSettingsFootnote" = "The four-way arrow is the move handle; with no tool active you can also drag the selection itself";
 "toolbarSettingsShortcutHint" = "Click a tool to record a shortcut, right-click to clear or restore it; dividers, More and the move handle take none";
 "toolbarSettingsShortcutRecording" = "Press a new shortcut for “%@” or press Esc to cancel";
 "toolbarSettingsShortcutRecord" = "Record Shortcut";
@@ -276,7 +274,7 @@
 "quitConfirmAction" = "Quit";
 "quitConfirmCancel" = "Cancel";
 
-/* Upload — settings tab */
+/* File name rules */
 "filenameRuleTitle" = "File name rules";
 "filenameRuleSubtitle" = "Controls image save defaults and recording save defaults. Extensions are added automatically";
 "filenameRulePresetLabel" = "Preset";
@@ -300,7 +298,7 @@
 "permissionGranted" = "Granted";
 "permissionNotGranted" = "Not granted";
 
-/* OCR & Translation — result panel */
+/* OCR — result panel */
 "ocrTextHeader" = "Recognized Text";
 "ocrRecognizing" = "Recognizing";
 "ocrNoText" = "No text found";
@@ -311,9 +309,6 @@
 "copyImageTextCopying" = "Copying";
 "copyImageTextCopied" = "Image text copied";
 "copyImageTextNoText" = "No text found";
-
-/* Image Merge */
-"mergeEditExitHint" = "Editing merged image. Press X to exit editing";
 
 /* Screenshot quality */
 "screenshotQualityTitle" = "Screenshot quality";

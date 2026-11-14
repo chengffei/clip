@@ -183,14 +183,11 @@ enum L10n {
     static var copiedToClipboard: String { s("copiedToClipboard") }
     static var mergedLongScreenshot: String { s("mergedLongScreenshot") }
     static var scrollCaptureManualHint: String { s("scrollCaptureManualHint") }
-    static var finderEditExitHint: String { s("finderEditExitHint") }
-    static var clipboardEditExitHint: String { s("clipboardEditExitHint") }
     static var pinEditExitHint: String { s("pinEditExitHint") }
     static var fullScreenEditExitHint: String { s("fullScreenEditExitHint") }
     static var editSuspendedToast: String { s("editSuspendedToast") }
     static var editSuspendedResumeToast: String { s("editSuspendedResumeToast") }
     static var fullScreenScreenshotFailed: String { s("fullScreenScreenshotFailed") }
-    static var mergeEditExitHint: String { s("mergeEditExitHint") }
     static func recordingSaved(to path: String) -> String {
         String(format: s("recordingSaved"), path)
     }

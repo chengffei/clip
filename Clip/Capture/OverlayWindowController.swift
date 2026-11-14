@@ -8,10 +8,7 @@ typealias WindowImageLoader = @Sendable (CGWindowID, NSSize) async throws -> NSI
 class OverlayWindowController {
     /// Where a preset image came from — drives the source-specific edit hint.
     enum PresetSource {
-        case finder
-        case clipboard
         case pin
-        case merge
         case fullScreen
     }
 
@@ -1064,16 +1061,10 @@ class OverlayWindowController {
         let anchorRect = convertToScreenRect(viewRect, view: selectionView)
         let hint: String
         switch presetSource {
-        case .clipboard:
-            hint = L10n.clipboardEditExitHint
-        case .pin:
-            hint = L10n.pinEditExitHint
         case .fullScreen:
             hint = L10n.fullScreenEditExitHint
-        case .merge:
-            hint = L10n.mergeEditExitHint
-        case .finder, nil:
-            hint = L10n.finderEditExitHint
+        case .pin, nil:
+            hint = L10n.pinEditExitHint
         }
         ToastWindow.show(
             message: hint,

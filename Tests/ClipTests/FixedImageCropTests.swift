@@ -56,13 +56,7 @@ final class FixedImageCropRendererTests: XCTestCase {
     func testEveryPresetImageSourceKeepsCropHandlesInteractive() throws {
         _ = NSApplication.shared
         let image = try makeTwoColorImage()
-        let sources: [OverlayWindowController.PresetSource] = [
-            .finder,
-            .clipboard,
-            .pin,
-            .merge,
-            .fullScreen,
-        ]
+        let sources: [OverlayWindowController.PresetSource] = [.pin, .fullScreen]
 
         for source in sources {
             let controller = OverlayWindowController(
