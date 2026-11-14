@@ -63,11 +63,11 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.cornerRadius = 12
+        layer?.cornerRadius = Brand.radiusLarge
         layer?.cornerCurve = .continuous
-        layer?.backgroundColor = NSColor.black.withAlphaComponent(0.028).cgColor
-        layer?.borderColor = NSColor.black.withAlphaComponent(0.042).cgColor
-        layer?.borderWidth = 1
+        layer?.backgroundColor = Brand.surfaceRaised.cgColor
+        layer?.borderColor = Brand.cardBorder.cgColor
+        layer?.borderWidth = Brand.hairline
 
         imageField.stringValue = Defaults.imageFilenameTemplate
         recordingField.stringValue = Defaults.recordingFilenameTemplate
@@ -187,8 +187,8 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
     }
 
     private func configurePrimaryLabel(_ label: NSTextField) {
-        label.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = Brand.text.withAlphaComponent(0.94)
+        label.font = NSFont.systemFont(ofSize: 13)
+        label.textColor = Brand.text
         label.alignment = .left
     }
 
@@ -203,7 +203,7 @@ final class FilenameRuleCard: NSView, NSTextFieldDelegate {
     private func rowDivider() -> NSView {
         let v = NSView()
         v.wantsLayer = true
-        v.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
+        v.layer?.backgroundColor = Brand.cardBorder.cgColor
         v.translatesAutoresizingMaskIntoConstraints = false
         v.heightAnchor.constraint(equalToConstant: 1).isActive = true
         return v
