@@ -38,6 +38,9 @@ class KeyMonitor {
     private var commandIsDown = false
     private var otherKeyPressed = false
     private let onTrigger: (CaptureTriggerContext) -> Void
+    /// A lone ⌘ tap was released quickly enough to be the first half of a
+    /// double-tap. Lets the snapshot start before the second tap lands.
+    var onFirstTapReleased: (() -> Void)?
 
     private struct ModifierSample {
         let commandIsDown: Bool
@@ -211,6 +214,15 @@ class KeyMonitor {
                 lastCommandPressTime = now
             }
             otherKeyPressed = false
+        }
+
+        if !sample.commandIsDown && commandIsDown,
+           !otherKeyPressed,
+           lastCommandPressTime > 0,
+           isRegularDoubleTapEnabled,
+           sample.eventUptime - lastCommandPressTime < Defaults.doubleTapInterval,
+           let onFirstTapReleased {
+            onFirstTapReleased()
         }
 
         commandIsDown = sample.commandIsDown

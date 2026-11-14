@@ -3417,6 +3417,18 @@ class ToolbarView: NSView {
         }
     }
 
+    /// One symbol image per tool, shared by every editor session: building
+    /// ~20 configured SF Symbols per editor open was a visible share of its
+    /// cost. Bounded by the number of toolbar items.
+    private static var buttonIconCache: [ToolbarItemID: NSImage] = [:]
+
+    private static func buttonIcon(for id: ToolbarItemID) -> NSImage? {
+        if let cached = buttonIconCache[id] { return cached }
+        let image = id.iconImage(pointSize: symbolPointSize)
+        buttonIconCache[id] = image
+        return image
+    }
+
     private func makeButton(for id: ToolbarItemID, frame: NSRect) -> NSView {
         if id.kind == .dragHandle {
             let handle = MoveSelectionDragHandle(frame: frame)
@@ -3438,7 +3450,8 @@ class ToolbarView: NSView {
             normalColor: id.normalColor,
             selectedColor: id.selectedColor,
             symbolPointSize: Self.symbolPointSize,
-            iconImage: id.iconImage(pointSize: Self.symbolPointSize)
+            iconImage: Self.buttonIcon(for: id),
+            inkCacheKey: "item:\(id.rawValue)|\(Self.symbolPointSize)"
         )
         btn.isProminent = (id == .confirm)
         btn.highlightCornerRadius = highlightCornerRadius
@@ -3538,7 +3551,10 @@ class ToolButton: NSButton {
     let selectedColor: NSColor
     private var hoverTrackingArea: NSTrackingArea?
 
-    init(frame: NSRect, symbolName: String, normalColor: NSColor, selectedColor: NSColor, symbolPointSize: CGFloat = 14, iconImage: NSImage? = nil) {
+    /// `inkCacheKey` names a supplied `iconImage` that is the same glyph for
+    /// every button made with that key, so its ink bounds are measured once
+    /// per process instead of once per editor session.
+    init(frame: NSRect, symbolName: String, normalColor: NSColor, selectedColor: NSColor, symbolPointSize: CGFloat = 14, iconImage: NSImage? = nil, inkCacheKey: String? = nil) {
         self.normalColor = normalColor
         self.selectedColor = selectedColor
         super.init(frame: frame)
@@ -3549,6 +3565,10 @@ class ToolButton: NSButton {
 
         if let iconImage {
             image = iconImage
+            if let inkCacheKey {
+                symbolInkImage = iconImage
+                symbolInkKey = inkCacheKey
+            }
         } else if let img = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) {
             let config = NSImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .medium, scale: .medium)
             // Keep the text tool's Aa glyph independent of the system language.

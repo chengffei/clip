@@ -2027,8 +2027,13 @@ class EditCanvasView: NSView {
             bytesPerRow: 0,
             bitsPerPixel: 0
         )
-        rep?.size = image.size
-        return rep
+        // Composite in the snapshot's own color space. A device-RGB canvas
+        // clipped Display P3 colors in every annotated export, while
+        // unannotated exports kept them.
+        let tagged = NSColorSpace(cgColorSpace: cgImage.outputRGBColorSpace)
+            .flatMap { rep?.retagging(with: $0) } ?? rep
+        tagged?.size = image.size
+        return tagged
     }
 
     func loadPreviewImage(_ image: NSImage) {
