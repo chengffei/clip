@@ -42,8 +42,6 @@
 	<true/>
 	<key>NSMainNibFile</key>
 	<string></string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Clip needs microphone access to record audio with screen recordings</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSScreenCaptureUsageDescription</key>

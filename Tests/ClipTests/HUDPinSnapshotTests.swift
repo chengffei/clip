@@ -14,7 +14,6 @@ final class HUDPinSnapshotTests: XCTestCase {
         for paused in [false, true] {
             let hud = RecordingHUDPanel()
             hud.update(elapsedSeconds: 83)
-            hud.configureAudioButtons(systemAudio: true, microphone: false)
             if paused { hud.setPaused(true) }
             let content = try XCTUnwrap(hud.contentView)
             let size = hud.frame.size
@@ -75,19 +74,12 @@ final class HUDPinSnapshotTests: XCTestCase {
     func testRecordingHUDContextMenuMirrorsControls() {
         _ = NSApplication.shared
         let hud = RecordingHUDPanel()
-        hud.configureAudioButtons(systemAudio: true, microphone: false)
         let menu = hud.makeContextMenu()
         let titles = menu.items.filter { !$0.isSeparatorItem }.map(\.title)
         XCTAssertEqual(titles, [
             L10n.recordingPause,
             L10n.recordingStop,
-            L10n.hudMenuSystemAudio,
-            L10n.hudMenuMicrophone,
-            L10n.hudMenuMicrophoneInput,
         ])
-        XCTAssertEqual(menu.items.first { $0.title == L10n.hudMenuSystemAudio }?.state, .on)
-        XCTAssertEqual(menu.items.first { $0.title == L10n.hudMenuMicrophone }?.state, .off)
-        XCTAssertNotNil(menu.items.last?.submenu, "input device picker is one submenu level")
         XCTAssertTrue(menu.items.allSatisfy { $0.keyEquivalent.isEmpty }, "context menus don't show shortcuts")
 
         hud.setPaused(true)

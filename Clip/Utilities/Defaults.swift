@@ -207,36 +207,12 @@ enum L10n {
     static var recordingFormatChoiceTitle: String { s("recordingFormatChoiceTitle") }
     static var recordingFormatChoiceMessage: String { s("recordingFormatChoiceMessage") }
 
-    // Recording audio
-    static var recordingSystemAudioLabel: String { s("recordingSystemAudioLabel") }
-    static var recordingSystemAudioHint: String { s("recordingSystemAudioHint") }
-    static var recordingMicrophoneLabel: String { s("recordingMicrophoneLabel") }
-    static var recordingMicrophoneHint: String { s("recordingMicrophoneHint") }
-    static var recordingMicrophoneDeniedTitle: String { s("recordingMicrophoneDeniedTitle") }
-    static var recordingMicrophoneDeniedMessage: String { s("recordingMicrophoneDeniedMessage") }
-    static var recordingMicrophoneOpenSettings: String { s("recordingMicrophoneOpenSettings") }
-    static var recordingMicrophoneTooltipOn: String { s("recordingMicrophoneTooltipOn") }
-    static var recordingMicrophoneTooltipOff: String { s("recordingMicrophoneTooltipOff") }
-    static var recordingSystemAudioTooltipOn: String { s("recordingSystemAudioTooltipOn") }
-    static var recordingSystemAudioTooltipOff: String { s("recordingSystemAudioTooltipOff") }
-    static var recordingMicrophoneDeviceLabel: String { s("recordingMicrophoneDeviceLabel") }
-    static var recordingMicrophoneDeviceDefault: String { s("recordingMicrophoneDeviceDefault") }
-    static var recordingMicrophoneDeviceMenuHint: String { s("recordingMicrophoneDeviceMenuHint") }
-    static var recordingSystemAudioChangeFailed: String { s("recordingSystemAudioChangeFailed") }
-    static var recordingMicrophoneStartFailed: String { s("recordingMicrophoneStartFailed") }
-
-    // Microphone permission row
-    static var microphonePermission: String { s("microphonePermission") }
-    static var microphoneDescription: String { s("microphoneDescription") }
     static func screenshotSaved(to path: String) -> String {
         String(format: s("screenshotSaved"), path)
     }
     static var recordingStop: String { s("recordingStop") }
     static var recordingPause: String { s("recordingPause") }
     static var recordingResume: String { s("recordingResume") }
-    static var hudMenuSystemAudio: String { s("hudMenuSystemAudio") }
-    static var hudMenuMicrophone: String { s("hudMenuMicrophone") }
-    static var hudMenuMicrophoneInput: String { s("hudMenuMicrophoneInput") }
     static func recordingFailed(_ message: String) -> String {
         String(format: s("recordingFailed"), message)
     }
@@ -796,48 +772,6 @@ struct Defaults {
         }
         set {
             defaults.set(newValue.rawValue, forKey: "recordingSavePreference")
-        }
-    }
-
-    /// Whether the next recording should capture system audio (what the Mac is
-    /// playing). Requires screen-recording permission (already needed for video)
-    /// — no separate permission prompt for the user.
-    static var recordingSystemAudioEnabled: Bool {
-        get {
-            if defaults.object(forKey: "recordingSystemAudioEnabled") == nil {
-                return false
-            }
-            return defaults.bool(forKey: "recordingSystemAudioEnabled")
-        }
-        set {
-            defaults.set(newValue, forKey: "recordingSystemAudioEnabled")
-        }
-    }
-
-    /// Whether the next recording should capture microphone audio. Requires
-    /// microphone permission; permission is requested lazily when the user
-    /// first enables this toggle.
-    static var recordingMicrophoneEnabled: Bool {
-        get {
-            if defaults.object(forKey: "recordingMicrophoneEnabled") == nil {
-                return false
-            }
-            return defaults.bool(forKey: "recordingMicrophoneEnabled")
-        }
-        set {
-            defaults.set(newValue, forKey: "recordingMicrophoneEnabled")
-        }
-    }
-
-    /// UID of the CoreAudio input device used for microphone recording.
-    /// nil means the system default input device. If the persisted device is
-    /// unplugged at recording time, the system default is used instead.
-    static var recordingMicrophoneDeviceUID: String? {
-        get {
-            defaults.string(forKey: "recordingMicrophoneDeviceUID")
-        }
-        set {
-            defaults.set(newValue, forKey: "recordingMicrophoneDeviceUID")
         }
     }
 
