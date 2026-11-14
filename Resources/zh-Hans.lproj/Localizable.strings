@@ -36,6 +36,8 @@
 "pinMenuRecognizeText" = "识别文字";
 "pinMenuActualSize" = "实际大小";
 "pinMenuClose" = "关闭";
+"ocrPanelPin" = "保持窗口打开";
+"ocrPanelUnpin" = "允许窗口关闭";
 
 /* Other global shortcuts */
 "textRecognitionShortcutHeader" = "文字识别";
@@ -73,7 +75,7 @@
 "takeFullScreenScreenshot" = "截全屏";
 "record" = "录制";
 "colorPicker" = "取色器";
-"settings" = "设置";
+"settings" = "设置…";
 "quitApp" = "退出 Clip";
 
 /* Cursor chip */
@@ -199,7 +201,7 @@
 "arrowStyleDotTail" = "圆点箭头";
 "arrowStylePlain" = "直线";
 "insertImageFromClipboard" = "从剪贴板插入";
-"insertImageFromFile" = "从本地文件插入";
+"insertImageFromFile" = "从本地文件插入…";
 "insertImageChooseFile" = "选择图片";
 "insertImageNoClipboardImage" = "剪贴板中没有图片";
 
@@ -334,6 +336,7 @@
 "recordingSaveFormatSettingLabel" = "录制格式";
 "screenshotSavePathLabel" = "截图保存路径";
 "savePathChoose" = "选择";
+"savePathChooseButton" = "选择…";
 "savePathReveal" = "打开";
 "chooseRecordingSavePathTitle" = "选择录制保存路径";
 "chooseScreenshotSavePathTitle" = "选择截图保存路径";

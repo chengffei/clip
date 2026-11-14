@@ -17,6 +17,8 @@ enum Brand {
     static let lineStrong = NSColor.black.withAlphaComponent(0.14)
     static let subtleFill = NSColor.black.withAlphaComponent(0.05)
     static let selectedFill = NSColor.black.withAlphaComponent(0.08)
+    /// Outline and row dividers of settings cards.
+    static let cardBorder = NSColor.black.withAlphaComponent(0.042)
 
     // Text
     static let text = NSColor(srgbRed: 0.114, green: 0.114, blue: 0.122, alpha: 1)          // #1D1D1F

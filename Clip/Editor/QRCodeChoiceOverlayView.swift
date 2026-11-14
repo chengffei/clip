@@ -43,6 +43,7 @@ final class QRCodeChoiceOverlayView: NSView {
         for choice in choices {
             let button = QRCodeChoiceButton(frame: .zero)
             button.toolTip = L10n.copyQRCodeContent
+            button.setAccessibilityLabel(L10n.copyQRCodeContent)
             button.onClick = { [weak self] in
                 self?.onChoose(choice)
             }

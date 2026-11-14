@@ -36,6 +36,8 @@
 "pinMenuRecognizeText" = "Recognize Text";
 "pinMenuActualSize" = "Actual Size";
 "pinMenuClose" = "Close";
+"ocrPanelPin" = "Keep Window Open";
+"ocrPanelUnpin" = "Allow Window to Close";
 
 /* Other global shortcuts */
 "textRecognitionShortcutHeader" = "Text Recognition";
@@ -73,7 +75,7 @@
 "takeFullScreenScreenshot" = "Capture Full Screen";
 "record" = "Record";
 "colorPicker" = "Color Picker";
-"settings" = "Settings";
+"settings" = "Settings…";
 "quitApp" = "Quit Clip";
 
 /* Cursor chip */
@@ -104,7 +106,7 @@
 "recordingFailed" = "Recording failed: %@";
 "saveRecordingPrompt" = "Save";
 "recordingFormatLabel" = "Format";
-"recordingFormatManual" = "Choose each time";
+"recordingFormatManual" = "Choose Each Time";
 "recordingFormatMP4" = "MP4";
 "recordingFormatGIF" = "GIF";
 "recordingFormatChoiceTitle" = "Choose Recording Format";
@@ -186,11 +188,11 @@
 "textStrokeEffect" = "Stroke";
 "textCalloutEffect" = "Callout";
 "textFontLabel" = "Font";
-"textFontSystemDefault" = "System default";
+"textFontSystemDefault" = "System Default";
 "shapeFillEffect" = "Fill";
 "shapeFillNone" = "Outline";
 "shapeFillOpaque" = "Fill";
-"shapeFillTranslucent" = "Translucent fill";
+"shapeFillTranslucent" = "Translucent Fill";
 "shapeStyleRounded" = "Rounded rectangle style";
 "shapeStyleHandDrawn" = "Hand-drawn style";
 "arrowStyleTapered" = "Tapered arrow";
@@ -199,7 +201,7 @@
 "arrowStyleDotTail" = "Dot-tail arrow";
 "arrowStylePlain" = "Straight line";
 "insertImageFromClipboard" = "From Clipboard";
-"insertImageFromFile" = "From File";
+"insertImageFromFile" = "From File…";
 "insertImageChooseFile" = "Choose Image";
 "insertImageNoClipboardImage" = "No image in clipboard";
 
@@ -214,13 +216,13 @@
 "tipMore" = "More";
 "tipDivider" = "Divider";
 "ocrResultBehaviorLabel" = "After recognition";
-"ocrResultBehaviorCopy" = "Copy to clipboard";
-"ocrResultBehaviorPanel" = "Open the result panel";
+"ocrResultBehaviorCopy" = "Copy to Clipboard";
+"ocrResultBehaviorPanel" = "Open the Result Panel";
 "ocrLanguageSetLabel" = "System recognition languages";
 "ocrEngineLabel" = "Engine";
-"ocrEngineAuto" = "Automatic (recommended)";
-"ocrEngineSystem" = "System recognition only";
-"ocrEngineBundled" = "Built-in model only";
+"ocrEngineAuto" = "Automatic (Recommended)";
+"ocrEngineSystem" = "System Recognition Only";
+"ocrEngineBundled" = "Built-in Model Only";
 "ocrEngineDescription" = "Images never leave this Mac. The built-in model is PaddleOCR v6";
 "ocrLanguageSetChineseEnglish" = "Chinese and English";
 "ocrLanguageSetEastAsian" = "Chinese, English, Japanese, Korean, Traditional";
@@ -253,10 +255,10 @@
 /* About pane */
 "aboutTagline" = "Menu bar screenshot tool";
 "aboutLicense" = "License";
-"aboutSourceCode" = "Source code";
+"aboutSourceCode" = "Source Code";
 "aboutStarOnGitHub" = "Star Clip on GitHub 🌟";
-"aboutFeatureRequest" = "Request a feature";
-"aboutBugReport" = "Report a bug";
+"aboutFeatureRequest" = "Request a Feature";
+"aboutBugReport" = "Report a Bug";
 "checkForUpdates" = "Check for Updates…";
 "updateChecking" = "Checking for updates…";
 "updateAvailableTitle" = "Clip %@ is available";
@@ -280,10 +282,10 @@
 "filenameRulePresetLabel" = "Preset";
 "filenameRulePresetCustom" = "Custom";
 "filenameRulePresetShort" = "Short";
-"filenameRulePresetCompact" = "Tiny link";
-"filenameRulePresetUnique" = "Avoid duplicates";
-"filenameRulePresetCounter" = "Daily counter";
-"filenameRulePresetRestore" = "Restore default";
+"filenameRulePresetCompact" = "Tiny Link";
+"filenameRulePresetUnique" = "Avoid Duplicates";
+"filenameRulePresetCounter" = "Daily Counter";
+"filenameRulePresetRestore" = "Restore Default";
 "filenameRuleImageLabel" = "Image";
 "filenameRuleRecordingLabel" = "Recording";
 "filenameRuleVariablesLabel" = "Variables";
@@ -334,6 +336,7 @@
 "recordingSaveFormatSettingLabel" = "Recording format";
 "screenshotSavePathLabel" = "Screenshot save path";
 "savePathChoose" = "Choose";
+"savePathChooseButton" = "Choose…";
 "savePathReveal" = "Open";
 "chooseRecordingSavePathTitle" = "Choose Recording Save Path";
 "chooseScreenshotSavePathTitle" = "Choose Screenshot Save Path";

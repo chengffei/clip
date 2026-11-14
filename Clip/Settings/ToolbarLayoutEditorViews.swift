@@ -371,6 +371,7 @@ final class ToolbarSlotGridView: NSView {
         guard bounds.width > 0 else { return }
         columns = currentColumns()
         let animated = animateNextLayout
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         animateNextLayout = false
         for (index, tile) in tiles.enumerated() {
             let frame = slotFrame(at: index)

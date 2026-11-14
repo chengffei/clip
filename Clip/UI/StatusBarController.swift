@@ -69,6 +69,7 @@ class StatusBarController: NSObject {
         let ocrItem = NSMenuItem(title: L10n.copyImageTextShortcutHeader, action: #selector(copyImageText), keyEquivalent: "")
         ocrItem.target = self
         ocrItem.image = Self.menuIcon(systemName: "text.viewfinder")
+        HotkeyManager.applyCopyImageTextToMenuItem(ocrItem)
         menu.addItem(ocrItem)
 
         let colorPickerItem = NSMenuItem(title: L10n.colorPicker, action: #selector(colorPicker), keyEquivalent: "")
@@ -112,6 +113,9 @@ class StatusBarController: NSObject {
            let image = NSImage(contentsOf: url) {
             image.size = size
             image.isTemplate = true
+            // The SVG carries no description; VoiceOver would announce an
+            // unlabeled image in the menu bar.
+            image.accessibilityDescription = "Clip"
             return image
         }
 

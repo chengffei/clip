@@ -76,6 +76,7 @@ enum L10n {
     static var recordingSaveFormatSettingLabel: String { s("recordingSaveFormatSettingLabel") }
     static var screenshotSavePathLabel: String { s("screenshotSavePathLabel") }
     static var savePathChoose: String { s("savePathChoose") }
+    static var savePathChooseButton: String { s("savePathChooseButton") }
     static var savePathReveal: String { s("savePathReveal") }
     static var chooseRecordingSavePathTitle: String { s("chooseRecordingSavePathTitle") }
     static var chooseScreenshotSavePathTitle: String { s("chooseScreenshotSavePathTitle") }
@@ -106,6 +107,8 @@ enum L10n {
     static var quickPinShortcutDefaultDisplay: String { s("quickPinShortcutDefaultDisplay") }
     static var quickPinShortcutClear: String { s("quickPinShortcutClear") }
     static var pinToolbarClose: String { s("pinToolbarClose") }
+    static var ocrPanelPin: String { s("ocrPanelPin") }
+    static var ocrPanelUnpin: String { s("ocrPanelUnpin") }
     static var pinToolbarCopy: String { s("pinToolbarCopy") }
     static var pinToolbarDrag: String { s("pinToolbarDrag") }
     static var pinToolbarEdit: String { s("pinToolbarEdit") }

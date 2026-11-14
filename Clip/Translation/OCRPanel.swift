@@ -736,7 +736,7 @@ private final class PanelPinButton: NSButton {
     override var acceptsFirstResponder: Bool { false }
 
     func setPinned(_ pinned: Bool) {
-        let label = pinned ? "Unpin dialog" : "Pin dialog"
+        let label = pinned ? L10n.ocrPanelUnpin : L10n.ocrPanelPin
         let symbolName = pinned ? "pin.fill" : "pin"
         image = NSImage(systemSymbolName: symbolName, accessibilityDescription: label)?
             .withSymbolConfiguration(pinSymbolConfiguration)
