@@ -231,16 +231,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         HotkeyManager.shared.unregisterColorPicker()
     }
 
-    /// KeyMonitor entry point for plain double-tap ⌘. While an overlay is
-    /// active this is the default copy-to-clipboard hotkey; otherwise it falls
-    /// through to the regular screenshot trigger.
     /// A lone ⌘ tap may be the first half of ⌘⌘. Start the frozen-desktop
     /// snapshot now: the second tap usually lands 100–200ms later, and the
     /// snapshot (60–110ms warm) is then ready when the overlay appears
     /// instead of arriving after it. Unused snapshots are dropped once the
     /// double-tap window has passed.
     private func beginSpeculativeSnapshot() {
-        guard overlayController == nil, recordingEngine == nil, !countdownActive,
+        guard overlayController == nil, recordingEngine == nil,
               suspendedEditDraft == nil, !fullScreenCaptureInFlight,
               AppPermissions.screenRecordingGranted else { return }
         ScreenSnapshotProvider.shared.beginSpeculativeCapture(
@@ -249,6 +246,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    /// KeyMonitor entry point for plain double-tap ⌘. While an overlay is
+    /// active this is the default copy-to-clipboard hotkey; otherwise it falls
+    /// through to the regular screenshot trigger.
     private func handleDoubleTapCommand(triggerContext: CaptureTriggerContext) {
         FileLog.write("doubleTap recording=\(recordingEngine != nil) overlay=\(overlayController != nil)")
         if recordingEngine != nil {
