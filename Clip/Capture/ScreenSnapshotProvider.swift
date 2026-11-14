@@ -30,35 +30,56 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
 
     private let contentCache = ScreenSnapshotContentCache()
     private let cacheEpoch = ScreenSnapshotCacheEpoch()
+    private let speculation = SpeculativeSnapshotSlot()
 
     private init() {}
 
-    func prewarm() {
+    /// Loads the shareable content and takes one 16-pixel capture. The
+    /// content alone left the first real snapshot after launch at ~190ms;
+    /// a tiny capture also wakes the ScreenCaptureKit capture path and
+    /// brings it to ~80ms (SnapshotLatencyLiveBench, 2026-11-14).
+    @discardableResult
+    func prewarm() -> Task<Void, Never> {
         let contentCache = contentCache
         let cacheEpoch = cacheEpoch.current
-        Task.detached(priority: .utility) {
-            do {
-                _ = try await contentCache.captureContent(
-                    requiredDisplayIDs: [],
-                    cacheEpoch: cacheEpoch
-                )
-            } catch {}
+        return Task.detached(priority: .utility) {
+            await Self.warmCapturePath(contentCache: contentCache, displayIDs: [], cacheEpoch: cacheEpoch)
         }
     }
 
     func invalidateAndPrewarm(displayIDs: Set<CGDirectDisplayID>) {
         let contentCache = contentCache
         let cacheEpoch = cacheEpoch.advance()
+        speculation.clear()
         Task.detached(priority: .utility) {
-            do {
-                _ = try await contentCache.captureContent(
-                    requiredDisplayIDs: displayIDs,
-                    cacheEpoch: cacheEpoch
-                )
-            } catch is CancellationError {
-                return
-            } catch {}
+            await Self.warmCapturePath(contentCache: contentCache, displayIDs: displayIDs, cacheEpoch: cacheEpoch)
         }
+    }
+
+    private static func warmCapturePath(
+        contentCache: ScreenSnapshotContentCache,
+        displayIDs: Set<CGDirectDisplayID>,
+        cacheEpoch: Int
+    ) async {
+        guard let content = try? await contentCache.captureContent(
+            requiredDisplayIDs: displayIDs,
+            cacheEpoch: cacheEpoch
+        ) else { return }
+        let mainDisplayID = CGMainDisplayID()
+        guard let display = content.displays.first(where: { $0.displayID == mainDisplayID })
+            ?? content.displays.first else { return }
+        let filter = SCContentFilter(display: display, excludingWindows: [])
+        let configuration = SCStreamConfiguration()
+        configuration.sourceRect = CGRect(x: 0, y: 0, width: 8, height: 8)
+        configuration.width = 16
+        configuration.height = 16
+        configuration.capturesAudio = false
+        configuration.showsCursor = false
+        configuration.queueDepth = 1
+        _ = try? await SCScreenshotManager.captureImage(
+            contentFilter: filter,
+            configuration: configuration
+        )
     }
 
     @discardableResult
@@ -70,9 +91,28 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
         let contentCache = contentCache
         let requiredDisplayIDs = Set(targets.map(\.displayID))
         let cacheEpoch = cacheEpoch.current
+        let speculative = speculation.take(matching: targets, cacheEpoch: cacheEpoch)
 
         let task = Task.detached(priority: .userInitiated) {
             guard !Task.isCancelled else { return }
+
+            if let speculative {
+                let events = await speculative.task.value
+                let complete = !events.isEmpty && events.allSatisfy {
+                    if case .image = $0 { return true }
+                    return false
+                }
+                if complete {
+                    FileLog.write("capture latency snapshot reused speculative age=\(speculative.ageMS())ms")
+                    for event in events {
+                        guard !Task.isCancelled else { return }
+                        delivery.send(event)
+                    }
+                    guard !Task.isCancelled else { return }
+                    delivery.send(.finished)
+                    return
+                }
+            }
 
             do {
                 let content = try await contentCache.captureContent(
@@ -114,6 +154,45 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
             delivery.cancel()
             task.cancel()
         }
+    }
+
+    /// Takes the snapshot a likely double-tap ⌘ is about to ask for, at the
+    /// release of a lone first tap. `capture(targets:)` reuses it when the
+    /// second tap arrives within `lifetime`; otherwise it is dropped, so a
+    /// lone ⌘ tap holds its full-screen image for well under a second.
+    func beginSpeculativeCapture(
+        targets: [ScreenSnapshotTarget],
+        lifetime: TimeInterval
+    ) {
+        guard !targets.isEmpty else { return }
+        let contentCache = contentCache
+        let requiredDisplayIDs = Set(targets.map(\.displayID))
+        let cacheEpoch = cacheEpoch.current
+        let task = Task.detached(priority: .userInitiated) { () -> [ScreenSnapshotEvent] in
+            guard let content = try? await contentCache.captureContent(
+                requiredDisplayIDs: requiredDisplayIDs,
+                cacheEpoch: cacheEpoch
+            ), !Task.isCancelled else { return [] }
+            return await withTaskGroup(of: ScreenSnapshotEvent.self) { group in
+                for target in targets {
+                    group.addTask { await Self.capture(target: target, content: content) }
+                }
+                var events: [ScreenSnapshotEvent] = []
+                for await event in group { events.append(event) }
+                return events
+            }
+        }
+        speculation.store(
+            task: task,
+            targets: targets,
+            cacheEpoch: cacheEpoch,
+            lifetime: lifetime
+        )
+    }
+
+    /// Drops a pending speculative snapshot and its image.
+    func discardSpeculativeCapture() {
+        speculation.clear()
     }
 
     private static func capture(
@@ -179,6 +258,80 @@ final class ScreenSnapshotProvider: ScreenSnapshotProviding {
         // capture even though no subsequent frame can be consumed.
         configuration.queueDepth = 1
         return configuration
+    }
+}
+
+/// At most one speculative snapshot, alive for `lifetime` after it starts.
+private final class SpeculativeSnapshotSlot: @unchecked Sendable {
+    struct Entry {
+        let id: UUID
+        let targets: [ScreenSnapshotTarget]
+        let cacheEpoch: Int
+        let startUptime: TimeInterval
+        let lifetime: TimeInterval
+        let task: Task<[ScreenSnapshotEvent], Never>
+
+        func ageMS() -> Int {
+            Int(((ProcessInfo.processInfo.systemUptime - startUptime) * 1000).rounded())
+        }
+    }
+
+    private let lock = NSLock()
+    private var entry: Entry?
+
+    func store(
+        task: Task<[ScreenSnapshotEvent], Never>,
+        targets: [ScreenSnapshotTarget],
+        cacheEpoch: Int,
+        lifetime: TimeInterval
+    ) {
+        let id = UUID()
+        let replaced: Entry? = lock.withLock {
+            let old = entry
+            entry = Entry(
+                id: id,
+                targets: targets,
+                cacheEpoch: cacheEpoch,
+                startUptime: ProcessInfo.processInfo.systemUptime,
+                lifetime: lifetime,
+                task: task
+            )
+            return old
+        }
+        replaced?.task.cancel()
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + lifetime) { [weak self] in
+            self?.clear(id: id)
+        }
+    }
+
+    func take(matching targets: [ScreenSnapshotTarget], cacheEpoch: Int) -> Entry? {
+        lock.withLock {
+            guard let current = entry else { return nil }
+            entry = nil
+            let now = ProcessInfo.processInfo.systemUptime
+            guard current.cacheEpoch == cacheEpoch,
+                  now - current.startUptime <= current.lifetime,
+                  Self.same(current.targets, targets) else {
+                current.task.cancel()
+                return nil
+            }
+            return current
+        }
+    }
+
+    func clear(id: UUID? = nil) {
+        let dropped: Entry? = lock.withLock {
+            guard let current = entry, id == nil || current.id == id else { return nil }
+            entry = nil
+            return current
+        }
+        dropped?.task.cancel()
+    }
+
+    private static func same(_ a: [ScreenSnapshotTarget], _ b: [ScreenSnapshotTarget]) -> Bool {
+        a.count == b.count && zip(a, b).allSatisfy {
+            $0.displayID == $1.displayID && $0.bounds == $1.bounds && $0.scale == $1.scale
+        }
     }
 }
 

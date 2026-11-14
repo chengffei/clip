@@ -440,7 +440,7 @@ class OverlayWindowController {
         }
     }
 
-    private static func snapshotTargets() -> [ScreenSnapshotTarget] {
+    static func snapshotTargets() -> [ScreenSnapshotTarget] {
         NSScreen.screens.compactMap { screen in
             guard let displayID = screen.deviceDescription[
                 NSDeviceDescriptionKey("NSScreenNumber")

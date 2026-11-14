@@ -40,6 +40,9 @@ class KeyMonitor {
     private var otherKeyPressed = false
     private let onTrigger: (CaptureTriggerContext) -> Void
     private let onCountdownTrigger: () -> Void
+    /// A lone ⌘ tap was released quickly enough to be the first half of a
+    /// double-tap. Lets the snapshot start before the second tap lands.
+    var onFirstTapReleased: (() -> Void)?
 
     /// Which path is live, for the settings window's diagnostics line.
     private(set) var activePath: String = "none"
@@ -229,6 +232,16 @@ class KeyMonitor {
                 lastCommandPressOption = sample.optionIsDown
             }
             otherKeyPressed = false
+        }
+
+        if !sample.commandIsDown && commandIsDown,
+           !otherKeyPressed,
+           lastCommandPressTime > 0,
+           !lastCommandPressOption,
+           isRegularDoubleTapEnabled,
+           sample.eventUptime - lastCommandPressTime < Defaults.doubleTapInterval,
+           let onFirstTapReleased {
+            onFirstTapReleased()
         }
 
         commandIsDown = sample.commandIsDown
