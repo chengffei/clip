@@ -73,6 +73,10 @@ class SettingsView: NSView {
     private var shortcutSetButton: NSButton!
     private var shortcutRestoreButton: NSButton!
     private var shortcutRecordingMonitor: Any?
+    /// Watches bare ⌘ taps while the screenshot shortcut is recording, so a
+    /// double-tap ⌘ (a modifier-only gesture that never sends keyDown) can be
+    /// recorded to restore the default trigger.
+    private var shortcutDoubleCommandMonitor: Any?
 
     // Full-screen screenshot shortcut card
     private var fullScreenScreenshotShortcutTitleLabel: NSTextField!
@@ -2079,8 +2083,18 @@ class SettingsView: NSView {
         cancelShortcutRecordings(except: .screenshot)
         HotkeyManager.shared.beginRecording()
         shortcutSetButton.title = L10n.shortcutCancel
-        shortcutField.stringValue = L10n.shortcutWaiting
+        shortcutField.stringValue = L10n.shortcutWaitingOrDoubleCommand
         shortcutRestoreButton.isHidden = true
+
+        var detector = DoubleCommandTapDetector()
+        shortcutDoubleCommandMonitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged, .keyDown]) { [weak self] event in
+            guard let self else { return event }
+            if detector.handle(event, interval: Defaults.doubleTapInterval) {
+                Defaults.clearScreenshotHotkey()
+                self.finishShortcutRecording()
+            }
+            return event
+        }
 
         shortcutRecordingMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self else { return event }
@@ -2132,7 +2146,15 @@ class SettingsView: NSView {
         refreshShortcutDisplay()
     }
 
+    private func removeShortcutDoubleCommandMonitor() {
+        if let m = shortcutDoubleCommandMonitor {
+            NSEvent.removeMonitor(m)
+            shortcutDoubleCommandMonitor = nil
+        }
+    }
+
     private func finishShortcutRecording() {
+        removeShortcutDoubleCommandMonitor()
         if let m = shortcutRecordingMonitor {
             NSEvent.removeMonitor(m)
             shortcutRecordingMonitor = nil
@@ -2143,6 +2165,7 @@ class SettingsView: NSView {
 
     func cancelShortcutRecording() {
         guard shortcutRecordingMonitor != nil else { return }
+        removeShortcutDoubleCommandMonitor()
         if let m = shortcutRecordingMonitor {
             NSEvent.removeMonitor(m)
             shortcutRecordingMonitor = nil
@@ -3200,5 +3223,39 @@ private final class HoverButton: NSButton {
         layer?.backgroundColor = NSColor.black.withAlphaComponent(0.07).cgColor
         super.mouseDown(with: event)
         layer?.backgroundColor = NSColor.black.withAlphaComponent(0.042).cgColor
+    }
+}
+
+/// Recognizes two bare ⌘ presses within `interval` with nothing else pressed
+/// in between, matching the KeyMonitor trigger.
+struct DoubleCommandTapDetector {
+    private var commandIsDown = false
+    private var interrupted = false
+    private var lastPress: TimeInterval = 0
+
+    /// Feeds a flagsChanged or keyDown event; true when the second tap lands.
+    mutating func handle(_ event: NSEvent, interval: TimeInterval) -> Bool {
+        if event.type == .keyDown {
+            interrupted = true
+            return false
+        }
+        guard event.type == .flagsChanged else { return false }
+        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        if !flags.subtracting(.command).isEmpty {
+            interrupted = true
+            commandIsDown = flags.contains(.command)
+            return false
+        }
+        let down = flags.contains(.command)
+        defer { commandIsDown = down }
+        guard down, !commandIsDown else { return false }
+        let now = event.timestamp
+        if !interrupted, lastPress > 0, now - lastPress < interval {
+            lastPress = 0
+            return true
+        }
+        lastPress = now
+        interrupted = false
+        return false
     }
 }

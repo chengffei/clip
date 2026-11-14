@@ -21,6 +21,7 @@
 "shortcutSet" = "Set";
 "shortcutCancel" = "Cancel";
 "shortcutWaiting" = "Press keys";
+"shortcutWaitingOrDoubleCommand" = "Press keys or double-tap ⌘";
 "shortcutNeedsModifierTitle" = "Shortcut Needs a Modifier";
 "shortcutNeedsModifier" = "Use ⌘/⌥/⇧/⌃ plus another key (e.g. ⌘⇧8), or F1–F12 alone";
 "shortcutRestore" = "Restore Default";

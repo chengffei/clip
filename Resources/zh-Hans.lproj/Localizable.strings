@@ -21,6 +21,7 @@
 "shortcutSet" = "录制";
 "shortcutCancel" = "取消";
 "shortcutWaiting" = "等待按键";
+"shortcutWaitingOrDoubleCommand" = "按组合键，或双击 ⌘";
 "shortcutNeedsModifierTitle" = "快捷键需要修饰键";
 "shortcutNeedsModifier" = "需要组合键：⌘/⌥/⇧/⌃ + 其他按键（如 ⌘⇧8），或单独按 F1–F12";
 "shortcutRestore" = "恢复默认";
