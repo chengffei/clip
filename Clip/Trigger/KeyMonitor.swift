@@ -35,26 +35,18 @@ class KeyMonitor {
     private var eventTap: CFMachPort?
     private var eventTapSource: CFRunLoopSource?
     private var lastCommandPressTime: TimeInterval = 0
-    private var lastCommandPressOption: Bool = false
     private var commandIsDown = false
     private var otherKeyPressed = false
     private let onTrigger: (CaptureTriggerContext) -> Void
-    private let onCountdownTrigger: () -> Void
-
-    /// Which path is live, for the settings window's diagnostics line.
-    private(set) var activePath: String = "none"
 
     private struct ModifierSample {
         let commandIsDown: Bool
-        let optionIsDown: Bool
         let hasDisruptiveModifiers: Bool
         let eventUptime: TimeInterval
     }
 
-    init(onTrigger: @escaping (CaptureTriggerContext) -> Void,
-         onCountdownTrigger: @escaping () -> Void) {
+    init(onTrigger: @escaping (CaptureTriggerContext) -> Void) {
         self.onTrigger = onTrigger
-        self.onCountdownTrigger = onCountdownTrigger
         startMonitoring()
     }
 
@@ -70,7 +62,6 @@ class KeyMonitor {
         FileLog.write("KeyMonitor start accessibility=\(axTrusted) inputMonitoring=\(listenAccess)")
 
         if listenAccess, startEventTapMonitoring() {
-            activePath = "event-tap"
             Self.log.notice("path: CGEvent tap")
             FileLog.write("KeyMonitor path=event-tap")
             return
@@ -86,7 +77,6 @@ class KeyMonitor {
         keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] _ in
             self?.otherKeyPressed = true
         }
-        activePath = axTrusted ? "nsevent-monitor" : "nsevent-monitor (no accessibility)"
         Self.log.notice("path: NSEvent monitors, accessibility=\(axTrusted)")
         FileLog.write("KeyMonitor path=nsevent-monitor accessibility=\(axTrusted)")
     }
@@ -112,7 +102,6 @@ class KeyMonitor {
             NSEvent.removeMonitor(m)
             keyDownMonitor = nil
         }
-        activePath = "none"
     }
 
     private func resetSequence() {
@@ -124,9 +113,9 @@ class KeyMonitor {
     private func handleFlagsChanged(_ event: NSEvent) {
         handleModifierSample(ModifierSample(
             commandIsDown: event.modifierFlags.contains(.command),
-            optionIsDown: event.modifierFlags.contains(.option),
             hasDisruptiveModifiers: event.modifierFlags.contains(.shift)
-                || event.modifierFlags.contains(.control),
+                || event.modifierFlags.contains(.control)
+                || event.modifierFlags.contains(.option),
             eventUptime: event.timestamp
         ))
     }
@@ -175,9 +164,9 @@ class KeyMonitor {
             let flags = event.flags
             handleModifierSample(ModifierSample(
                 commandIsDown: flags.contains(.maskCommand),
-                optionIsDown: flags.contains(.maskAlternate),
                 hasDisruptiveModifiers: flags.contains(.maskShift)
-                    || flags.contains(.maskControl),
+                    || flags.contains(.maskControl)
+                    || flags.contains(.maskAlternate),
                 eventUptime: Double(event.timestamp) / 1_000_000_000
             ))
         default:
@@ -197,18 +186,12 @@ class KeyMonitor {
         if sample.commandIsDown && !commandIsDown {
             let now = sample.eventUptime
             let withinWindow = (now - lastCommandPressTime) < Defaults.doubleTapInterval
-            // Both presses must share the same Option state — a sequence that
-            // mixes ⌘ then ⌥⌘ is treated as a fresh first press, not a double-tap.
-            let isDoubleTap = !otherKeyPressed
-                && withinWindow
-                && lastCommandPressOption == sample.optionIsDown
+            let isDoubleTap = !otherKeyPressed && withinWindow
             Self.log.debug("⌘ down: withinWindow=\(withinWindow) otherKey=\(self.otherKeyPressed) double=\(isDoubleTap)")
             FileLog.write("⌘ down withinWindow=\(withinWindow) otherKey=\(otherKeyPressed) double=\(isDoubleTap) regularEnabled=\(isRegularDoubleTapEnabled)")
 
             if isDoubleTap {
-                if sample.optionIsDown {
-                    MainRunLoopScheduler.perform { [weak self] in self?.onCountdownTrigger() }
-                } else if isRegularDoubleTapEnabled {
+                if isRegularDoubleTapEnabled {
                     let context = CaptureTriggerContext(
                         source: .doubleCommand,
                         eventUptime: now
@@ -226,7 +209,6 @@ class KeyMonitor {
                 lastCommandPressTime = 0
             } else {
                 lastCommandPressTime = now
-                lastCommandPressOption = sample.optionIsDown
             }
             otherKeyPressed = false
         }

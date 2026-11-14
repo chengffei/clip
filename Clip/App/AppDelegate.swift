@@ -109,8 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 self.handleDoubleTapCommand(triggerContext: context)
-            },
-            onCountdownTrigger: {}
+            }
         )
 
         NotificationCenter.default.addObserver(

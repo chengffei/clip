@@ -57,7 +57,6 @@ final class RecordingEngine: NSObject {
     private let fps: Int
     private let recordingQueue = DispatchQueue(label: "clip.recording")
 
-    private var screen: NSScreen?
     private var sourceRect: CGRect = .zero
     private var stream: SCStream?
     private var streamOutput: RecordingStreamOutput?
@@ -98,7 +97,6 @@ final class RecordingEngine: NSObject {
         }
 
         self.state = .recording
-        self.screen = screen
         self.totalPausedDuration = 0
         self.pauseStartTime = nil
         self.hasWrittenFrame = false
