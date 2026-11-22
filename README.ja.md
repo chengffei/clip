@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg"><b>ダウンロード</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg"><b>ダウンロード</b></a> ·
   <a href="https://chengffei.github.io/clip/">ウェブサイト</a> ·
   <a href="#ソースからビルド">ソースからビルド</a>
 </p>
@@ -40,7 +40,7 @@
 Clipは無料。中の機能も、すべて無料です。
 
 - 矢印、四角、番号、モザイクで書き込み。コピーするまで、どれも直せます。
-- 囲んだ範囲をMP4で録画。チャットでそのまま再生できるGIFにも。
+- 囲んだ範囲をMP4で録画。チャットでそのまま再生できるGIFにも。停止するとファイルがコピーされ、そのままペーストできます。
 - 長いページや会話はスクロールするだけ。Clipがつなぎ合わせ、固定ヘッダーは繰り返しません。
 - キャプチャを全ウインドウの上にピン留めして参考に。画面上の色はポイントするだけで拾えます。
 - ウインドウにポインタを合わせると、Clipがピクセル単位で縁取り。どのディスプレイでも。
@@ -53,7 +53,7 @@ Shottrは小さいけれど録画できません。CleanShot Xはいちばん多
 
 ## インストール
 
-1. [Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
+1. [Clip-0.8.2.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg)をダウンロードし、Clipを「アプリケーション」にドラッグします。
 2. Clipは署名済みですがAppleの公証を受けていないため、初回起動時にmacOSにブロックされます。一度開いて警告を閉じたあと、「システム設定 › プライバシーとセキュリティ」で「このまま開く」をクリックしてください。または「ターミナル」で次のコマンドを一度実行すれば、そのまま開けます。
 
    ```sh

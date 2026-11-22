@@ -9,7 +9,7 @@ Clip has no upload, no account and no telemetry. Its only network requests are a
 - Trigger: double-tap ⌘ anywhere; other actions get global shortcuts in Settings › Shortcuts
 - Capture: window snapping, pixel-precise selection, origin and size label, multiple displays, scrolling capture
 - Annotations: rectangle, ellipse, arrow, line, pen, highlighter, mosaic, numbered markers, text; editable with undo and redo
-- Recording: selected region to MP4 or GIF with a pause/stop HUD
+- Recording: selected region to MP4 or GIF with a pause/stop HUD; the saved file is copied to the clipboard
 - OCR: Apple Vision on device, with a built-in PP-OCRv6 model (Core ML) taking over when Vision errors, finds nothing or takes longer than 1.5 s; Chinese and English by default, copied straight to the clipboard
 - Toolbar: one bar; any tool on the bar, in the More menu or hidden, with dividers anywhere (Settings › Toolbar)
 - Network: only the manual update check; nothing is uploaded
@@ -32,4 +32,4 @@ Checked 30 October 2026.
 - [Website](https://chengffei.github.io/clip/): overview, screenshots, install steps and FAQ
 - [中文介绍页](https://chengffei.github.io/clip/zh/): Chinese version of the website
 - [Source code](https://github.com/chengffei/clip): GitHub repository and README
-- [Download Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg): latest release (also a .zip and a .sha256 on the Releases page)
+- [Download Clip-0.8.2.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg): latest release (also a .zip and a .sha256 on the Releases page)

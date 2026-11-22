@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg"><b>下載</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg"><b>下載</b></a> ·
   <a href="https://chengffei.github.io/clip/">網站</a> ·
   <a href="#從原始碼建置">從原始碼建置</a>
 </p>
@@ -40,7 +40,7 @@
 Clip 免費，裡面每個功能也都免費。
 
 - 用箭頭、方框、步驟編號和馬賽克標註，複製之前每一筆都能再改。
-- 把框好的範圍錄成 MP4，或錄成能在聊天裡直接播放的 GIF。
+- 把框好的範圍錄成 MP4，或錄成能在聊天裡直接播放的 GIF。停止後檔案已拷貝，直接貼上即可。
 - 長網頁、長聊天紀錄，捲動一遍就截下來；Clip 邊捲邊拼接，置頂的標題列只出現一次。
 - 把截圖釘在所有視窗上方當參考，螢幕上任何顏色指一下就能取。
 - 指標移到視窗上，Clip 沿邊緣描出來，精確到像素，哪部顯示器都一樣。
@@ -53,7 +53,7 @@ Shottr 小巧，但不能錄影。CleanShot X 功能最完整，售價 35 美元
 
 ## 安裝
 
-1. 下載 [Clip-0.8.1.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.1.dmg)，把 Clip 拖進「應用程式」。
+1. 下載 [Clip-0.8.2.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg)，把 Clip 拖進「應用程式」。
 2. Clip 已簽署但未經 Apple 公證，首次開啟會被 macOS 擋下。先開啟一次並關閉提示，再到「系統設定 › 隱私權與安全性」按「強制打開」。也可以在「終端機」裡執行一次下面的指令，之後正常開啟即可：
 
    ```sh
