@@ -102,6 +102,7 @@
 "editSuspendedResumeToast" = "Continuing your suspended edit";
 "fullScreenScreenshotFailed" = "Full-screen screenshot failed";
 "recordingSaved" = "Recording saved to %@";
+"recordingSavedAndCopied" = "Recording saved to %@ and copied. Paste it anywhere.";
 "recordingCancelled" = "Recording cancelled";
 "recordingExportingGIF" = "Creating GIF";
 "recordingFailed" = "Recording failed: %@";

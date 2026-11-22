@@ -102,6 +102,7 @@
 "editSuspendedResumeToast" = "已恢复上次未完成的编辑";
 "fullScreenScreenshotFailed" = "截全屏失败";
 "recordingSaved" = "录制已保存到 %@";
+"recordingSavedAndCopied" = "录制已保存到 %@，并已复制，可直接粘贴";
 "recordingCancelled" = "录制已取消";
 "recordingExportingGIF" = "正在生成 GIF";
 "recordingFailed" = "录制失败: %@";

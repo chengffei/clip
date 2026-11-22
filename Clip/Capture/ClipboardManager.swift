@@ -36,6 +36,21 @@ struct ClipboardManager {
         }
     }
 
+    /// A saved recording as a file on the clipboard, so ⌘V pastes it into chat apps, mail or Finder.
+    /// A GIF also carries its bytes (up to 20 MB) so apps that take images show it animated.
+    @discardableResult
+    static func copyRecordingFile(_ url: URL, pasteboard: NSPasteboard = .general) -> Bool {
+        let item = NSPasteboardItem()
+        item.setString(url.absoluteString, forType: .fileURL)
+        if url.pathExtension.lowercased() == "gif",
+           let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size <= 20_000_000,
+           let data = try? Data(contentsOf: url) {
+            item.setData(data, forType: NSPasteboard.PasteboardType("com.compuserve.gif"))
+        }
+        pasteboard.clearContents()
+        return pasteboard.writeObjects([item])
+    }
+
     static func copyToClipboard(text: String) {
         writeTextToClipboard(text)
     }

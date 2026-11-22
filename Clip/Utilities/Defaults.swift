@@ -195,6 +195,10 @@ enum L10n {
     static func recordingSaved(to path: String) -> String {
         String(format: s("recordingSaved"), path)
     }
+
+    static func recordingSavedAndCopied(to path: String) -> String {
+        String(format: s("recordingSavedAndCopied"), path)
+    }
     static var recordingCancelled: String { s("recordingCancelled") }
     static var recordingExportingGIF: String { s("recordingExportingGIF") }
     static var saveRecordingPrompt: String { s("saveRecordingPrompt") }
@@ -707,7 +711,9 @@ struct Defaults {
             guard let raw = defaults.string(forKey: "recordingSavePreference"),
                   let preference = RecordingSavePreference(rawValue: raw)
             else {
-                return .manual
+                // Unset: save in the last format used instead of asking after every recording.
+                // "Ask every time" stays available in Settings.
+                return recordingSaveFormat == .gif ? .gif : .mp4
             }
             return preference
         }

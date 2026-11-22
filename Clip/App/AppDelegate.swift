@@ -778,7 +778,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showSavedRecording(_ destination: URL) {
         let directoryPath = SaveDestination.displayPath(destination.deletingLastPathComponent())
-        ToastWindow.show(message: L10n.recordingSaved(to: directoryPath))
+        // Like a screenshot, the take lands on the clipboard: ⌘V pastes the file into chat apps and Finder.
+        let copied = ClipboardManager.copyRecordingFile(destination)
+        ToastWindow.show(message: copied ? L10n.recordingSavedAndCopied(to: directoryPath) : L10n.recordingSaved(to: directoryPath),
+                         duration: copied ? 2.5 : 1.5)
         if Defaults.autoRevealSavedFiles {
             NSWorkspace.shared.activateFileViewerSelecting([destination])
         }

@@ -42,15 +42,15 @@ class KeyMonitor {
     /// double-tap. Lets the snapshot start before the second tap lands.
     var onFirstTapReleased: (() -> Void)?
 
-    private struct ModifierSample {
+    struct ModifierSample {
         let commandIsDown: Bool
         let hasDisruptiveModifiers: Bool
         let eventUptime: TimeInterval
     }
 
-    init(onTrigger: @escaping (CaptureTriggerContext) -> Void) {
+    init(onTrigger: @escaping (CaptureTriggerContext) -> Void, monitoring: Bool = true) {
         self.onTrigger = onTrigger
-        startMonitoring()
+        if monitoring { startMonitoring() }
     }
 
     deinit {
@@ -77,7 +77,7 @@ class KeyMonitor {
             self?.handleFlagsChanged(event)
             return event
         }
-        keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] _ in
+        keyDownMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
             self?.otherKeyPressed = true
         }
         Self.log.notice("path: NSEvent monitors, accessibility=\(axTrusted)")
@@ -125,7 +125,10 @@ class KeyMonitor {
 
     @discardableResult
     private func startEventTapMonitoring() -> Bool {
-        let types: [CGEventType] = [.flagsChanged, .keyDown]
+        // Mouse downs count as "another key": ⌘-click (multi-select, open in new tab) is not a ⌘ tap.
+        // Without them two quick ⌘-clicks read as a double tap, and every ⌘-click started a
+        // speculative full-screen snapshot.
+        let types: [CGEventType] = [.flagsChanged, .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
         let mask = types.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
         guard let tap = CGEvent.tapCreate(
@@ -161,7 +164,7 @@ class KeyMonitor {
             if let eventTap {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
-        case .keyDown:
+        case .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown:
             otherKeyPressed = true
         case .flagsChanged:
             let flags = event.flags
@@ -177,7 +180,10 @@ class KeyMonitor {
         }
     }
 
-    private func handleModifierSample(_ sample: ModifierSample) {
+    /// Test hook: a mouse button went down (the event tap and the fallback monitors do the same).
+    func noteMouseDown() { otherKeyPressed = true }
+
+    func handleModifierSample(_ sample: ModifierSample) {
         guard isEnabled else { return }
 
         if sample.hasDisruptiveModifiers {
