@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg"><b>Download</b></a> ·
+  <a href="https://github.com/chengffei/clip/releases/latest/download/Clip-0.9.0.dmg"><b>Download</b></a> ·
   <a href="https://chengffei.github.io/clip/">Website</a> ·
   <a href="#build-from-source">Build from source</a>
 </p>
@@ -43,6 +43,7 @@ Clip is free, and so is everything in it.
 - Mark up with arrows, boxes, numbered steps and mosaic, and change any mark until you copy.
 - Record the area you framed as an MP4, or as a GIF that plays right in a chat. The file is copied when you stop, ready to paste.
 - Scroll through a long page or conversation and Clip stitches it as you go, without repeating sticky headers.
+- Drag an edge and a loupe shows the exact pixel under it. Arrow keys nudge the frame one point at a time.
 - Pin a capture above your windows while you work, and pick any color on screen.
 - Hover a window and Clip outlines it to the pixel, on any display.
 - Keep the tools you use on the toolbar and tuck the rest into More.
@@ -54,7 +55,7 @@ Shottr is small but can’t record. CleanShot X does the most, for $35. PixPin i
 
 ## Install
 
-1. Download [Clip-0.8.2.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.8.2.dmg) and drag Clip into Applications.
+1. Download [Clip-0.9.0.dmg](https://github.com/chengffei/clip/releases/latest/download/Clip-0.9.0.dmg) and drag Clip into Applications.
 2. Clip is signed but not notarized, so macOS blocks the first launch. Open it, close the warning, then click **Open Anyway** in *System Settings › Privacy & Security*. Or run this once in Terminal and open Clip as usual:
 
    ```sh
