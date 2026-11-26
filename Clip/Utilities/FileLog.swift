@@ -23,7 +23,12 @@ enum FileLog {
     private static var writtenSinceSizeCheck = 0
     private static let sizeLimit = 1_000_000
 
+    /// Unit tests drive KeyMonitor and capture sessions with fake events;
+    /// those lines must not land in the real log Felix and Claude read.
+    private static let isRunningTests = NSClassFromString("XCTestCase") != nil
+
     static func write(_ message: String) {
+        guard !isRunningTests else { return }
         let line = "\(stamp.string(from: Date())) \(message)\n"
         queue.async {
             guard let data = line.data(using: .utf8) else { return }

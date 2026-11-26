@@ -82,6 +82,15 @@ final class CaptureLatencyTrace: @unchecked Sendable {
         self.eventUptime = (eventUptime > 0 && eventUptime <= now && now - eventUptime < 5) ? eventUptime : now
     }
 
+    private let createdUptime = ProcessInfo.processInfo.systemUptime
+
+    /// One line per cancelled session. A double-command session cancelled
+    /// within a second or two with no selection is most likely a misfire.
+    func noteSessionCancelled(hadSelection: Bool) {
+        let ms = Int(((ProcessInfo.processInfo.systemUptime - createdUptime) * 1000).rounded())
+        FileLog.write("capture session \(source.rawValue) cancelled after=\(ms)ms selection=\(hadSelection)")
+    }
+
     private func elapsedMS() -> Int {
         Int(((ProcessInfo.processInfo.systemUptime - eventUptime) * 1000).rounded())
     }

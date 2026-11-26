@@ -1193,6 +1193,7 @@ class OverlayWindowController {
         if editController?.cancelWindowCaptureOutput() == true { return }
         guard !sessionEnded else { return }
         triggerContext?.finish(.cancelled)
+        triggerContext?.trace.noteSessionCancelled(hadSelection: editController != nil || activeSelectionView != nil)
         editController?.tearDown()
         editController = nil
         tearDown()
