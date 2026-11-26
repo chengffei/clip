@@ -115,11 +115,15 @@ class SelectionView: NSView {
 
     /// Full-screen snapshot taken before overlays appear, preserving transient menus/popups.
     var backgroundSnapshot: NSImage?
+    /// Same pixels as `backgroundSnapshot`, kept for the edge loupe.
+    private var backgroundCGImage: CGImage?
+    private var edgeLoupe: EdgeLoupeWindow?
 
     /// Seeds the frozen desktop background from a CGImage produced by the
     /// off-main-thread pre-capture path.
     func setBackgroundSnapshot(cgImage: CGImage, pointSize: NSSize) {
         backgroundSnapshot = NSImage(cgImage: cgImage, size: pointSize)
+        backgroundCGImage = cgImage
         awaitsBackgroundSnapshot = false
         needsDisplay = true
     }
@@ -248,13 +252,70 @@ class SelectionView: NSView {
         state = .selected
         delegate?.selectionDidChange(rect: newRect, inView: self)
         invalidate(from: previousRect, to: newRect)
+        updateEdgeLoupe(handle: handle, rect: newRect, cursor: currentPoint)
     }
 
     /// Mirror of `mouseUp`'s `.resize` finalize.
     func finalizeExternalResize() {
+        dismissEdgeLoupe()
         if let rect = selectionRect {
             delegate?.selectionDidComplete(rect: rect, inView: self, isWindowSelection: false, windowID: nil)
         }
+    }
+
+    // MARK: - Edge loupe
+
+    /// Shows the loupe centered on the dragged edge. Corners center on the
+    /// corner; side handles center on the edge at the cursor's height or
+    /// width. The lens sits on the selection's inner side of the cursor.
+    private func updateEdgeLoupe(handle: HandlePosition, rect: NSRect, cursor: NSPoint) {
+        guard let image = backgroundCGImage, !scrollCaptureActive,
+              let window, let screen = window.screen else { return }
+        let side = Self.outwardDirection(of: handle)
+        let anchor = Self.loupeAnchor(handle: handle, rect: rect, cursor: cursor)
+        let loupe = edgeLoupe ?? EdgeLoupeWindow()
+        edgeLoupe = loupe
+        let cursorOnScreen = window.convertPoint(toScreen: convert(cursor, to: nil))
+        loupe.update(
+            image: image,
+            imageBounds: bounds,
+            anchor: anchor,
+            selection: rect,
+            placement: CGVector(dx: -side.dx, dy: -side.dy),
+            cursor: cursorOnScreen,
+            screenFrame: screen.frame
+        )
+    }
+
+    func dismissEdgeLoupe() {
+        edgeLoupe?.dismiss()
+    }
+
+    override func viewWillMove(toWindow newWindow: NSWindow?) {
+        super.viewWillMove(toWindow: newWindow)
+        if newWindow == nil { dismissEdgeLoupe() }
+    }
+
+    static func outwardDirection(of handle: HandlePosition) -> CGVector {
+        switch handle {
+        case .topLeft: return CGVector(dx: -1, dy: 1)
+        case .topRight: return CGVector(dx: 1, dy: 1)
+        case .bottomLeft: return CGVector(dx: -1, dy: -1)
+        case .bottomRight: return CGVector(dx: 1, dy: -1)
+        case .topCenter: return CGVector(dx: 0, dy: 1)
+        case .bottomCenter: return CGVector(dx: 0, dy: -1)
+        case .leftCenter: return CGVector(dx: -1, dy: 0)
+        case .rightCenter: return CGVector(dx: 1, dy: 0)
+        }
+    }
+
+    static func loupeAnchor(handle: HandlePosition, rect: NSRect, cursor: NSPoint) -> NSPoint {
+        let side = outwardDirection(of: handle)
+        let x: CGFloat = side.dx < 0 ? rect.minX : side.dx > 0 ? rect.maxX
+            : max(rect.minX, min(rect.maxX, cursor.x))
+        let y: CGFloat = side.dy < 0 ? rect.minY : side.dy > 0 ? rect.maxY
+            : max(rect.minY, min(rect.maxY, cursor.y))
+        return NSPoint(x: x, y: y)
     }
 
     // MARK: - Cursors
@@ -470,6 +531,7 @@ class SelectionView: NSView {
             selectionRect = newRect
             delegate?.selectionDidChange(rect: newRect, inView: self)
             invalidate(from: previousRect, to: newRect)
+            updateEdgeLoupe(handle: handle, rect: newRect, cursor: point)
 
         case .none:
             break
@@ -527,6 +589,7 @@ class SelectionView: NSView {
             needsDisplay = true
 
         case .move, .resize:
+            dismissEdgeLoupe()
             if let rect = selectionRect {
                 delegate?.selectionDidComplete(rect: rect, inView: self, isWindowSelection: false, windowID: nil)
             }
@@ -712,7 +775,7 @@ class SelectionView: NSView {
             context.restoreGState()
         }
 
-        // Draw border — solid red during scroll capture, green dashed otherwise
+        // Border: solid red during scroll capture, dashed otherwise
         if scrollCaptureActive {
             // ScreenCaptureKit sees the overlay panel, so any stroke pixels
             // inside `rect` bleed into every captured frame and produce thin
@@ -770,13 +833,22 @@ class SelectionView: NSView {
         NSPoint(x: rect.minX, y: bounds.maxY - rect.maxY)
     }
 
-    /// Solid frame drawn just outside the captured rect so no stroke pixel
-    /// bleeds into the image.
+    /// Dashed hairline drawn just outside the captured rect so no stroke
+    /// pixel bleeds into the image: a white base line with accent dashes on
+    /// top, so the frame reads on any content without looking heavy.
     static func drawFrame(context: CGContext, rect: NSRect, color: NSColor) {
         let w = Brand.selectionStroke
-        context.setStrokeColor(color.cgColor)
+        let path = CGPath(rect: rect.insetBy(dx: -w / 2, dy: -w / 2), transform: nil)
+        context.saveGState()
         context.setLineWidth(w)
-        context.stroke(rect.insetBy(dx: -w / 2, dy: -w / 2))
+        context.setStrokeColor(NSColor.white.withAlphaComponent(0.9).cgColor)
+        context.addPath(path)
+        context.strokePath()
+        context.setStrokeColor(color.cgColor)
+        context.setLineDash(phase: 0, lengths: Brand.selectionDash)
+        context.addPath(path)
+        context.strokePath()
+        context.restoreGState()
     }
 
     /// Eight round handles: white disc with an accent ring, legible on any

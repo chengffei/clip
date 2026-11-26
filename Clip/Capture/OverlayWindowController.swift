@@ -1279,6 +1279,7 @@ class OverlayWindowController {
 
         for window in windows {
             (window.contentView as? SelectionView)?.cancelFirstFramePresentationTracking()
+            (window.contentView as? SelectionView)?.dismissEdgeLoupe()
             OverlayPanelPool.shared.recycle(window)
         }
         windows.removeAll()

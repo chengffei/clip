@@ -30,7 +30,10 @@ enum Brand {
     static let onAccent = NSColor.white
 
     // Selection geometry (capture overlay and editor frame)
-    static let selectionStroke: CGFloat = 2
+    /// Hairline two-tone dash: accent dashes over a white line, the macOS
+    /// selection idiom; legible on light and dark content alike.
+    static let selectionStroke: CGFloat = 1
+    static let selectionDash: [CGFloat] = [4, 3]
     static let handleDiameter: CGFloat = 9
     static let handleRing: CGFloat = 1.5
     static let labelBackground = NSColor(srgbRed: 0.114, green: 0.114, blue: 0.122, alpha: 0.82)
