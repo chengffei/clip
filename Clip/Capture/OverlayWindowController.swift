@@ -718,6 +718,9 @@ class OverlayWindowController {
             if self?.editController?.nudgeSelectedAnnotationFromKeyboard(for: event) == true {
                 return nil
             }
+            if self?.adjustSelectionFromKeyboard(event) == true {
+                return nil
+            }
             if self?.editController?.deleteSelectedAnnotationFromKeyboard(for: event) == true {
                 return nil
             }
@@ -1310,6 +1313,18 @@ class OverlayWindowController {
             width: screenRect.width,
             height: screenRect.height
         )
+    }
+
+    // MARK: - Keyboard selection adjustment
+
+    /// Arrow keys fine-tune the established selection once no annotation is
+    /// selected (annotation nudging runs first in the key chain).
+    private func adjustSelectionFromKeyboard(_ event: NSEvent) -> Bool {
+        // Only in the editor: elsewhere a completed selection starts capture.
+        guard !sessionEnded, let editController, !editController.blocksHistoryNavigation,
+              let adjustment = SelectionView.keyboardAdjustment(for: event),
+              let view = activeSelectionView else { return false }
+        return view.adjustFromKeyboard(adjustment)
     }
 
     // MARK: - Magnifier lens panel

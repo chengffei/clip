@@ -52,3 +52,35 @@ final class EdgeLoupeTests: XCTestCase {
             .write(to: URL(fileURLWithPath: dir).appendingPathComponent("edge-loupe.png"))
     }
 }
+
+final class SelectionKeyboardAdjustmentTests: XCTestCase {
+    private func key(_ code: UInt16, _ flags: NSEvent.ModifierFlags = []) -> NSEvent {
+        NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0, windowNumber: 0, context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: code)!
+    }
+
+    func testArrowKeyMapping() {
+        XCTAssertEqual(SelectionView.keyboardAdjustment(for: key(123)), .move(CGVector(dx: -1, dy: 0)))
+        XCTAssertEqual(SelectionView.keyboardAdjustment(for: key(126, .shift)), .move(CGVector(dx: 0, dy: 10)))
+        XCTAssertEqual(SelectionView.keyboardAdjustment(for: key(124, .command)), .resize(CGVector(dx: 1, dy: 0)))
+        XCTAssertEqual(SelectionView.keyboardAdjustment(for: key(125, [.command, .shift])), .resize(CGVector(dx: 0, dy: -10)))
+        XCTAssertNil(SelectionView.keyboardAdjustment(for: key(123, .option)))
+        XCTAssertNil(SelectionView.keyboardAdjustment(for: key(0)))
+    }
+
+    func testMoveAndResizeKeepTopLeftForResize() {
+        _ = NSApplication.shared
+        let view = SelectionView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        view.updateSelectionRect(NSRect(x: 100, y: 100, width: 100, height: 50))
+        XCTAssertTrue(view.adjustFromKeyboard(.move(CGVector(dx: -1, dy: 0))))
+        XCTAssertEqual(view.currentSelectionRect, NSRect(x: 99, y: 100, width: 100, height: 50))
+        // ⌘↓: bottom edge down, top edge (maxY 150) fixed.
+        view.adjustFromKeyboard(.resize(CGVector(dx: 0, dy: -10)))
+        XCTAssertEqual(view.currentSelectionRect, NSRect(x: 99, y: 90, width: 100, height: 60))
+        // ⌘←: right edge in.
+        view.adjustFromKeyboard(.resize(CGVector(dx: -1, dy: 0)))
+        XCTAssertEqual(view.currentSelectionRect, NSRect(x: 99, y: 90, width: 99, height: 60))
+        // Moving stops at the view's edge.
+        view.adjustFromKeyboard(.move(CGVector(dx: -500, dy: 0)))
+        XCTAssertEqual(view.currentSelectionRect?.minX, 0)
+    }
+}

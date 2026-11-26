@@ -118,6 +118,7 @@ class SelectionView: NSView {
     /// Same pixels as `backgroundSnapshot`, kept for the edge loupe.
     private var backgroundCGImage: CGImage?
     private var edgeLoupe: EdgeLoupeWindow?
+    private var edgeLoupeHideWork: DispatchWorkItem?
 
     /// Seeds the frozen desktop background from a CGImage produced by the
     /// off-main-thread pre-capture path.
@@ -288,7 +289,71 @@ class SelectionView: NSView {
     }
 
     func dismissEdgeLoupe() {
+        edgeLoupeHideWork?.cancel()
+        edgeLoupeHideWork = nil
         edgeLoupe?.dismiss()
+    }
+
+    // MARK: - Keyboard adjustment
+
+    enum KeyboardAdjustment: Equatable {
+        case move(CGVector)
+        /// Moves the bottom-right corner; the top-left stays put.
+        case resize(CGVector)
+    }
+
+    /// Arrow keys move the selection 1 pt, ⌘ + arrow moves its right or
+    /// bottom edge, and ⇧ makes either step 10 pt (Shottr and ShareX use
+    /// the same scheme). ⌃ and ⌥ combinations are left alone.
+    static func keyboardAdjustment(for event: NSEvent) -> KeyboardAdjustment? {
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        guard !flags.contains(.option), !flags.contains(.control) else { return nil }
+        let step: CGFloat = flags.contains(.shift) ? 10 : 1
+        let delta: CGVector
+        switch event.keyCode {
+        case 123: delta = CGVector(dx: -step, dy: 0)
+        case 124: delta = CGVector(dx: step, dy: 0)
+        case 125: delta = CGVector(dx: 0, dy: -step)
+        case 126: delta = CGVector(dx: 0, dy: step)
+        default: return nil
+        }
+        return flags.contains(.command) ? .resize(delta) : .move(delta)
+    }
+
+    /// Applies an arrow-key adjustment to the established selection and
+    /// commits it the way a finished drag does. Resizing flashes the loupe
+    /// on the moving corner so single-pixel steps can be checked.
+    @discardableResult
+    func adjustFromKeyboard(_ adjustment: KeyboardAdjustment) -> Bool {
+        guard state == .selected, selectionInteractionEnabled, !scrollCaptureActive,
+              case .none = dragAction, let rect = selectionRect else { return false }
+        let newRect: NSRect
+        switch adjustment {
+        case .move(let d):
+            newRect = clampedForMove(rect.offsetBy(dx: d.dx, dy: d.dy))
+        case .resize(let d):
+            newRect = SelectionView.resizedRect(
+                from: rect,
+                handle: .bottomRight,
+                currentPoint: NSPoint(x: rect.maxX + d.dx, y: rect.minY + d.dy),
+                aspectRatio: aspectRatio,
+                bounds: selectionAdjustmentBounds ?? bounds
+            )
+        }
+        guard newRect != rect else { return true }
+        selectionRect = newRect
+        invalidate(from: rect, to: newRect)
+        refreshCursorRects()
+        delegate?.selectionDidChange(rect: newRect, inView: self)
+        delegate?.selectionDidComplete(rect: newRect, inView: self, isWindowSelection: false, windowID: nil)
+        if case .resize = adjustment {
+            updateEdgeLoupe(handle: .bottomRight, rect: newRect, cursor: NSPoint(x: newRect.maxX, y: newRect.minY))
+            edgeLoupeHideWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in self?.dismissEdgeLoupe() }
+            edgeLoupeHideWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.9, execute: work)
+        }
+        return true
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
